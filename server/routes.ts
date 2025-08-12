@@ -137,6 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const today = new Date().toISOString().split('T')[0];
       await storage.deleteDailyChallenge(today);
+      console.log(`Challenge for ${today} deleted, hints will reset for new challenge`);
       res.json({ message: "Challenge cleared, next request will generate a new one" });
     } catch (error) {
       console.error("Error clearing challenge:", error);
@@ -204,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Hint request for ${today}, challenge found: ${challenge ? 'YES' : 'NO'}`);
       if (challenge) {
-        console.log(`Challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0})`);
+        console.log(`Challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0}) [ID: ${challenge.id}]`);
       }
       
       if (!challenge) {
