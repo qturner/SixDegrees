@@ -184,6 +184,13 @@ class TMDbService {
     }
   }
 
+  async getActorHintMovies(actorId: number, count: number = 5): Promise<Movie[]> {
+    const movies = await this.getActorMovies(actorId);
+    // Return a random selection of movies, prioritizing more popular ones
+    const shuffled = movies.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
+
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {
     try {
       const credits = await this.getMovieCredits(movieId);

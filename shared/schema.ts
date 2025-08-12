@@ -12,6 +12,7 @@ export const dailyChallenges = pgTable("daily_challenges", {
   endActorId: integer("end_actor_id").notNull(),
   endActorName: text("end_actor_name").notNull(),
   endActorProfilePath: text("end_actor_profile_path"),
+  hintsUsed: integer("hints_used").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

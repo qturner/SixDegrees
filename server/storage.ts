@@ -5,6 +5,7 @@ export interface IStorage {
   // Daily Challenge methods
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
   createDailyChallenge(challenge: InsertDailyChallenge): Promise<DailyChallenge>;
+  updateDailyChallengeHints(challengeId: string, hintsUsed: number): Promise<DailyChallenge>;
   
   // Game Attempt methods
   createGameAttempt(attempt: InsertGameAttempt): Promise<GameAttempt>;
@@ -34,9 +35,21 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       startActorProfilePath: insertChallenge.startActorProfilePath || null,
       endActorProfilePath: insertChallenge.endActorProfilePath || null,
+      hintsUsed: insertChallenge.hintsUsed || 0,
     };
     this.dailyChallenges.set(id, challenge);
     return challenge;
+  }
+
+  async updateDailyChallengeHints(challengeId: string, hintsUsed: number): Promise<DailyChallenge> {
+    const challenge = this.dailyChallenges.get(challengeId);
+    if (!challenge) {
+      throw new Error("Challenge not found");
+    }
+    
+    const updatedChallenge = { ...challenge, hintsUsed };
+    this.dailyChallenges.set(challengeId, updatedChallenge);
+    return updatedChallenge;
   }
 
   async createGameAttempt(insertAttempt: InsertGameAttempt): Promise<GameAttempt> {

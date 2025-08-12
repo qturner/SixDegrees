@@ -5,6 +5,7 @@ import GameGrid from "@/components/GameGrid";
 import ActorSwitcher from "@/components/ActorSwitcher";
 import GameInstructions from "@/components/GameInstructions";
 import ValidationFeedback from "@/components/ValidationFeedback";
+import { HintsSection } from "@/components/HintsSection";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 
 export default function Game() {
@@ -99,6 +100,10 @@ export default function Game() {
           onFlip={handleFlipActors}
           disabled={connections.some(c => c.actorId || c.movieId)}
         />
+        
+        <div className="mb-8">
+          <HintsSection dailyChallenge={challenge} />
+        </div>
         
         <GameGrid 
           challenge={effectiveChallenge!}

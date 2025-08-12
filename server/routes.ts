@@ -28,6 +28,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           endActorId: actors.actor2.id,
           endActorName: actors.actor2.name,
           endActorProfilePath: actors.actor2.profile_path,
+          hintsUsed: 0,
         });
       }
 
@@ -89,6 +90,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Error validating connection:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get hints for daily challenge
+  app.post("/api/daily-challenge/hint", async (req, res) => {
+    try {
+      const { actorType } = req.body; // 'start' or 'end'
+      
+      if (!actorType || (actorType !== 'start' && actorType !== 'end')) {
+        return res.status(400).json({ message: "Actor type must be 'start' or 'end'" });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const challenge = await storage.getDailyChallenge(today);
+      
+      if (!challenge) {
+        return res.status(404).json({ message: "No challenge found for today" });
+      }
+
+      if (challenge.hintsUsed >= 2) {
+        return res.status(400).json({ message: "All hints have been used for today" });
+      }
+
+      const actorId = actorType === 'start' ? challenge.startActorId : challenge.endActorId;
+      const actorName = actorType === 'start' ? challenge.startActorName : challenge.endActorName;
+      
+      const movies = await tmdbService.getActorHintMovies(actorId, 5);
+      
+      // Update hints used count
+      const updatedChallenge = await storage.updateDailyChallengeHints(
+        challenge.id, 
+        challenge.hintsUsed + 1
+      );
+      
+      res.json({
+        actorName,
+        movies,
+        hintsRemaining: 2 - updatedChallenge.hintsUsed,
+      });
+    } catch (error) {
+      console.error("Error getting hint:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
