@@ -12,6 +12,8 @@ Stand-up comedian filtering: Excludes TV movies, music films, and solo performer
 Bug fixes: Critical race condition in daily challenge generation resolved (August 2025) - hints no longer reset daily actors.
 UI Enhancement: Compact validation feedback using checkmarks/X icons instead of large alert boxes (August 2025).
 Daily Reset: Automated daily challenge reset at midnight EST with proper timezone handling (August 2025).
+Hints Toggle Feature: Users can now toggle between both hints after using them - both hints remain accessible instead of the first disappearing (August 2025).
+Mobile Responsive Design: Full mobile optimization with stacked layouts, touch-friendly buttons, proper viewport settings, and mobile-specific CSS improvements (August 2025).
 
 # System Architecture
 

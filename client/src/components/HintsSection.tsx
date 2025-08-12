@@ -28,18 +28,27 @@ interface HintsSectionProps {
 }
 
 export function HintsSection({ dailyChallenge }: HintsSectionProps) {
-  const [activeHint, setActiveHint] = useState<HintResponse | null>(null);
+  const [startActorHint, setStartActorHint] = useState<HintResponse | null>(null);
+  const [endActorHint, setEndActorHint] = useState<HintResponse | null>(null);
+  const [activeHintType, setActiveHintType] = useState<'start' | 'end' | null>(null);
   const { toast } = useToast();
   
   const hintsRemaining = 2 - (dailyChallenge.hintsUsed || 0);
+  const activeHint = activeHintType === 'start' ? startActorHint : endActorHint;
 
   const hintMutation = useMutation({
     mutationFn: async (actorType: 'start' | 'end'): Promise<HintResponse> => {
       const response = await apiRequest("POST", "/api/daily-challenge/hint", { actorType });
       return await response.json();
     },
-    onSuccess: (data: HintResponse) => {
-      setActiveHint(data);
+    onSuccess: (data: HintResponse, actorType: 'start' | 'end') => {
+      if (actorType === 'start') {
+        setStartActorHint(data);
+        setActiveHintType('start');
+      } else {
+        setEndActorHint(data);
+        setActiveHintType('end');
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
       toast({
         title: "Hint revealed!",
@@ -56,6 +65,13 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   });
 
   const handleHintClick = (actorType: 'start' | 'end') => {
+    // If hint already exists, just toggle to it
+    if ((actorType === 'start' && startActorHint) || (actorType === 'end' && endActorHint)) {
+      setActiveHintType(actorType);
+      return;
+    }
+    
+    // Otherwise, request a new hint if we have hints remaining
     if (hintsRemaining <= 0) {
       toast({
         title: "No hints remaining",
@@ -85,24 +101,28 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <Button 
               onClick={() => handleHintClick('start')}
-              disabled={hintsRemaining <= 0 || hintMutation.isPending}
-              variant="outline"
+              disabled={(hintsRemaining <= 0 && !startActorHint) || hintMutation.isPending}
+              variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
               className="flex-1 text-sm"
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
-                <span className="truncate">Hint for {dailyChallenge.startActorName}</span>
+                <span className="truncate">
+                  {startActorHint ? `Show ${dailyChallenge.startActorName} hint` : `Hint for ${dailyChallenge.startActorName}`}
+                </span>
               )}
             </Button>
             <Button 
               onClick={() => handleHintClick('end')}
-              disabled={hintsRemaining <= 0 || hintMutation.isPending}
-              variant="outline"
+              disabled={(hintsRemaining <= 0 && !endActorHint) || hintMutation.isPending}
+              variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
               className="flex-1 text-sm"
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
-                <span className="truncate">Hint for {dailyChallenge.endActorName}</span>
+                <span className="truncate">
+                  {endActorHint ? `Show ${dailyChallenge.endActorName} hint` : `Hint for ${dailyChallenge.endActorName}`}
+                </span>
               )}
             </Button>
           </div>
