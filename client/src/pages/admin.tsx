@@ -4,6 +4,17 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Shield, RefreshCw, LogOut, Users, Calendar } from "lucide-react";
@@ -49,6 +60,7 @@ function useAdminAuth() {
 
 export default function AdminPanel() {
   const [_, setLocation] = useLocation();
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const { toast } = useToast();
   const token = useAdminAuth();
 
@@ -82,6 +94,7 @@ export default function AdminPanel() {
       return await response.json();
     },
     onSuccess: () => {
+      setIsResetDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
       toast({
         title: "Challenge reset",
@@ -89,6 +102,7 @@ export default function AdminPanel() {
       });
     },
     onError: (error: any) => {
+      setIsResetDialogOpen(false);
       toast({
         title: "Reset failed",
         description: error.message || "Failed to reset challenge",
@@ -102,9 +116,7 @@ export default function AdminPanel() {
   };
 
   const handleResetChallenge = () => {
-    if (confirm("Are you sure you want to reset today's daily challenge? This will generate new actors.")) {
-      resetChallengeMutation.mutate();
-    }
+    resetChallengeMutation.mutate();
   };
 
   if (!token) {
@@ -196,15 +208,35 @@ export default function AdminPanel() {
                   This will delete the current challenge and generate a new one with different actors.
                   All hints will be reset to 0.
                 </p>
-                <Button 
-                  onClick={handleResetChallenge}
-                  disabled={resetChallengeMutation.isPending}
-                  variant="destructive"
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className={`h-4 w-4 ${resetChallengeMutation.isPending ? 'animate-spin' : ''}`} />
-                  {resetChallengeMutation.isPending ? "Resetting..." : "Reset Challenge"}
-                </Button>
+                <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      disabled={resetChallengeMutation.isPending}
+                      variant="destructive"
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${resetChallengeMutation.isPending ? 'animate-spin' : ''}`} />
+                      {resetChallengeMutation.isPending ? "Resetting..." : "Reset Challenge"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reset Daily Challenge</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to reset today's daily challenge? This will generate new actors.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleResetChallenge}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Reset Challenge
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </CardContent>
