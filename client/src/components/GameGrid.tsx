@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, RotateCcw, User, Film } from "lucide-react";
+import { CheckCircle, XCircle, RotateCcw, User, Film } from "lucide-react";
 import ActorSearch from "./ActorSearch";
 import MovieSearch from "./MovieSearch";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 interface GameGridProps {
   challenge: DailyChallenge;
   connections: Connection[];
+  validationResults: ValidationResult[];
   onConnectionUpdate: (index: number, connection: Partial<Connection>) => void;
   onValidationResult: (index: number, result: ValidationResult) => void;
   onGameResult: (result: ValidationResult) => void;
@@ -18,7 +19,8 @@ interface GameGridProps {
 
 export default function GameGrid({ 
   challenge, 
-  connections, 
+  connections,
+  validationResults,
   onConnectionUpdate, 
   onValidationResult,
   onGameResult,
@@ -157,16 +159,38 @@ export default function GameGrid({
             </div>
 
             {/* Connection Movies */}
-            {connectionSlots.map((connection, index) => (
-              <div key={`movie-${index}`} className="relative">
-                <MovieSearch
-                  onSelect={(movie) => handleMovieSelect(index, movie)}
-                  placeholder="Search for movie..."
-                  value={connection.movieTitle}
-                  disabled={!connection.actorId || validatingIndex === index}
-                />
-              </div>
-            ))}
+            {connectionSlots.map((connection, index) => {
+              const validationResult = validationResults?.[index];
+              
+              return (
+                <div key={`movie-${index}`} className="relative">
+                  <MovieSearch
+                    onSelect={(movie) => handleMovieSelect(index, movie)}
+                    placeholder="Search for movie..."
+                    value={connection.movieTitle}
+                    disabled={!connection.actorId || validatingIndex === index}
+                  />
+                  
+                  {/* Validation Status Icon */}
+                  {validationResult && connection.movieTitle && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      {validationResult.valid ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-600" />
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Loading Spinner */}
+                  {validatingIndex === index && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-game-blue"></div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             {/* Ending space */}
             <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-500 font-medium">

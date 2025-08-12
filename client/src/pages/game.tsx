@@ -152,6 +152,7 @@ export default function Game() {
         <GameGrid 
           challenge={effectiveChallenge!}
           connections={connections}
+          validationResults={validationResults}
           onConnectionUpdate={handleConnectionUpdate}
           onValidationResult={handleValidationResult}
           onGameResult={handleGameResult}

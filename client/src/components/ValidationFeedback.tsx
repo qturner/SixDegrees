@@ -32,32 +32,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
 
   return (
     <div className="space-y-4 mb-8">
-      {/* Individual connection validation results */}
-      {validationResults.map((result, index) => {
-        if (!result) return null;
-        
-        return (
-          <Alert
-            key={index}
-            className={`${
-              result.valid
-                ? "bg-game-success bg-opacity-10 border-game-success text-game-success"
-                : "bg-game-error bg-opacity-10 border-game-error text-game-error"
-            }`}
-          >
-            <div className="flex items-center">
-              {result.valid ? (
-                <CheckCircle className="w-4 h-4 mr-3" />
-              ) : (
-                <XCircle className="w-4 h-4 mr-3" />
-              )}
-              <AlertDescription>
-                <strong>{result.valid ? "Valid connection!" : "Invalid connection:"}</strong> {result.message}
-              </AlertDescription>
-            </div>
-          </Alert>
-        );
-      })}
+      {/* Individual connection validation is now shown inline with icons */}
 
       {/* Game completion result */}
       {gameResult && (
