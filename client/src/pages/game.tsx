@@ -96,18 +96,20 @@ export default function Game() {
     setGameResult(result);
   };
 
-  const resetGame = () => {
+  const resetGame = (preserveFlip = false) => {
     setConnections([]);
     setValidationResults([]);
     setGameResult(null);
-    setIsFlipped(false);
+    if (!preserveFlip) {
+      setIsFlipped(false);
+    }
     localStorage.removeItem('gameState');
   };
 
   const handleFlipActors = () => {
     setIsFlipped(prev => !prev);
-    // Reset the game when flipping actors
-    resetGame();
+    // Reset the game when flipping actors but preserve the flip state
+    resetGame(true);
   };
 
   // Get the effective start and end actors based on flip state
