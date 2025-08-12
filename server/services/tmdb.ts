@@ -84,6 +84,21 @@ class TMDbService {
     'Maurice LaMarche',
     'Rob Paulsen',
     'Dee Bradley Baker',
+    'Charlie Adler',
+    'Nancy Cartwright',
+    'Hank Azaria',
+    'Dan Castellaneta',
+    'Julie Kavner',
+    'Yeardley Smith',
+    'Harry Shearer',
+    'Phil LaMarr',
+    'Carlos Alazraqui',
+    'Kath Soucie',
+    'Jeff Bennett',
+    'Corey Burton',
+    'Kevin Michael Richardson',
+    'John DiMaggio',
+    'Mark Hamill', // Primarily voice work in recent years
     // Stand-up comedians (primarily solo performers)
     'Dave Chappelle',
     'Chris Rock',
@@ -350,7 +365,14 @@ class TMDbService {
         try {
           // Skip excluded actors (primarily voice actors)
           if (this.EXCLUDED_ACTORS.has(actor.name)) {
-            console.log(`Excluding voice actor: ${actor.name}`);
+            console.log(`Excluding known voice actor: ${actor.name}`);
+            return null;
+          }
+
+          // Check if actor is primarily a voice actor through their filmography
+          const isVoiceActor = await this.isPrimarilyVoiceActor(actor.id);
+          if (isVoiceActor) {
+            console.log(`Excluding detected voice actor: ${actor.name}`);
             return null;
           }
 
@@ -360,12 +382,24 @@ class TMDbService {
             return null; // Skip actors with no movies
           }
 
-          // Check if actor has significant non-documentary/non-animated work
+          // Check if actor has significant mainstream live-action work
           const liveActionMovies = await this.getNonDocumentaryNonAnimatedMovies(actor.id);
           
-          // Actor must have at least 2 live-action movies to be included
-          if (liveActionMovies.length >= 2) {
-            return actor;
+          // Actor must have at least 3 live-action movies for better mainstream focus
+          // Also check if they have high-profile live-action work
+          if (liveActionMovies.length >= 3) {
+            // Additional check: ensure they have movies with decent popularity/budget
+            const popularMovies = liveActionMovies.filter(movie => {
+              // Focus on movies from 1990+ for more mainstream appeal
+              if (!movie.release_date) return false;
+              const releaseYear = new Date(movie.release_date).getFullYear();
+              return releaseYear >= 1990;
+            });
+            
+            // Must have at least 2 movies from 1990+ to ensure mainstream relevance
+            if (popularMovies.length >= 2) {
+              return actor;
+            }
           }
           
           return null;
@@ -388,7 +422,7 @@ class TMDbService {
   }
 
   /**
-   * Get movies for an actor, excluding documentaries and animated movies
+   * Get movies for an actor, excluding documentaries, animated movies, and focusing on mainstream releases
    */
   private async getNonDocumentaryNonAnimatedMovies(actorId: number): Promise<Movie[]> {
     try {
@@ -421,6 +455,36 @@ class TMDbService {
     } catch (error) {
       console.error("Error getting non-documentary/non-animated movies:", error);
       return [];
+    }
+  }
+
+  /**
+   * Enhanced check to identify if an actor is primarily a voice actor
+   */
+  private async isPrimarilyVoiceActor(actorId: number): Promise<boolean> {
+    try {
+      const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
+      
+      if (response.cast.length === 0) return false;
+      
+      // Count animated vs live-action movies
+      let animatedCount = 0;
+      let liveActionCount = 0;
+      
+      for (const movie of response.cast) {
+        if (movie.genre_ids && movie.genre_ids.includes(this.EXCLUDED_GENRES.ANIMATION)) {
+          animatedCount++;
+        } else {
+          liveActionCount++;
+        }
+      }
+      
+      // If more than 60% of their work is animated, consider them primarily a voice actor
+      const animatedPercentage = animatedCount / (animatedCount + liveActionCount);
+      return animatedPercentage > 0.6;
+    } catch (error) {
+      console.error(`Error checking voice actor status for ${actorId}:`, error);
+      return false;
     }
   }
 

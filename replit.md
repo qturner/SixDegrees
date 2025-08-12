@@ -17,6 +17,7 @@ Mobile Responsive Design: Full mobile optimization with stacked layouts, touch-f
 Data Quality Enhancement: Fixed hint system to filter movies by actor death dates, ensuring deceased actors only show movies from their actual career periods (August 2025).
 Actor Selection Update: Enhanced filtering to exclude deceased actors from daily challenges, focusing on living actors for better game relevance (August 2025).
 Actor Pool Expansion: Increased actor pool from 60 to 200 actors (10 pages vs 3 pages) to dramatically improve challenge diversity and reduce repetition (August 2025).
+Mainstream Focus Enhancement: Added sophisticated voice actor detection (60% animated work threshold) and expanded exclusion list to focus on live-action movie stars with post-1990 mainstream appeal (August 2025).
 
 # System Architecture
 
