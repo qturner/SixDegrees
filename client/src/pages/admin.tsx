@@ -61,6 +61,17 @@ function useAdminAuth() {
 export default function AdminPanel() {
   const [_, setLocation] = useLocation();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  
+  // Auto-dismiss dialog after 1 second
+  useEffect(() => {
+    if (isResetDialogOpen) {
+      const timer = setTimeout(() => {
+        setIsResetDialogOpen(false);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isResetDialogOpen]);
   const { toast } = useToast();
   const token = useAdminAuth();
 
