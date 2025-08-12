@@ -73,9 +73,16 @@ export default function AdminPanel() {
     mutationFn: async () => {
       const token = localStorage.getItem('adminToken');
       if (token) {
-        await apiRequest("POST", "/api/admin/logout", {}, {
-          headers: { Authorization: `Bearer ${token}` }
+        const response = await fetch("/api/admin/logout", {
+          method: "POST",
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}` 
+          }
         });
+        if (!response.ok) {
+          throw new Error('Logout failed');
+        }
       }
     },
     onSettled: () => {
@@ -88,9 +95,23 @@ export default function AdminPanel() {
   const resetChallengeMutation = useMutation({
     mutationFn: async () => {
       const token = localStorage.getItem('adminToken');
-      const response = await apiRequest("DELETE", "/api/admin/reset-challenge", {}, {
-        headers: { Authorization: `Bearer ${token}` }
+      if (!token) {
+        throw new Error('No admin token found');
+      }
+      
+      const response = await fetch("/api/admin/reset-challenge", {
+        method: "DELETE",
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        }
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Reset failed');
+      }
+      
       return await response.json();
     },
     onSuccess: () => {
