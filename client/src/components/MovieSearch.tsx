@@ -68,8 +68,8 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div className="relative flex">
+      <div className="relative flex">
+        <PopoverTrigger asChild>
           <Input
             value={displayValue}
             onChange={(e) => handleInputChange(e.target.value)}
@@ -77,16 +77,18 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
             placeholder={placeholder}
             disabled={disabled}
             className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
+            data-testid="input-movie-search"
           />
-          <Button
-            onClick={handleSearch}
-            disabled={disabled || displayValue.length <= 2}
-            className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Search className="w-4 h-4" />
-          </Button>
-        </div>
-      </PopoverTrigger>
+        </PopoverTrigger>
+        <Button
+          onClick={handleSearch}
+          disabled={disabled || displayValue.length <= 2}
+          className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
+          data-testid="button-movie-search"
+        >
+          <Search className="w-4 h-4" />
+        </Button>
+      </div>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandList>
