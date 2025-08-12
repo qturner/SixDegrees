@@ -109,6 +109,17 @@ export default function Game() {
     localStorage.removeItem('gameState');
   };
 
+  const clearAllUserData = () => {
+    // Clear all localStorage data for this user
+    const challengeDate = new Date().toISOString().split('T')[0];
+    localStorage.removeItem('gameState');
+    localStorage.removeItem(`hints-${challengeDate}`);
+    
+    // Reset all state
+    resetGame();
+    window.location.reload(); // Force full reset of component state
+  };
+
   const handleFlipActors = () => {
     setIsFlipped(prev => !prev);
     // Reset the game when flipping actors but preserve the flip state

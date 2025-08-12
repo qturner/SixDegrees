@@ -27,49 +27,90 @@ interface HintsSectionProps {
   };
 }
 
+// Helper functions for localStorage hint management
+const getHintStorageKey = (challengeDate: string) => `hints-${challengeDate}`;
+
+const saveHintState = (challengeDate: string, hintsUsed: number, startHint?: HintResponse, endHint?: HintResponse) => {
+  const hintState = {
+    hintsUsed,
+    startHint: startHint || null,
+    endHint: endHint || null,
+    savedAt: Date.now()
+  };
+  localStorage.setItem(getHintStorageKey(challengeDate), JSON.stringify(hintState));
+};
+
+const loadHintState = (challengeDate: string) => {
+  try {
+    const saved = localStorage.getItem(getHintStorageKey(challengeDate));
+    if (saved) {
+      const state = JSON.parse(saved);
+      // Only load if saved within last 24 hours to avoid stale state
+      if (Date.now() - state.savedAt < 24 * 60 * 60 * 1000) {
+        return state;
+      }
+    }
+  } catch (error) {
+    console.log('Error loading hint state:', error);
+  }
+  return { hintsUsed: 0, startHint: null, endHint: null };
+};
+
 export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   const [startActorHint, setStartActorHint] = useState<HintResponse | null>(null);
   const [endActorHint, setEndActorHint] = useState<HintResponse | null>(null);
   const [activeHintType, setActiveHintType] = useState<'start' | 'end' | null>(null);
+  const [userHintsUsed, setUserHintsUsed] = useState<number>(0);
   const [lastChallengeActors, setLastChallengeActors] = useState<string>('');
   const { toast } = useToast();
   
-  const hintsRemaining = 2 - (dailyChallenge.hintsUsed || 0);
+  const hintsRemaining = 2 - userHintsUsed;
   const activeHint = activeHintType === 'start' ? startActorHint : endActorHint;
   
-  // Reset hint state when challenge actors change
+  // Load/reset hint state when challenge changes
   useEffect(() => {
+    const challengeDate = new Date().toISOString().split('T')[0]; // Today's date
     const currentChallengeActors = `${dailyChallenge.startActorName}-${dailyChallenge.endActorName}`;
+    
     if (lastChallengeActors && lastChallengeActors !== currentChallengeActors) {
-      // Actors changed - reset all hint state
+      // Actors changed - reset all hint state for new challenge
       setStartActorHint(null);
       setEndActorHint(null);
       setActiveHintType(null);
-      // Invalidate React Query cache for hints
-      queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge/hints"] });
+      setUserHintsUsed(0);
+      saveHintState(challengeDate, 0);
+    } else {
+      // Same challenge - load saved state
+      const savedState = loadHintState(challengeDate);
+      setUserHintsUsed(savedState.hintsUsed);
+      setStartActorHint(savedState.startHint);
+      setEndActorHint(savedState.endHint);
+      if (savedState.startHint && !savedState.endHint) {
+        setActiveHintType('start');
+      } else if (savedState.endHint) {
+        setActiveHintType('end');
+      }
     }
     setLastChallengeActors(currentChallengeActors);
   }, [dailyChallenge.startActorName, dailyChallenge.endActorName, lastChallengeActors]);
 
-  // Load stored hints on component mount
-  const { data: storedHints } = useQuery({
-    queryKey: ["/api/daily-challenge/hints"],
-    enabled: (dailyChallenge.hintsUsed || 0) > 0, // Only load if hints were used
-  });
-
-  // Update local state when stored hints are loaded
+  // Initialize hint state on component mount
   useEffect(() => {
-    if (storedHints) {
-      if (storedHints.startActorHint) {
-        setStartActorHint(storedHints.startActorHint);
-        if (!activeHintType) setActiveHintType('start');
+    const challengeDate = new Date().toISOString().split('T')[0];
+    const savedState = loadHintState(challengeDate);
+    
+    if (savedState.hintsUsed > 0) {
+      setUserHintsUsed(savedState.hintsUsed);
+      if (savedState.startHint) {
+        setStartActorHint(savedState.startHint);
+        setActiveHintType('start');
       }
-      if (storedHints.endActorHint) {
-        setEndActorHint(storedHints.endActorHint);
-        if (!activeHintType && !storedHints.startActorHint) setActiveHintType('end');
+      if (savedState.endHint) {
+        setEndActorHint(savedState.endHint);
+        if (!savedState.startHint) setActiveHintType('end');
       }
     }
-  }, [storedHints, activeHintType]);
+  }, []);
 
   const hintMutation = useMutation({
     mutationFn: async (actorType: 'start' | 'end'): Promise<HintResponse> => {
@@ -77,14 +118,20 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       return await response.json();
     },
     onSuccess: (data: HintResponse, actorType: 'start' | 'end') => {
+      const challengeDate = new Date().toISOString().split('T')[0];
+      const newHintsUsed = userHintsUsed + 1;
+      setUserHintsUsed(newHintsUsed);
+      
       if (actorType === 'start') {
         setStartActorHint(data);
         setActiveHintType('start');
+        saveHintState(challengeDate, newHintsUsed, data, endActorHint || undefined);
       } else {
         setEndActorHint(data);
         setActiveHintType('end');
+        saveHintState(challengeDate, newHintsUsed, startActorHint || undefined, data);
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
+      
       toast({
         title: "Hint revealed!",
         description: `Here are 5 movies featuring ${data.actorName}`,
