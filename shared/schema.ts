@@ -56,6 +56,9 @@ export const movieSchema = z.object({
   release_date: z.string().optional(),
   poster_path: z.string().nullable(),
   overview: z.string().optional(),
+  popularity: z.number().optional(),
+  vote_average: z.number().optional(),
+  vote_count: z.number().optional(),
 });
 
 export const connectionSchema = z.object({

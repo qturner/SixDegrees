@@ -57,6 +57,9 @@ interface TMDbPersonMovies {
     poster_path: string | null;
     character: string;
     genre_ids: number[];
+    popularity: number;
+    vote_average: number;
+    vote_count: number;
   }>;
 }
 
@@ -221,7 +224,8 @@ class TMDbService {
     try {
       const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
       
-      return response.cast
+      // Get movies with basic data first
+      const movies = response.cast
         .filter(movie => {
           // Only include movies from 1970 onwards
           if (!movie.release_date) return false;
@@ -233,15 +237,53 @@ class TMDbService {
           title: movie.title,
           release_date: movie.release_date,
           poster_path: movie.poster_path,
+          // These may not be available in movie_credits endpoint
+          popularity: movie.popularity || 0,
+          vote_average: movie.vote_average || 0,
+          vote_count: movie.vote_count || 0,
         }));
+      
+      // For hint selection, we need to enhance popular movies with full details
+      // This method will be used by hint system to get accurate popularity data
+      return movies;
     } catch (error) {
       console.error("Error getting actor movies:", error);
       return [];
     }
   }
 
+  async getActorMoviesWithPopularity(actorId: number): Promise<Movie[]> {
+    try {
+      const basicMovies = await this.getActorMovies(actorId);
+      
+      // For the most popular movies, fetch detailed data to get accurate popularity scores
+      const enhancedMovies = await Promise.all(
+        basicMovies.slice(0, 20).map(async (movie) => { // Only enhance top 20 to avoid rate limits
+          try {
+            const details = await this.makeRequest<TMDbMovie>(`/movie/${movie.id}`);
+            return {
+              ...movie,
+              popularity: details.popularity || 0,
+              vote_average: details.vote_average || 0,
+              vote_count: details.vote_count || 0,
+            };
+          } catch {
+            return movie; // Return basic movie if details fail
+          }
+        })
+      );
+      
+      // Add remaining movies without enhanced data
+      return [...enhancedMovies, ...basicMovies.slice(20)];
+    } catch (error) {
+      console.error("Error getting actor movies with popularity:", error);
+      return [];
+    }
+  }
+
   async getActorHintMovies(actorId: number, count: number = 5): Promise<Movie[]> {
-    const movies = await this.getActorMovies(actorId);
+    // Use enhanced movie data with accurate popularity scores
+    const movies = await this.getActorMoviesWithPopularity(actorId);
     
     // Get actor details to check for death date
     const actorDetails = await this.getActorDetails(actorId);
@@ -259,7 +301,7 @@ class TMDbService {
       console.log(`Actor ${actorDetails.name} died in ${deathYear}, filtered movies from ${movies.length} to ${filteredMovies.length}`);
     }
     
-    // Strategic hint selection - mix of recognizable and diverse movies
+    // Strategic hint selection - now with accurate TMDB popularity data
     const strategicMovies = this.selectStrategicHintMovies(filteredMovies, count);
     return strategicMovies;
   }
@@ -337,16 +379,25 @@ class TMDbService {
   }
 
   /**
-   * Calculate a hint score for a movie based on multiple factors
+   * Calculate a hint score for a movie based on TMDB popularity and other factors
    */
   private calculateMovieHintScore(movie: Movie): number {
     let score = 0;
     
+    // Primary factor: TMDB popularity score (most important)
+    if (movie.popularity) {
+      score += movie.popularity * 2; // Weight popularity heavily
+    }
+    
+    // Secondary factor: Vote count and rating (indicates mainstream recognition)
+    if (movie.vote_count && movie.vote_average) {
+      const popularityFromVotes = Math.log(movie.vote_count + 1) * movie.vote_average;
+      score += popularityFromVotes;
+    }
+    
     // Release date factor (more recent movies often more recognizable)
     if (movie.release_date) {
       const releaseYear = new Date(movie.release_date).getFullYear();
-      const currentYear = new Date().getFullYear();
-      const yearsSinceRelease = currentYear - releaseYear;
       
       // Sweet spot: movies from 1980-2020 get highest scores
       if (releaseYear >= 1980 && releaseYear <= 2020) {
@@ -363,15 +414,15 @@ class TMDbService {
     // Title length factor (distinctive titles often more memorable)
     const titleLength = movie.title.length;
     if (titleLength >= 8 && titleLength <= 25) {
-      score += 5; // Sweet spot for memorable titles
+      score += 3; // Sweet spot for memorable titles
     } else if (titleLength > 25) {
-      score += 3; // Long titles can be distinctive
+      score += 2; // Long titles can be distinctive
     } else {
-      score += 2; // Short titles
+      score += 1; // Short titles
     }
     
-    // Add some randomness to prevent predictability
-    score += Math.random() * 3;
+    // Add minimal randomness to prevent complete predictability
+    score += Math.random() * 1;
     
     return score;
   }
