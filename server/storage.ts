@@ -48,7 +48,18 @@ export class MemStorage implements IStorage {
     }
     
     const updatedChallenge = { ...challenge, hintsUsed };
+    
+    // Update in the map to ensure it can still be found by ID and date
     this.dailyChallenges.set(challengeId, updatedChallenge);
+    
+    // Also ensure any existing entry is replaced (defensive programming)
+    const existingByDate = Array.from(this.dailyChallenges.entries()).find(
+      ([_, c]) => c.date === challenge.date && c.id !== challengeId
+    );
+    if (existingByDate) {
+      this.dailyChallenges.delete(existingByDate[0]);
+    }
+    
     return updatedChallenge;
   }
 

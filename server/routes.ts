@@ -14,6 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let challenge = await storage.getDailyChallenge(today);
 
       if (!challenge) {
+        console.log(`No challenge found for ${today}, generating new challenge...`);
         // Generate new challenge for today
         const actors = await gameLogicService.generateDailyActors();
         if (!actors) {
@@ -30,6 +31,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           endActorProfilePath: actors.actor2.profile_path,
           hintsUsed: 0,
         });
+        console.log(`Created new challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
+      } else {
+        console.log(`Found existing challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0})`);
       }
 
       res.json(challenge);
@@ -105,6 +109,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const today = new Date().toISOString().split('T')[0];
       const challenge = await storage.getDailyChallenge(today);
+      
+      console.log(`Hint request for ${today}, challenge found: ${challenge ? 'YES' : 'NO'}`);
+      if (challenge) {
+        console.log(`Challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0})`);
+      }
       
       if (!challenge) {
         return res.status(404).json({ message: "No challenge found for today" });
