@@ -16,15 +16,25 @@ interface MovieSearchProps {
 export default function MovieSearch({ onSelect, placeholder = "Search for movie...", value = "", disabled = false }: MovieSearchProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [displayValue, setDisplayValue] = useState(value);
 
   useEffect(() => {
     setDisplayValue(value);
   }, [value]);
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data: movies = [], isLoading } = useQuery<Movie[]>({
-    queryKey: ["/api/search/movies", search],
-    enabled: search.length > 2,
+    queryKey: ["/api/search/movies", debouncedSearch],
+    enabled: debouncedSearch.length > 2,
     staleTime: 30000, // Cache for 30 seconds
   });
 
@@ -40,6 +50,8 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
     setSearch(value);
     if (value.length > 2) {
       setOpen(true);
+    } else {
+      setOpen(false);
     }
   };
 

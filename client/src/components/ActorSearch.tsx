@@ -16,15 +16,25 @@ interface ActorSearchProps {
 export default function ActorSearch({ onSelect, placeholder = "Search for actor...", value = "", disabled = false }: ActorSearchProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [displayValue, setDisplayValue] = useState(value);
 
   useEffect(() => {
     setDisplayValue(value);
   }, [value]);
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data: actors = [], isLoading } = useQuery<Actor[]>({
-    queryKey: ["/api/search/actors", search],
-    enabled: search.length > 2,
+    queryKey: ["/api/search/actors", debouncedSearch],
+    enabled: debouncedSearch.length > 2,
     staleTime: 30000, // Cache for 30 seconds
   });
 
@@ -40,6 +50,8 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
     setSearch(value);
     if (value.length > 2) {
       setOpen(true);
+    } else {
+      setOpen(false);
     }
   };
 
