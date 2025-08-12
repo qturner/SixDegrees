@@ -82,13 +82,13 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
           </Button>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandList>
             {isLoading && (
               <CommandEmpty>Searching actors...</CommandEmpty>
             )}
-            {!isLoading && actors.length === 0 && displayValue.length > 2 && (
+            {!isLoading && actors.length === 0 && searchQuery.length > 2 && (
               <CommandEmpty>No actors found.</CommandEmpty>
             )}
             {actors.length > 0 && (

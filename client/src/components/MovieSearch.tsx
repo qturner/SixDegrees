@@ -87,13 +87,13 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
           </Button>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandList>
             {isLoading && (
               <CommandEmpty>Searching movies...</CommandEmpty>
             )}
-            {!isLoading && movies.length === 0 && displayValue.length > 2 && (
+            {!isLoading && movies.length === 0 && searchQuery.length > 2 && (
               <CommandEmpty>No movies found.</CommandEmpty>
             )}
             {movies.length > 0 && (
