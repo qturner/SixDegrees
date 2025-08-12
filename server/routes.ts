@@ -24,8 +24,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: today,
           startActorId: actors.actor1.id,
           startActorName: actors.actor1.name,
+          startActorProfilePath: actors.actor1.profile_path,
           endActorId: actors.actor2.id,
           endActorName: actors.actor2.name,
+          endActorProfilePath: actors.actor2.profile_path,
         });
       }
 

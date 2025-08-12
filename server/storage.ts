@@ -31,7 +31,9 @@ export class MemStorage implements IStorage {
     const challenge: DailyChallenge = { 
       ...insertChallenge, 
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      startActorProfilePath: insertChallenge.startActorProfilePath || null,
+      endActorProfilePath: insertChallenge.endActorProfilePath || null,
     };
     this.dailyChallenges.set(id, challenge);
     return challenge;
@@ -42,7 +44,8 @@ export class MemStorage implements IStorage {
     const attempt: GameAttempt = { 
       ...insertAttempt, 
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      completed: insertAttempt.completed || null,
     };
     this.gameAttempts.set(id, attempt);
     return attempt;

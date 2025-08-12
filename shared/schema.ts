@@ -8,8 +8,10 @@ export const dailyChallenges = pgTable("daily_challenges", {
   date: text("date").notNull().unique(), // YYYY-MM-DD format
   startActorId: integer("start_actor_id").notNull(),
   startActorName: text("start_actor_name").notNull(),
+  startActorProfilePath: text("start_actor_profile_path"),
   endActorId: integer("end_actor_id").notNull(),
   endActorName: text("end_actor_name").notNull(),
+  endActorProfilePath: text("end_actor_profile_path"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

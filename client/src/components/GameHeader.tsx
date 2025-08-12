@@ -45,15 +45,41 @@ export default function GameHeader({ challenge, currentMoves }: GameHeaderProps)
       <div className="bg-white rounded-xl shadow-lg p-6 mb-8 max-w-4xl mx-auto -mt-4">
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-game-primary mb-4">Today's Challenge</h2>
-          <div className="flex items-center justify-center space-x-4 mb-4">
-            <div className="bg-game-blue text-white px-6 py-3 rounded-lg font-medium text-lg">
-              {challenge.startActorName}
+          <div className="flex items-center justify-center space-x-6 mb-4">
+            <div className="flex items-center space-x-3 bg-game-blue text-white px-6 py-3 rounded-lg font-medium text-lg">
+              {challenge.startActorProfilePath ? (
+                <img
+                  src={`https://image.tmdb.org/t/p/w92${challenge.startActorProfilePath}`}
+                  alt={challenge.startActorName}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center border-2 border-white">
+                  <span className="text-xs font-medium text-white">
+                    {challenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </span>
+                </div>
+              )}
+              <span>{challenge.startActorName}</span>
             </div>
             <div className="text-2xl text-gray-400">
               <ArrowRight className="w-6 h-6" />
             </div>
-            <div className="bg-game-blue text-white px-6 py-3 rounded-lg font-medium text-lg">
-              {challenge.endActorName}
+            <div className="flex items-center space-x-3 bg-game-blue text-white px-6 py-3 rounded-lg font-medium text-lg">
+              {challenge.endActorProfilePath ? (
+                <img
+                  src={`https://image.tmdb.org/t/p/w92${challenge.endActorProfilePath}`}
+                  alt={challenge.endActorName}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center border-2 border-white">
+                  <span className="text-xs font-medium text-white">
+                    {challenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </span>
+                </div>
+              )}
+              <span>{challenge.endActorName}</span>
             </div>
           </div>
           <div className="text-sm text-gray-600">
