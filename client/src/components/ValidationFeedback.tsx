@@ -1,0 +1,108 @@
+import { CheckCircle, XCircle, Trophy, Share } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { ValidationResult } from "@shared/schema";
+
+interface ValidationFeedbackProps {
+  validationResults: ValidationResult[];
+  gameResult: ValidationResult | null;
+}
+
+export default function ValidationFeedback({ validationResults, gameResult }: ValidationFeedbackProps) {
+  const hasResults = validationResults.length > 0 || gameResult;
+
+  if (!hasResults) {
+    return null;
+  }
+
+  const handleShare = () => {
+    if (gameResult?.completed) {
+      const text = `I just completed today's 6 Degrees of Separation challenge in ${gameResult.moves} moves! Can you do better?`;
+      if (navigator.share) {
+        navigator.share({
+          title: "6 Degrees of Separation",
+          text,
+          url: window.location.href,
+        });
+      } else {
+        navigator.clipboard.writeText(`${text} ${window.location.href}`);
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-4 mb-8">
+      {/* Individual connection validation results */}
+      {validationResults.map((result, index) => {
+        if (!result) return null;
+        
+        return (
+          <Alert
+            key={index}
+            className={`${
+              result.valid
+                ? "bg-game-success bg-opacity-10 border-game-success text-game-success"
+                : "bg-game-error bg-opacity-10 border-game-error text-game-error"
+            }`}
+          >
+            <div className="flex items-center">
+              {result.valid ? (
+                <CheckCircle className="w-4 h-4 mr-3" />
+              ) : (
+                <XCircle className="w-4 h-4 mr-3" />
+              )}
+              <AlertDescription>
+                <strong>{result.valid ? "Valid connection!" : "Invalid connection:"}</strong> {result.message}
+              </AlertDescription>
+            </div>
+          </Alert>
+        );
+      })}
+
+      {/* Game completion result */}
+      {gameResult && (
+        <Alert
+          className={`${
+            gameResult.valid && gameResult.completed
+              ? "bg-game-success bg-opacity-10 border-game-success text-game-success"
+              : gameResult.valid
+              ? "bg-blue-50 border-game-blue text-game-blue"
+              : "bg-game-error bg-opacity-10 border-game-error text-game-error"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              {gameResult.valid && gameResult.completed ? (
+                <Trophy className="w-4 h-4 mr-3" />
+              ) : gameResult.valid ? (
+                <CheckCircle className="w-4 h-4 mr-3" />
+              ) : (
+                <XCircle className="w-4 h-4 mr-3" />
+              )}
+              <div>
+                <AlertDescription>
+                  {gameResult.completed && (
+                    <div className="text-lg font-semibold mb-1">Congratulations!</div>
+                  )}
+                  <div>{gameResult.message}</div>
+                </AlertDescription>
+              </div>
+            </div>
+            
+            {gameResult.completed && (
+              <Button
+                onClick={handleShare}
+                variant="outline"
+                size="sm"
+                className="ml-4 border-game-success text-game-success hover:bg-game-success hover:text-white"
+              >
+                <Share className="w-4 h-4 mr-2" />
+                Share Victory
+              </Button>
+            )}
+          </div>
+        </Alert>
+      )}
+    </div>
+  );
+}
