@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Movie } from "@shared/schema";
 
@@ -16,14 +17,15 @@ interface MovieSearchProps {
 export default function MovieSearch({ onSelect, placeholder = "Search for movie...", value = "", disabled = false }: MovieSearchProps) {
   const [open, setOpen] = useState(false);
   const [displayValue, setDisplayValue] = useState(value);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setDisplayValue(value);
   }, [value]);
 
   const { data: movies = [], isLoading } = useQuery<Movie[]>({
-    queryKey: ["/api/search/movies", displayValue],
-    enabled: displayValue.length > 2,
+    queryKey: ["/api/search/movies", searchQuery],
+    enabled: searchQuery.length > 2,
     staleTime: 10000,
     gcTime: 20000,
   });
@@ -31,6 +33,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
   const handleSelect = (movie: Movie) => {
     setDisplayValue(movie.title);
     setOpen(false);
+    setSearchQuery("");
     onSelect(movie);
   };
 
@@ -38,14 +41,25 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
     setDisplayValue(value);
   };
 
-  // Open dropdown when we have results and input is long enough
-  useEffect(() => {
-    if (displayValue.length > 2 && movies.length > 0) {
+  const handleSearch = () => {
+    if (displayValue.length > 2) {
+      setSearchQuery(displayValue);
       setOpen(true);
-    } else if (displayValue.length <= 2) {
-      setOpen(false);
     }
-  }, [movies, displayValue]);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  // Open dropdown when we have search results
+  useEffect(() => {
+    if (searchQuery && movies.length > 0) {
+      setOpen(true);
+    }
+  }, [movies, searchQuery]);
 
   const formatYear = (date: string | undefined) => {
     if (!date) return "";
@@ -55,17 +69,22 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <div className="relative">
+        <div className="relative flex">
           <Input
             value={displayValue}
             onChange={(e) => handleInputChange(e.target.value)}
+            onKeyPress={handleKeyPress}
             placeholder={placeholder}
             disabled={disabled}
-            className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-game-blue focus:outline-none transition-colors pr-10"
+            className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors"
           />
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <Button
+            onClick={handleSearch}
+            disabled={disabled || displayValue.length <= 2}
+            className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Search className="w-4 h-4" />
-          </div>
+          </Button>
         </div>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
