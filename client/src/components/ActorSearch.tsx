@@ -17,34 +17,50 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [displayValue, setDisplayValue] = useState(value);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
     setDisplayValue(value);
   }, [value]);
 
+  // Debounce only the search query, not the display
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500); // Longer delay to ensure smooth typing
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data: actors = [], isLoading } = useQuery<Actor[]>({
-    queryKey: ["/api/search/actors", search],
-    enabled: search.length > 2,
-    staleTime: 5000, // Cache for 5 seconds
-    gcTime: 10000, // Keep in cache for 10 seconds
+    queryKey: ["/api/search/actors", debouncedSearch],
+    enabled: debouncedSearch.length > 2,
+    staleTime: 10000, // Cache for 10 seconds
+    gcTime: 20000, // Keep in cache for 20 seconds
   });
 
   const handleSelect = (actor: Actor) => {
     setDisplayValue(actor.name);
     setOpen(false);
     setSearch("");
+    setDebouncedSearch("");
     onSelect(actor);
   };
 
   const handleInputChange = (value: string) => {
     setDisplayValue(value);
     setSearch(value);
-    if (value.length > 2) {
+    // Only open dropdown when we have results
+  };
+
+  // Control dropdown opening based on results, not input length
+  useEffect(() => {
+    if (actors.length > 0 && debouncedSearch.length > 2) {
       setOpen(true);
-    } else {
+    } else if (debouncedSearch.length <= 2) {
       setOpen(false);
     }
-  };
+  }, [actors, debouncedSearch]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -68,7 +84,7 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
             {isLoading && (
               <CommandEmpty>Searching actors...</CommandEmpty>
             )}
-            {!isLoading && actors.length === 0 && search.length > 2 && (
+            {!isLoading && actors.length === 0 && debouncedSearch.length > 2 && (
               <CommandEmpty>No actors found.</CommandEmpty>
             )}
             {actors.length > 0 && (

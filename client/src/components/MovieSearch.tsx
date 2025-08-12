@@ -17,34 +17,50 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [displayValue, setDisplayValue] = useState(value);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
     setDisplayValue(value);
   }, [value]);
 
+  // Debounce only the search query, not the display
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500); // Longer delay to ensure smooth typing
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data: movies = [], isLoading } = useQuery<Movie[]>({
-    queryKey: ["/api/search/movies", search],
-    enabled: search.length > 2,
-    staleTime: 5000, // Cache for 5 seconds
-    gcTime: 10000, // Keep in cache for 10 seconds
+    queryKey: ["/api/search/movies", debouncedSearch],
+    enabled: debouncedSearch.length > 2,
+    staleTime: 10000, // Cache for 10 seconds
+    gcTime: 20000, // Keep in cache for 20 seconds
   });
 
   const handleSelect = (movie: Movie) => {
     setDisplayValue(movie.title);
     setOpen(false);
     setSearch("");
+    setDebouncedSearch("");
     onSelect(movie);
   };
 
   const handleInputChange = (value: string) => {
     setDisplayValue(value);
     setSearch(value);
-    if (value.length > 2) {
+    // Only open dropdown when we have results
+  };
+
+  // Control dropdown opening based on results, not input length
+  useEffect(() => {
+    if (movies.length > 0 && debouncedSearch.length > 2) {
       setOpen(true);
-    } else {
+    } else if (debouncedSearch.length <= 2) {
       setOpen(false);
     }
-  };
+  }, [movies, debouncedSearch]);
 
   const formatYear = (date: string | undefined) => {
     if (!date) return "";
@@ -73,7 +89,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
             {isLoading && (
               <CommandEmpty>Searching movies...</CommandEmpty>
             )}
-            {!isLoading && movies.length === 0 && search.length > 2 && (
+            {!isLoading && movies.length === 0 && debouncedSearch.length > 2 && (
               <CommandEmpty>No movies found.</CommandEmpty>
             )}
             {movies.length > 0 && (
