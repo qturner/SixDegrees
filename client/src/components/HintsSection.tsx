@@ -82,22 +82,28 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       <CardContent>
         <div className="space-y-4">
           {/* Hint Buttons */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <Button 
               onClick={() => handleHintClick('start')}
               disabled={hintsRemaining <= 0 || hintMutation.isPending}
               variant="outline"
-              className="flex-1"
+              className="flex-1 text-sm"
+              size="sm"
             >
-              {hintMutation.isPending ? "Getting hint..." : `Hint for ${dailyChallenge.startActorName}`}
+              {hintMutation.isPending ? "Getting hint..." : (
+                <span className="truncate">Hint for {dailyChallenge.startActorName}</span>
+              )}
             </Button>
             <Button 
               onClick={() => handleHintClick('end')}
               disabled={hintsRemaining <= 0 || hintMutation.isPending}
               variant="outline"
-              className="flex-1"
+              className="flex-1 text-sm"
+              size="sm"
             >
-              {hintMutation.isPending ? "Getting hint..." : `Hint for ${dailyChallenge.endActorName}`}
+              {hintMutation.isPending ? "Getting hint..." : (
+                <span className="truncate">Hint for {dailyChallenge.endActorName}</span>
+              )}
             </Button>
           </div>
 

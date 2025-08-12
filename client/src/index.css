@@ -143,6 +143,33 @@
   border-color: var(--game-blue);
 }
 
+/* Mobile-specific improvements */
+@media (max-width: 640px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  input, button, select, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+  
+  .no-zoom {
+    touch-action: manipulation;
+  }
+  
+  /* Better touch targets */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve scrolling on mobile */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
 .focus\:border-game-blue:focus {
   border-color: var(--game-blue);
 }

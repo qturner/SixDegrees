@@ -155,7 +155,7 @@ export default function Game() {
     <div className="min-h-screen bg-gray-50 font-sans">
       <GameHeader challenge={challenge} currentMoves={connections.filter(c => c.actorId && c.movieId).length} />
       
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <ActorSwitcher 
           challenge={challenge}
           isFlipped={isFlipped}
@@ -163,7 +163,7 @@ export default function Game() {
           disabled={connections.some(c => c.actorId || c.movieId)}
         />
         
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8 mx-2 sm:mx-0">
           <HintsSection dailyChallenge={challenge} />
         </div>
         
