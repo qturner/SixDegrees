@@ -108,95 +108,102 @@ export default function GameGrid({
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Actor Column */}
-        <div>
-          <h3 className="text-lg font-semibold text-game-primary mb-4 text-center">
-            <User className="inline-block w-5 h-5 mr-2" />
-            Actors
-          </h3>
-          <div className="space-y-3">
-            {/* Starting Actor */}
-            <div className="p-4 bg-game-blue text-white rounded-lg text-center font-medium">
-              {challenge.startActorName}
-            </div>
-
-            {/* Connection Actors */}
-            {connectionSlots.map((connection, index) => (
-              <div key={`actor-${index}`} className="relative">
-                <ActorSearch
-                  onSelect={(actor) => handleActorSelect(index, actor)}
-                  placeholder="Search for actor..."
-                  value={connection.actorName}
-                  disabled={validatingIndex === index}
-                />
-                {validatingIndex === index && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-game-blue"></div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Ending Actor */}
-            <div className="p-4 bg-game-blue text-white rounded-lg text-center font-medium">
-              {challenge.endActorName}
-            </div>
-          </div>
+    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-8">
+      {/* Starting Actor */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-game-primary mb-3 text-center">
+          <User className="inline-block w-5 h-5 mr-2" />
+          Starting Actor
+        </h3>
+        <div className="p-4 bg-game-blue text-white rounded-lg text-center font-medium">
+          {challenge.startActorName}
         </div>
+      </div>
 
-        {/* Movie Column */}
-        <div>
-          <h3 className="text-lg font-semibold text-game-primary mb-4 text-center">
-            <Film className="inline-block w-5 h-5 mr-2" />
-            Movies
-          </h3>
-          <div className="space-y-3 pr-10">
-            {/* Starting space */}
-            <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-500 font-medium">
-              Starting Point
-            </div>
-
-            {/* Connection Movies */}
-            {connectionSlots.map((connection, index) => {
-              const validationResult = validationResults?.[index];
+      {/* Connection Chain */}
+      <div className="space-y-6">
+        {connectionSlots.map((connection, index) => {
+          const validationResult = validationResults?.[index];
+          const previousActorName = index === 0 ? challenge.startActorName : connectionSlots[index - 1]?.actorName;
+          
+          return (
+            <div key={`connection-${index}`} className="border border-gray-200 rounded-lg p-4 space-y-4">
+              <h4 className="text-sm font-medium text-gray-600 text-center">
+                Connection {index + 1} of {connectionSlots.length}
+              </h4>
               
-              return (
-                <div key={`movie-${index}`} className="relative">
+              {/* Movie Input (Primary) */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center">
+                  <Film className="w-4 h-4 mr-1" />
+                  Movie featuring {previousActorName || 'previous actor'}
+                </label>
+                <div className="relative">
                   <MovieSearch
                     onSelect={(movie) => handleMovieSelect(index, movie)}
                     placeholder="Search for movie..."
                     value={connection.movieTitle}
-                    disabled={!connection.actorId || validatingIndex === index}
+                    disabled={validatingIndex === index}
                   />
-                  
-                  {/* Validation Status Icon - positioned outside the input */}
-                  {validationResult && connection.movieTitle && !validatingIndex && (
-                    <div className="absolute -right-8 top-1/2 transform -translate-y-1/2">
-                      {validationResult.valid ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-600" />
-                      )}
-                    </div>
-                  )}
                   
                   {/* Loading Spinner */}
                   {validatingIndex === index && (
-                    <div className="absolute -right-8 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-game-blue"></div>
                     </div>
                   )}
                 </div>
-              );
-            })}
+              </div>
 
-            {/* Ending space */}
-            <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-500 font-medium">
-              Final Connection
+              {/* Actor Input (Subfield) */}
+              <div className="space-y-2 ml-4 border-l-2 border-gray-200 pl-4">
+                <label className="text-sm font-medium text-gray-700 flex items-center">
+                  <User className="w-4 h-4 mr-1" />
+                  Co-star in {connection.movieTitle || 'this movie'}
+                </label>
+                <div className="relative">
+                  <ActorSearch
+                    onSelect={(actor) => handleActorSelect(index, actor)}
+                    placeholder={connection.movieTitle ? "Who else is in this movie?" : "Select movie first"}
+                    value={connection.actorName}
+                    disabled={!connection.movieTitle || validatingIndex === index}
+                  />
+                </div>
+              </div>
+
+              {/* Connection Status */}
+              {validationResult && connection.movieTitle && connection.actorName && (
+                <div className={`text-sm p-3 rounded-md ${
+                  validationResult.valid 
+                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}>
+                  {validationResult.valid ? (
+                    <div className="flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Valid connection! {previousActorName} and {connection.actorName} both appear in {connection.movieTitle}
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <XCircle className="w-4 h-4 mr-2" />
+                      {validationResult.message}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
+          );
+        })}
+      </div>
+
+      {/* Target Actor */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-game-primary mb-3 text-center">
+          <User className="inline-block w-5 h-5 mr-2" />
+          Target Actor
+        </h3>
+        <div className="p-4 bg-game-blue text-white rounded-lg text-center font-medium">
+          {challenge.endActorName}
         </div>
       </div>
 
