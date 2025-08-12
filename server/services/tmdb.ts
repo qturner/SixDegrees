@@ -227,20 +227,70 @@ class TMDbService {
 
   async getActorHintMovies(actorId: number, count: number = 5): Promise<Movie[]> {
     const movies = await this.getActorMovies(actorId);
+    
+    // Get actor details to check for death date
+    const actorDetails = await this.getActorDetails(actorId);
+    let filteredMovies = movies;
+    
+    // If actor is deceased, filter out movies released after their death
+    if (actorDetails?.deathday) {
+      const deathYear = new Date(actorDetails.deathday).getFullYear();
+      filteredMovies = movies.filter(movie => {
+        if (!movie.release_date) return false;
+        const releaseYear = new Date(movie.release_date).getFullYear();
+        return releaseYear <= deathYear;
+      });
+      
+      console.log(`Actor ${actorDetails.name} died in ${deathYear}, filtered movies from ${movies.length} to ${filteredMovies.length}`);
+    }
+    
     // Return a random selection of movies, prioritizing more popular ones
-    const shuffled = movies.sort(() => 0.5 - Math.random());
+    const shuffled = filteredMovies.sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
   }
 
   /**
-   * Check if an actor has career activity after 1980
+   * Get detailed actor information including birth/death dates
+   */
+  async getActorDetails(actorId: number): Promise<{ name: string; birthday?: string; deathday?: string } | null> {
+    try {
+      const response = await this.makeRequest<{
+        id: number;
+        name: string;
+        birthday?: string;
+        deathday?: string;
+      }>(`/person/${actorId}`);
+      
+      return {
+        name: response.name,
+        birthday: response.birthday,
+        deathday: response.deathday
+      };
+    } catch (error) {
+      console.error(`Error getting actor details for ${actorId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if an actor has career activity after 1980 and is still living
    */
   private async hasCareerActivityAfter1980(actorId: number): Promise<boolean> {
     try {
-      const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
+      // Get actor details and movie credits in parallel
+      const [actorDetails, movieCredits] = await Promise.all([
+        this.getActorDetails(actorId),
+        this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`)
+      ]);
+      
+      // Exclude deceased actors to ensure current relevance
+      if (actorDetails?.deathday) {
+        console.log(`Excluding deceased actor: ${actorDetails.name} (died: ${actorDetails.deathday})`);
+        return false;
+      }
       
       // Check if actor has any movies released after 1980
-      const recentMovies = response.cast.filter(movie => {
+      const recentMovies = movieCredits.cast.filter(movie => {
         if (!movie.release_date) return false;
         const releaseYear = new Date(movie.release_date).getFullYear();
         return releaseYear > 1980;
@@ -255,10 +305,10 @@ class TMDbService {
   }
 
   /**
-   * Filter actors by career activity - only include those active after 1980
+   * Filter actors by career activity - only include those active after 1980 and still living
    */
   private async filterActorsByCareerActivity(actors: Actor[]): Promise<Actor[]> {
-    console.log("Applying career activity filtering (post-1980) to popular actors...");
+    console.log("Applying career activity filtering (post-1980) and living status to popular actors...");
     const validActors: Actor[] = [];
 
     // Process actors in smaller batches to avoid rate limits
