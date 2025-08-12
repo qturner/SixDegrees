@@ -62,19 +62,23 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
   }, [actors, searchQuery]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <div className="relative">
       <div className="relative flex">
-        <PopoverTrigger asChild>
-          <Input
-            value={displayValue}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={placeholder}
-            disabled={disabled}
-            className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
-            data-testid="input-actor-search"
-          />
-        </PopoverTrigger>
+        <Input
+          value={displayValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onKeyPress={handleKeyPress}
+          onFocus={() => {
+            if (displayValue.length > 2) {
+              setSearchQuery(displayValue);
+              setOpen(true);
+            }
+          }}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
+          data-testid="input-actor-search"
+        />
         <Button
           onClick={handleSearch}
           disabled={disabled || displayValue.length <= 2}
@@ -84,7 +88,12 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
           <Search className="w-4 h-4" />
         </Button>
       </div>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <div className="absolute inset-0 pointer-events-none" />
+        </PopoverTrigger>
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandList>
             {isLoading && (
@@ -124,7 +133,8 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
             )}
           </CommandList>
         </Command>
-      </PopoverContent>
-    </Popover>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
