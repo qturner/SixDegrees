@@ -13,6 +13,8 @@ export const dailyChallenges = pgTable("daily_challenges", {
   endActorName: text("end_actor_name").notNull(),
   endActorProfilePath: text("end_actor_profile_path"),
   hintsUsed: integer("hints_used").default(0),
+  startActorHint: text("start_actor_hint"), // JSON string of hint movies
+  endActorHint: text("end_actor_hint"),     // JSON string of hint movies
   createdAt: timestamp("created_at").defaultNow(),
 });
 

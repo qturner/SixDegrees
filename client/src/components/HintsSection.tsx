@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,26 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   
   const hintsRemaining = 2 - (dailyChallenge.hintsUsed || 0);
   const activeHint = activeHintType === 'start' ? startActorHint : endActorHint;
+
+  // Load stored hints on component mount
+  const { data: storedHints } = useQuery({
+    queryKey: ["/api/daily-challenge/hints"],
+    enabled: (dailyChallenge.hintsUsed || 0) > 0, // Only load if hints were used
+  });
+
+  // Update local state when stored hints are loaded
+  useEffect(() => {
+    if (storedHints) {
+      if (storedHints.startActorHint) {
+        setStartActorHint(storedHints.startActorHint);
+        if (!activeHintType) setActiveHintType('start');
+      }
+      if (storedHints.endActorHint) {
+        setEndActorHint(storedHints.endActorHint);
+        if (!activeHintType && !storedHints.startActorHint) setActiveHintType('end');
+      }
+    }
+  }, [storedHints, activeHintType]);
 
   const hintMutation = useMutation({
     mutationFn: async (actorType: 'start' | 'end'): Promise<HintResponse> => {

@@ -5,7 +5,7 @@ export interface IStorage {
   // Daily Challenge methods
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
   createDailyChallenge(challenge: InsertDailyChallenge): Promise<DailyChallenge>;
-  updateDailyChallengeHints(challengeId: string, hintsUsed: number): Promise<DailyChallenge>;
+  updateDailyChallengeHints(challengeId: string, hintsUsed: number, startActorHint?: string, endActorHint?: string): Promise<DailyChallenge>;
   deleteDailyChallenge(date: string): Promise<void>;
   
   // Game Attempt methods
@@ -37,18 +37,25 @@ export class MemStorage implements IStorage {
       startActorProfilePath: insertChallenge.startActorProfilePath || null,
       endActorProfilePath: insertChallenge.endActorProfilePath || null,
       hintsUsed: insertChallenge.hintsUsed || 0,
+      startActorHint: null,
+      endActorHint: null,
     };
     this.dailyChallenges.set(id, challenge);
     return challenge;
   }
 
-  async updateDailyChallengeHints(challengeId: string, hintsUsed: number): Promise<DailyChallenge> {
+  async updateDailyChallengeHints(challengeId: string, hintsUsed: number, startActorHint?: string, endActorHint?: string): Promise<DailyChallenge> {
     const challenge = this.dailyChallenges.get(challengeId);
     if (!challenge) {
       throw new Error("Challenge not found");
     }
     
-    const updatedChallenge = { ...challenge, hintsUsed };
+    const updatedChallenge = { 
+      ...challenge, 
+      hintsUsed,
+      startActorHint: startActorHint || challenge.startActorHint || null,
+      endActorHint: endActorHint || challenge.endActorHint || null,
+    };
     
     // Update in the map to ensure it can still be found by ID and date
     this.dailyChallenges.set(challengeId, updatedChallenge);

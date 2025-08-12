@@ -145,6 +145,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get hints for daily challenge
+  // Get stored hints for daily challenge
+  app.get("/api/daily-challenge/hints", async (req, res) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const challenge = await storage.getDailyChallenge(today);
+      
+      if (!challenge) {
+        return res.status(404).json({ message: "No challenge found" });
+      }
+
+      const result: any = {
+        hintsUsed: challenge.hintsUsed || 0,
+        startActorHint: null,
+        endActorHint: null,
+      };
+
+      // Parse stored hints if they exist
+      if (challenge.startActorHint) {
+        try {
+          result.startActorHint = {
+            actorName: challenge.startActorName,
+            movies: JSON.parse(challenge.startActorHint),
+          };
+        } catch (error) {
+          console.error("Error parsing start actor hint:", error);
+        }
+      }
+
+      if (challenge.endActorHint) {
+        try {
+          result.endActorHint = {
+            actorName: challenge.endActorName,
+            movies: JSON.parse(challenge.endActorHint),
+          };
+        } catch (error) {
+          console.error("Error parsing end actor hint:", error);
+        }
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error getting stored hints:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post("/api/daily-challenge/hint", async (req, res) => {
     try {
       const { actorType } = req.body; // 'start' or 'end'
@@ -174,10 +220,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const movies = await tmdbService.getActorHintMovies(actorId, 5);
       
-      // Update hints used count
+      // Store the hint content and update hints used count
+      const hintContent = JSON.stringify(movies);
       const updatedChallenge = await storage.updateDailyChallengeHints(
         challenge.id, 
-        (challenge.hintsUsed || 0) + 1
+        (challenge.hintsUsed || 0) + 1,
+        actorType === 'start' ? hintContent : undefined,
+        actorType === 'end' ? hintContent : undefined
       );
       
       res.json({
