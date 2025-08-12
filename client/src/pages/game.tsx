@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GameHeader from "@/components/GameHeader";
 import GameGrid from "@/components/GameGrid";
@@ -8,15 +8,58 @@ import ValidationFeedback from "@/components/ValidationFeedback";
 import { HintsSection } from "@/components/HintsSection";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 
+// Helper functions for localStorage persistence
+const saveGameState = (connections: Connection[], validationResults: ValidationResult[], gameResult: ValidationResult | null, isFlipped: boolean) => {
+  const gameState = {
+    connections,
+    validationResults,
+    gameResult,
+    isFlipped,
+    savedAt: Date.now()
+  };
+  localStorage.setItem('gameState', JSON.stringify(gameState));
+};
+
+const loadGameState = () => {
+  try {
+    const saved = localStorage.getItem('gameState');
+    if (saved) {
+      const state = JSON.parse(saved);
+      // Only load if saved within last 6 hours to avoid stale state
+      if (Date.now() - state.savedAt < 6 * 60 * 60 * 1000) {
+        return state;
+      }
+    }
+  } catch (error) {
+    console.log('Error loading game state:', error);
+  }
+  return null;
+};
+
 export default function Game() {
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
-  const [gameResult, setGameResult] = useState<ValidationResult | null>(null);
+  // Initialize state from localStorage if available
+  const [connections, setConnections] = useState<Connection[]>(() => {
+    const saved = loadGameState();
+    return saved?.connections || [];
+  });
+  const [validationResults, setValidationResults] = useState<ValidationResult[]>(() => {
+    const saved = loadGameState();
+    return saved?.validationResults || [];
+  });
+  const [gameResult, setGameResult] = useState<ValidationResult | null>(() => {
+    const saved = loadGameState();
+    return saved?.gameResult || null;
+  });
   const [isFlipped, setIsFlipped] = useState(false);
 
   const { data: challenge, isLoading } = useQuery<DailyChallenge>({
     queryKey: ["/api/daily-challenge"],
   });
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    saveGameState(connections, validationResults, gameResult, isFlipped);
+  }, [connections, validationResults, gameResult, isFlipped]);
 
   const handleConnectionUpdate = (index: number, connection: Partial<Connection>) => {
     setConnections(prev => {
@@ -42,6 +85,7 @@ export default function Game() {
     setConnections([]);
     setValidationResults([]);
     setGameResult(null);
+    localStorage.removeItem('gameState');
   };
 
   const handleFlipActors = () => {
