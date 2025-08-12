@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GameHeader from "@/components/GameHeader";
 import GameGrid from "@/components/GameGrid";
-import ActorSwitcher from "@/components/ActorSwitcher";
+
 import GameInstructions from "@/components/GameInstructions";
 import ValidationFeedback from "@/components/ValidationFeedback";
 import { HintsSection } from "@/components/HintsSection";
@@ -153,15 +153,15 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <GameHeader challenge={challenge} currentMoves={connections.filter(c => c.actorId && c.movieId).length} />
+      <GameHeader 
+        challenge={challenge} 
+        currentMoves={connections.filter(c => c.actorId && c.movieId).length}
+        isFlipped={isFlipped}
+        onFlip={handleFlipActors}
+        canFlip={!connections.some(c => c.actorId || c.movieId)}
+      />
       
       <main className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <ActorSwitcher 
-          challenge={challenge}
-          isFlipped={isFlipped}
-          onFlip={handleFlipActors}
-          disabled={connections.some(c => c.actorId || c.movieId)}
-        />
         
         <div className="mb-6 sm:mb-8 mx-2 sm:mx-0">
           <HintsSection dailyChallenge={challenge} />
