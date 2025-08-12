@@ -77,7 +77,7 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
             {isLoading && (
               <CommandEmpty>Searching actors...</CommandEmpty>
             )}
-            {!isLoading && actors.length === 0 && search.length > 2 && (
+            {!isLoading && actors.length === 0 && debouncedSearch.length > 2 && (
               <CommandEmpty>No actors found.</CommandEmpty>
             )}
             {actors.length > 0 && (

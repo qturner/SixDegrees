@@ -82,7 +82,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
             {isLoading && (
               <CommandEmpty>Searching movies...</CommandEmpty>
             )}
-            {!isLoading && movies.length === 0 && search.length > 2 && (
+            {!isLoading && movies.length === 0 && debouncedSearch.length > 2 && (
               <CommandEmpty>No movies found.</CommandEmpty>
             )}
             {movies.length > 0 && (
