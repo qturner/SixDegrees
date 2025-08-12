@@ -68,12 +68,6 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
           value={displayValue}
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyPress={handleKeyPress}
-          onFocus={() => {
-            if (displayValue.length > 2) {
-              setSearchQuery(displayValue);
-              setOpen(true);
-            }
-          }}
           placeholder={placeholder}
           disabled={disabled}
           className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
@@ -89,11 +83,45 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
         </Button>
       </div>
       
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <div className="absolute inset-0 pointer-events-none" />
-        </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      {open && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto"
+             style={{ width: '100%' }}>
+          {isLoading && (
+            <div className="p-3 text-center text-gray-500">Searching actors...</div>
+          )}
+          {!isLoading && actors.length === 0 && searchQuery.length > 2 && (
+            <div className="p-3 text-center text-gray-500">No actors found.</div>
+          )}
+          {actors.length > 0 && (
+            <div>
+              {actors.slice(0, 10).map((actor) => (
+                <div
+                  key={actor.id}
+                  onClick={() => handleSelect(actor)}
+                  className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                >
+                  <div className="flex items-center space-x-3">
+                    {actor.profile_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                        alt={actor.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-xs font-medium text-gray-600">
+                          {actor.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </span>
+                      </div>
+                    )}
+                    <span>{actor.name}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
         <Command>
           <CommandList>
             {isLoading && (
