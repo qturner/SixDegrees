@@ -15,6 +15,9 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
     return null;
   }
 
+  // Count the number of valid connections (green checkmarks)
+  const validConnectionsCount = validationResults.filter(result => result?.valid).length;
+
   const handleShare = () => {
     if (gameResult?.completed) {
       const text = `I just completed today's 6 Degrees of Separation challenge in ${gameResult.moves} moves! Can you do better?`;
@@ -58,7 +61,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
                 <AlertDescription>
                   {gameResult.completed && (
                     <div className="text-lg font-semibold mb-1">
-                      Congratulations! You finished in {gameResult.moves || 'unknown'} moves!
+                      Congratulations! You finished in {validConnectionsCount} moves!
                     </div>
                   )}
                   <div>{gameResult.message}</div>
