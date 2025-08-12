@@ -69,6 +69,20 @@ class TMDbService {
     DOCUMENTARY: 99,
   };
 
+  // Actors to exclude (primarily voice actors or those not suitable for the game)
+  private readonly EXCLUDED_ACTORS = new Set([
+    'Cree Summer',
+    'Tara Strong',
+    'Frank Welker',
+    'Grey Griffin',
+    'Jim Cummings',
+    'Tom Kenny',
+    'Billy West',
+    'Maurice LaMarche',
+    'Rob Paulsen',
+    'Dee Bradley Baker'
+  ]);
+
   constructor() {
     this.config = {
       apiKey: process.env.TMDB_API_KEY || process.env.API_KEY || "",
@@ -271,6 +285,12 @@ class TMDbService {
       const batch = actors.slice(i, i + 5);
       const batchPromises = batch.map(async (actor) => {
         try {
+          // Skip excluded actors (primarily voice actors)
+          if (this.EXCLUDED_ACTORS.has(actor.name)) {
+            console.log(`Excluding voice actor: ${actor.name}`);
+            return null;
+          }
+
           const movies = await this.getActorMovies(actor.id);
           
           if (movies.length === 0) {

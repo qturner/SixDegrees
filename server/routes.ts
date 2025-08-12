@@ -132,6 +132,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Force regenerate daily challenge (for development/admin)
+  app.delete("/api/daily-challenge/regenerate", async (req, res) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await storage.deleteDailyChallenge(today);
+      res.json({ message: "Challenge cleared, next request will generate a new one" });
+    } catch (error) {
+      console.error("Error clearing challenge:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Get hints for daily challenge
   app.post("/api/daily-challenge/hint", async (req, res) => {
     try {

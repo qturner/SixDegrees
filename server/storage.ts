@@ -6,6 +6,7 @@ export interface IStorage {
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
   createDailyChallenge(challenge: InsertDailyChallenge): Promise<DailyChallenge>;
   updateDailyChallengeHints(challengeId: string, hintsUsed: number): Promise<DailyChallenge>;
+  deleteDailyChallenge(date: string): Promise<void>;
   
   // Game Attempt methods
   createGameAttempt(attempt: InsertGameAttempt): Promise<GameAttempt>;
@@ -61,6 +62,15 @@ export class MemStorage implements IStorage {
     }
     
     return updatedChallenge;
+  }
+
+  async deleteDailyChallenge(date: string): Promise<void> {
+    const challengeEntry = Array.from(this.dailyChallenges.entries()).find(
+      ([_, challenge]) => challenge.date === date
+    );
+    if (challengeEntry) {
+      this.dailyChallenges.delete(challengeEntry[0]);
+    }
   }
 
   async createGameAttempt(insertAttempt: InsertGameAttempt): Promise<GameAttempt> {
