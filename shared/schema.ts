@@ -86,3 +86,29 @@ export type Movie = z.infer<typeof movieSchema>;
 export type Connection = z.infer<typeof connectionSchema>;
 export type GameConnection = z.infer<typeof gameConnectionSchema>;
 export type ValidationResult = z.infer<typeof validationResultSchema>;
+
+// Admin Users table
+export const adminUsers = pgTable("admin_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
+});
+
+export type AdminUser = typeof adminUsers.$inferSelect;
+export type InsertAdminUser = typeof adminUsers.$inferInsert;
+export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({ id: true, createdAt: true, lastLoginAt: true });
+export type InsertAdminUserType = z.infer<typeof insertAdminUserSchema>;
+
+// Admin Sessions table
+export const adminSessions = pgTable("admin_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  adminUserId: varchar("admin_user_id").references(() => adminUsers.id).notNull(),
+  token: varchar("token", { length: 255 }).unique().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AdminSession = typeof adminSessions.$inferSelect;
+export type InsertAdminSession = typeof adminSessions.$inferInsert;

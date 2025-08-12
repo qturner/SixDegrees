@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Shield } from "lucide-react";
 import GameHeader from "@/components/GameHeader";
 import GameGrid from "@/components/GameGrid";
 
@@ -153,6 +156,16 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
+      {/* Admin Access Button */}
+      <div className="fixed top-4 right-4 z-50">
+        <Link href="/admin-login">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-sm">
+            <Shield className="h-4 w-4" />
+            Admin
+          </Button>
+        </Link>
+      </div>
+
       <GameHeader 
         challenge={challenge} 
         currentMoves={connections.filter(c => c.actorId && c.movieId).length}

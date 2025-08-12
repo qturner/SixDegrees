@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { tmdbService } from "./services/tmdb";
 import { gameLogicService } from "./services/gameLogic";
 import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema } from "@shared/schema";
+import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
 import cron from "node-cron";
 
 // Prevent race conditions in challenge creation
@@ -356,6 +357,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error('Error generating daily challenge:', error);
+    }
+  });
+
+  // Admin authentication middleware
+  const requireAdminAuth = async (req: any, res: any, next: any) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return res.status(401).json({ message: "Admin authentication required" });
+      }
+      
+      const session = await validateAdminSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid or expired admin session" });
+      }
+      
+      req.adminSession = session;
+      next();
+    } catch (error) {
+      console.error("Admin auth error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
+
+  // Admin setup route (for initial admin creation)
+  app.post("/api/admin/setup", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (email !== "qturner17@gmail.com") {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const user = await createAdminUser(email, password);
+      res.json({ message: "Admin user created successfully", userId: user.id });
+    } catch (error) {
+      console.error("Admin setup error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin login
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      const user = await authenticateAdmin(email, password);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      const session = await createAdminSession(user.id);
+      res.json({ 
+        message: "Login successful", 
+        token: session.token,
+        expiresAt: session.expiresAt 
+      });
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin logout
+  app.post("/api/admin/logout", requireAdminAuth, async (req: any, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (token) {
+        await deleteAdminSession(token);
+      }
+      res.json({ message: "Logout successful" });
+    } catch (error) {
+      console.error("Admin logout error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin challenge reset
+  app.delete("/api/admin/reset-challenge", requireAdminAuth, async (req, res) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await storage.deleteDailyChallenge(today);
+      console.log(`Admin reset challenge for ${today}`);
+      res.json({ message: "Daily challenge reset successfully" });
+    } catch (error) {
+      console.error("Admin challenge reset error:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
