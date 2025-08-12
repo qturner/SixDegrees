@@ -8,6 +8,8 @@ Preferred communication style: Simple, everyday language.
 Content filtering: Only include actors and movies from 1970 onwards for more modern, relevant gameplay.
 Actor selection criteria: Only use well-known actors whose careers were active after 1980 (minimum 2 movies post-1980).
 Bug fixes: Critical race condition in daily challenge generation resolved (August 2025) - hints no longer reset daily actors.
+UI Enhancement: Compact validation feedback using checkmarks/X icons instead of large alert boxes (August 2025).
+Daily Reset: Automated daily challenge reset at midnight EST with proper timezone handling (August 2025).
 
 # System Architecture
 
@@ -45,7 +47,7 @@ Bug fixes: Critical race condition in daily challenge generation resolved (Augus
 - **Actor Filtering**: Career activity filtering (post-1980) + genre filtering (excludes documentary/animation-only actors)
 - **Connection Validation**: Real-time validation of actor-movie relationships through TMDB API
 - **Game State**: Client-side game state management with server-side validation
-- **Cron Jobs**: Scheduled task system for generating daily challenges
+- **Daily Reset System**: Automated challenge reset at midnight EST using node-cron with timezone handling for DST transitions
 
 ## Performance Considerations
 - **Caching Strategy**: TanStack Query provides client-side caching for search results and game data
