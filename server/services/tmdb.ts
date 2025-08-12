@@ -26,6 +26,8 @@ interface TMDbMovie {
   release_date?: string;
   poster_path: string | null;
   overview?: string;
+  vote_average: number;
+  vote_count: number;
 }
 
 interface TMDbCredit {
@@ -142,6 +144,8 @@ class TMDbService {
           const releaseYear = new Date(movie.release_date).getFullYear();
           return releaseYear >= 1970;
         })
+        // Sort by vote average and vote count to show more well-known movies first
+        .sort((a, b) => (b.vote_average * Math.log(b.vote_count + 1)) - (a.vote_average * Math.log(a.vote_count + 1)))
         .map(movie => ({
           id: movie.id,
           title: movie.title,
@@ -338,7 +342,11 @@ class TMDbService {
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {
     try {
       const credits = await this.getMovieCredits(movieId);
-      return credits.some(actor => actor.id === actorId);
+      const isValid = credits.some(actor => actor.id === actorId);
+      
+      // Remove excessive logging for production use
+      
+      return isValid;
     } catch (error) {
       console.error("Error validating actor in movie:", error);
       return false;

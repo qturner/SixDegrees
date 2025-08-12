@@ -117,6 +117,8 @@ class GameLogicService {
         if (i < connections.length - 1) {
           // Validate that current actor appears in next movie
           const nextConnection = connections[i + 1];
+          // Validation logic for chain continuity
+          
           const actorInNextMovie = await tmdbService.validateActorInMovie(
             connection.actorId,
             nextConnection.movieId
