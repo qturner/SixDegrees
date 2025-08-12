@@ -6,6 +6,7 @@ This is a React-based "6 Degrees of Separation" game application that challenges
 
 Preferred communication style: Simple, everyday language.
 Content filtering: Only include actors and movies from 1970 onwards for more modern, relevant gameplay.
+Bug fixes: Critical race condition in daily challenge generation resolved (August 2025) - hints no longer reset daily actors.
 
 # System Architecture
 
@@ -48,3 +49,4 @@ Content filtering: Only include actors and movies from 1970 onwards for more mod
 - **Caching Strategy**: TanStack Query provides client-side caching for search results and game data
 - **API Rate Limiting**: Structured to handle TMDB API rate limits efficiently
 - **Database Optimization**: Indexed queries on date fields for daily challenges
+- **Race Condition Prevention**: Request synchronization prevents concurrent daily challenge creation
