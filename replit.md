@@ -7,6 +7,8 @@ This is a React-based "6 Degrees of Separation" game application that challenges
 Preferred communication style: Simple, everyday language.
 Content filtering: Only include actors and movies from 1970 onwards for more modern, relevant gameplay.
 Actor selection criteria: Only use well-known actors whose careers were active after 1980 (minimum 2 movies post-1980).
+Voice actor exclusion: Excludes voice actors (Cree Summer, Tara Strong, Frank Welker, etc.) to focus on live-action films (August 2025).
+Stand-up comedian filtering: Excludes TV movies, music films, and solo performers to ensure proper co-starring connections (August 2025).
 Bug fixes: Critical race condition in daily challenge generation resolved (August 2025) - hints no longer reset daily actors.
 UI Enhancement: Compact validation feedback using checkmarks/X icons instead of large alert boxes (August 2025).
 Daily Reset: Automated daily challenge reset at midnight EST with proper timezone handling (August 2025).

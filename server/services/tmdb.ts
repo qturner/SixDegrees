@@ -67,10 +67,13 @@ class TMDbService {
   private readonly EXCLUDED_GENRES = {
     ANIMATION: 16,
     DOCUMENTARY: 99,
+    TV_MOVIE: 10770, // TV Movies often include stand-up specials and single-person shows
+    MUSIC: 10402, // Music documentaries and concert films
   };
 
-  // Actors to exclude (primarily voice actors or those not suitable for the game)
+  // Actors to exclude (primarily voice actors, stand-up comedians, or those not suitable for the game)
   private readonly EXCLUDED_ACTORS = new Set([
+    // Voice actors
     'Cree Summer',
     'Tara Strong',
     'Frank Welker',
@@ -80,7 +83,17 @@ class TMDbService {
     'Billy West',
     'Maurice LaMarche',
     'Rob Paulsen',
-    'Dee Bradley Baker'
+    'Dee Bradley Baker',
+    // Stand-up comedians (primarily solo performers)
+    'Dave Chappelle',
+    'Chris Rock',
+    'Eddie Murphy', // Primarily known for solo stand-up, though has acted
+    'Richard Pryor',
+    'George Carlin',
+    'Robin Williams', // Though he acted, much of his filmography is solo or voice work
+    'Joan Rivers',
+    'Andrew Dice Clay',
+    'Sam Kinison'
   ]);
 
   constructor() {
@@ -338,10 +351,12 @@ class TMDbService {
           const releaseYear = new Date(movie.release_date).getFullYear();
           if (releaseYear < 1970) return false;
 
-          // Exclude documentaries and animated movies if genre_ids are available
+          // Exclude documentaries, animated movies, TV movies, and music films if genre_ids are available
           if (movie.genre_ids && movie.genre_ids.length > 0) {
             return !movie.genre_ids.includes(this.EXCLUDED_GENRES.ANIMATION) &&
-                   !movie.genre_ids.includes(this.EXCLUDED_GENRES.DOCUMENTARY);
+                   !movie.genre_ids.includes(this.EXCLUDED_GENRES.DOCUMENTARY) &&
+                   !movie.genre_ids.includes(this.EXCLUDED_GENRES.TV_MOVIE) &&
+                   !movie.genre_ids.includes(this.EXCLUDED_GENRES.MUSIC);
           }
 
           // If no genre_ids, include the movie (we'll filter by other means)
