@@ -24,7 +24,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
   }, [value]);
 
   const { data: movies = [], isLoading } = useQuery<Movie[]>({
-    queryKey: ["/api/search/movies", searchQuery],
+    queryKey: [`/api/search/movies?q=${encodeURIComponent(searchQuery)}`],
     enabled: searchQuery.length > 2,
     staleTime: 10000,
     gcTime: 20000,

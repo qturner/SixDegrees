@@ -24,7 +24,7 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
   }, [value]);
 
   const { data: actors = [], isLoading } = useQuery<Actor[]>({
-    queryKey: ["/api/search/actors", searchQuery],
+    queryKey: [`/api/search/actors?q=${encodeURIComponent(searchQuery)}`],
     enabled: searchQuery.length > 2,
     staleTime: 10000,
     gcTime: 20000,
