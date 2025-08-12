@@ -266,13 +266,21 @@ class TMDbService {
 
   /**
    * Select strategic hint movies that provide good gameplay value
+   * Prioritizes popular movies while maintaining decade diversity
    */
   private selectStrategicHintMovies(movies: Movie[], count: number): Movie[] {
     if (movies.length <= count) return movies;
     
+    // Get detailed movie info with popularity scores
+    const moviesWithDetails = movies.map(movie => ({
+      ...movie,
+      // Calculate a composite score: popularity + recency + title distinctiveness
+      score: this.calculateMovieHintScore(movie)
+    }));
+    
     // Separate movies by decade for diversity
-    const moviesByDecade = new Map<number, Movie[]>();
-    movies.forEach(movie => {
+    const moviesByDecade = new Map<number, any[]>();
+    moviesWithDetails.forEach(movie => {
       if (movie.release_date) {
         const decade = Math.floor(new Date(movie.release_date).getFullYear() / 10) * 10;
         if (!moviesByDecade.has(decade)) {
@@ -282,33 +290,90 @@ class TMDbService {
       }
     });
     
+    // Sort movies within each decade by their hint score (popularity + other factors)
+    moviesByDecade.forEach(decadeMovies => {
+      decadeMovies.sort((a, b) => b.score - a.score);
+    });
+    
     const selectedMovies: Movie[] = [];
     const decades = Array.from(moviesByDecade.keys()).sort((a, b) => b - a); // Start with most recent
     
-    // Try to get at least one movie from each decade, up to our count
+    // First pass: Get the most popular movie from each decade
     for (const decade of decades) {
       if (selectedMovies.length >= count) break;
       
       const decadeMovies = moviesByDecade.get(decade)!;
-      // Prefer movies with longer titles (often more distinctive) but add some randomness
-      const sortedMovies = decadeMovies.sort((a, b) => {
-        const randomFactor = Math.random() * 0.3; // 30% randomness
-        const titleLengthFactor = (b.title.length - a.title.length) * 0.1;
-        return titleLengthFactor + randomFactor;
-      });
-      
-      selectedMovies.push(sortedMovies[0]);
+      selectedMovies.push(decadeMovies[0]); // Highest scored movie from this decade
     }
     
-    // If we still need more movies, fill randomly from remaining
+    // Second pass: If we still need more movies, get second-best from decades with multiple good movies
     if (selectedMovies.length < count) {
-      const remainingMovies = movies.filter(movie => !selectedMovies.includes(movie));
-      const shuffled = remainingMovies.sort(() => 0.5 - Math.random());
-      selectedMovies.push(...shuffled.slice(0, count - selectedMovies.length));
+      for (const decade of decades) {
+        if (selectedMovies.length >= count) break;
+        
+        const decadeMovies = moviesByDecade.get(decade)!;
+        if (decadeMovies.length > 1) {
+          const alreadySelected = selectedMovies.some(selected => 
+            decadeMovies[0].id === selected.id
+          );
+          if (alreadySelected && decadeMovies[1]) {
+            selectedMovies.push(decadeMovies[1]);
+          }
+        }
+      }
     }
     
-    // Final shuffle to not reveal the selection strategy
-    return selectedMovies.sort(() => 0.5 - Math.random()).slice(0, count);
+    // Final pass: Fill remaining slots with highest-scoring movies overall
+    if (selectedMovies.length < count) {
+      const remainingMovies = moviesWithDetails
+        .filter(movie => !selectedMovies.some(selected => selected.id === movie.id))
+        .sort((a, b) => b.score - a.score);
+      
+      selectedMovies.push(...remainingMovies.slice(0, count - selectedMovies.length));
+    }
+    
+    // Final shuffle to not reveal the selection strategy, but keep it light to preserve quality
+    return selectedMovies.sort(() => Math.random() - 0.45).slice(0, count);
+  }
+
+  /**
+   * Calculate a hint score for a movie based on multiple factors
+   */
+  private calculateMovieHintScore(movie: Movie): number {
+    let score = 0;
+    
+    // Release date factor (more recent movies often more recognizable)
+    if (movie.release_date) {
+      const releaseYear = new Date(movie.release_date).getFullYear();
+      const currentYear = new Date().getFullYear();
+      const yearsSinceRelease = currentYear - releaseYear;
+      
+      // Sweet spot: movies from 1980-2020 get highest scores
+      if (releaseYear >= 1980 && releaseYear <= 2020) {
+        score += 10;
+      } else if (releaseYear > 2020) {
+        score += 8; // Very recent movies
+      } else if (releaseYear >= 1970) {
+        score += 6; // Classic movies
+      } else {
+        score += 3; // Very old movies
+      }
+    }
+    
+    // Title length factor (distinctive titles often more memorable)
+    const titleLength = movie.title.length;
+    if (titleLength >= 8 && titleLength <= 25) {
+      score += 5; // Sweet spot for memorable titles
+    } else if (titleLength > 25) {
+      score += 3; // Long titles can be distinctive
+    } else {
+      score += 2; // Short titles
+    }
+    
+    // Add some randomness to prevent predictability
+    score += Math.random() * 3;
+    
+    return score;
   }
 
   /**

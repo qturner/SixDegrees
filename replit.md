@@ -18,6 +18,7 @@ Data Quality Enhancement: Fixed hint system to filter movies by actor death date
 Actor Selection Update: Enhanced filtering to exclude deceased actors from daily challenges, focusing on living actors for better game relevance (August 2025).
 Actor Pool Expansion: Increased actor pool from 60 to 200 actors (10 pages vs 3 pages) to dramatically improve challenge diversity and reduce repetition (August 2025).
 Mainstream Focus Enhancement: Added sophisticated voice actor detection (60% animated work threshold) and expanded exclusion list to focus on live-action movie stars with post-1990 mainstream appeal (August 2025).
+Enhanced Hint Movie Selection: Upgraded hint algorithm to prioritize popular, recognizable movies while maintaining decade diversity - uses composite scoring based on release year sweet spots (1980-2020), title distinctiveness, and strategic selection from each decade of actor's career (August 2025).
 
 # System Architecture
 
