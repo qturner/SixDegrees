@@ -6,6 +6,10 @@ import { gameLogicService } from "./services/gameLogic";
 import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema } from "@shared/schema";
 import cron from "node-cron";
 
+// Prevent race conditions in challenge creation
+let challengeCreationPromise: Promise<any> | null = null;
+let lastChallengeDate: string | null = null;
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get today's daily challenge
   app.get("/api/daily-challenge", async (req, res) => {
@@ -15,23 +19,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!challenge) {
         console.log(`No challenge found for ${today}, generating new challenge...`);
-        // Generate new challenge for today
-        const actors = await gameLogicService.generateDailyActors();
-        if (!actors) {
+        
+        // Prevent race conditions by using a shared promise
+        // Reset promise if date has changed (new day)
+        if (lastChallengeDate !== today) {
+          challengeCreationPromise = null;
+          lastChallengeDate = today;
+        }
+        
+        if (!challengeCreationPromise) {
+          challengeCreationPromise = (async () => {
+            try {
+              // Double-check if challenge was created while we were waiting
+              const existingChallenge = await storage.getDailyChallenge(today);
+              if (existingChallenge) {
+                console.log(`Challenge was created by another request: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
+                return existingChallenge;
+              }
+
+              // Generate new challenge for today
+              const actors = await gameLogicService.generateDailyActors();
+              if (!actors) {
+                throw new Error("Unable to generate daily challenge");
+              }
+
+              const newChallenge = await storage.createDailyChallenge({
+                date: today,
+                startActorId: actors.actor1.id,
+                startActorName: actors.actor1.name,
+                startActorProfilePath: actors.actor1.profile_path,
+                endActorId: actors.actor2.id,
+                endActorName: actors.actor2.name,
+                endActorProfilePath: actors.actor2.profile_path,
+                hintsUsed: 0,
+              });
+              console.log(`Created new challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
+              return newChallenge;
+            } finally {
+              // Clear the promise so future requests can create new challenges if needed
+              challengeCreationPromise = null;
+            }
+          })();
+        }
+        
+        challenge = await challengeCreationPromise;
+        if (!challenge) {
           return res.status(500).json({ message: "Unable to generate daily challenge" });
         }
-
-        challenge = await storage.createDailyChallenge({
-          date: today,
-          startActorId: actors.actor1.id,
-          startActorName: actors.actor1.name,
-          startActorProfilePath: actors.actor1.profile_path,
-          endActorId: actors.actor2.id,
-          endActorName: actors.actor2.name,
-          endActorProfilePath: actors.actor2.profile_path,
-          hintsUsed: 0,
-        });
-        console.log(`Created new challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
       } else {
         console.log(`Found existing challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0})`);
       }
