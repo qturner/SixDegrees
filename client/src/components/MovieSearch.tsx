@@ -76,7 +76,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
             onKeyPress={handleKeyPress}
             placeholder={placeholder}
             disabled={disabled}
-            className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors"
+            className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
           />
           <Button
             onClick={handleSearch}
