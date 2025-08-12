@@ -152,7 +152,7 @@ export default function GameGrid({
             <Film className="inline-block w-5 h-5 mr-2" />
             Movies
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-3 pr-10">
             {/* Starting space */}
             <div className="p-4 bg-gray-100 rounded-lg text-center text-gray-500 font-medium">
               Starting Point
@@ -171,9 +171,9 @@ export default function GameGrid({
                     disabled={!connection.actorId || validatingIndex === index}
                   />
                   
-                  {/* Validation Status Icon */}
-                  {validationResult && connection.movieTitle && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  {/* Validation Status Icon - positioned outside the input */}
+                  {validationResult && connection.movieTitle && !validatingIndex && (
+                    <div className="absolute -right-8 top-1/2 transform -translate-y-1/2">
                       {validationResult.valid ? (
                         <CheckCircle className="w-5 h-5 text-green-600" />
                       ) : (
@@ -184,7 +184,7 @@ export default function GameGrid({
                   
                   {/* Loading Spinner */}
                   {validatingIndex === index && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute -right-8 top-1/2 transform -translate-y-1/2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-game-blue"></div>
                     </div>
                   )}
