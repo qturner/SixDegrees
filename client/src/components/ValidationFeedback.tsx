@@ -57,7 +57,9 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
               <div>
                 <AlertDescription>
                   {gameResult.completed && (
-                    <div className="text-lg font-semibold mb-1">Congratulations!</div>
+                    <div className="text-lg font-semibold mb-1">
+                      Congratulations! You finished in {gameResult.moves || 'unknown'} moves!
+                    </div>
                   )}
                   <div>{gameResult.message}</div>
                 </AlertDescription>
