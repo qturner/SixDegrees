@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import GameHeader from "@/components/GameHeader";
 import GameGrid from "@/components/GameGrid";
+import ActorSwitcher from "@/components/ActorSwitcher";
 import GameInstructions from "@/components/GameInstructions";
 import ValidationFeedback from "@/components/ValidationFeedback";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
@@ -10,6 +11,7 @@ export default function Game() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
   const [gameResult, setGameResult] = useState<ValidationResult | null>(null);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   const { data: challenge, isLoading } = useQuery<DailyChallenge>({
     queryKey: ["/api/daily-challenge"],
@@ -41,6 +43,28 @@ export default function Game() {
     setGameResult(null);
   };
 
+  const handleFlipActors = () => {
+    setIsFlipped(prev => !prev);
+    // Reset the game when flipping actors
+    resetGame();
+  };
+
+  // Get the effective start and end actors based on flip state
+  const getEffectiveChallenge = () => {
+    if (!challenge) return null;
+    
+    if (isFlipped) {
+      return {
+        ...challenge,
+        startActorId: challenge.endActorId,
+        startActorName: challenge.endActorName,
+        endActorId: challenge.startActorId,
+        endActorName: challenge.startActorName,
+      };
+    }
+    return challenge;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -62,13 +86,22 @@ export default function Game() {
     );
   }
 
+  const effectiveChallenge = getEffectiveChallenge();
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <GameHeader challenge={challenge} currentMoves={connections.filter(c => c.actorId && c.movieId).length} />
       
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <GameGrid 
+        <ActorSwitcher 
           challenge={challenge}
+          isFlipped={isFlipped}
+          onFlip={handleFlipActors}
+          disabled={connections.some(c => c.actorId || c.movieId)}
+        />
+        
+        <GameGrid 
+          challenge={effectiveChallenge!}
           connections={connections}
           onConnectionUpdate={handleConnectionUpdate}
           onValidationResult={handleValidationResult}
