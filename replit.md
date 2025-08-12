@@ -6,6 +6,7 @@ This is a React-based "6 Degrees of Separation" game application that challenges
 
 Preferred communication style: Simple, everyday language.
 Content filtering: Only include actors and movies from 1970 onwards for more modern, relevant gameplay.
+Actor selection criteria: Only use well-known actors whose careers were active after 1980 (minimum 2 movies post-1980).
 Bug fixes: Critical race condition in daily challenge generation resolved (August 2025) - hints no longer reset daily actors.
 
 # System Architecture
@@ -40,7 +41,8 @@ Bug fixes: Critical race condition in daily challenge generation resolved (Augus
 - **Styling**: Tailwind CSS with custom design system including game-specific color variables
 
 ## Game Logic Architecture
-- **Challenge Generation**: Automated daily challenge creation using TMDB actor data
+- **Challenge Generation**: Automated daily challenge creation using TMDB actor data with multi-layer filtering
+- **Actor Filtering**: Career activity filtering (post-1980) + genre filtering (excludes documentary/animation-only actors)
 - **Connection Validation**: Real-time validation of actor-movie relationships through TMDB API
 - **Game State**: Client-side game state management with server-side validation
 - **Cron Jobs**: Scheduled task system for generating daily challenges

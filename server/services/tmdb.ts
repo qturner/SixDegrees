@@ -202,6 +202,61 @@ class TMDbService {
   }
 
   /**
+   * Check if an actor has career activity after 1980
+   */
+  private async hasCareerActivityAfter1980(actorId: number): Promise<boolean> {
+    try {
+      const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
+      
+      // Check if actor has any movies released after 1980
+      const recentMovies = response.cast.filter(movie => {
+        if (!movie.release_date) return false;
+        const releaseYear = new Date(movie.release_date).getFullYear();
+        return releaseYear > 1980;
+      });
+      
+      // Actor must have at least 2 movies after 1980 to be considered "active"
+      return recentMovies.length >= 2;
+    } catch (error) {
+      console.error(`Error checking career activity for actor ${actorId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Filter actors by career activity - only include those active after 1980
+   */
+  private async filterActorsByCareerActivity(actors: Actor[]): Promise<Actor[]> {
+    console.log("Applying career activity filtering (post-1980) to popular actors...");
+    const validActors: Actor[] = [];
+
+    // Process actors in smaller batches to avoid rate limits
+    for (let i = 0; i < actors.length; i += 5) {
+      const batch = actors.slice(i, i + 5);
+      const batchPromises = batch.map(async (actor) => {
+        try {
+          const hasRecentActivity = await this.hasCareerActivityAfter1980(actor.id);
+          return hasRecentActivity ? actor : null;
+        } catch (error) {
+          console.error(`Error checking career activity for ${actor.name}:`, error);
+          return null;
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      validActors.push(...batchResults.filter((actor): actor is Actor => actor !== null));
+      
+      // Add small delay between batches to respect API limits
+      if (i + 5 < actors.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    console.log(`Filtered from ${actors.length} to ${validActors.length} actors with post-1980 career activity`);
+    return validActors;
+  }
+
+  /**
    * Filter out actors who primarily appear in documentaries or animated movies
    */
   private async filterActorsByGenre(actors: Actor[]): Promise<Actor[]> {
@@ -308,12 +363,18 @@ class TMDbService {
           known_for_department: person.known_for_department,
         }));
 
-      // Apply genre filtering to exclude documentary/animation-only actors
-      console.log("Applying genre filtering to popular actors...");
-      const filteredActors = await this.filterActorsByGenre(actors);
-      console.log(`Filtered from ${actors.length} to ${filteredActors.length} popular actors`);
+      console.log(`Found ${actors.length} popular actors, applying career activity filtering...`);
       
-      return filteredActors.length > 0 ? filteredActors : actors; // Fallback if filtering is too restrictive
+      // First filter by career activity (post-1980)
+      const careerFilteredActors = await this.filterActorsByCareerActivity(actors);
+      
+      console.log("Applying genre filtering to career-filtered actors...");
+      
+      // Then apply genre filtering to exclude documentary/animation-only actors  
+      const finalFilteredActors = await this.filterActorsByGenre(careerFilteredActors);
+      console.log(`Final filtered actors: ${finalFilteredActors.length}`);
+      
+      return finalFilteredActors.length > 0 ? finalFilteredActors : careerFilteredActors; // Fallback to career-filtered if genre filtering is too restrictive
     } catch (error) {
       console.error("Error getting popular actors:", error);
       return [];
