@@ -259,9 +259,56 @@ class TMDbService {
       console.log(`Actor ${actorDetails.name} died in ${deathYear}, filtered movies from ${movies.length} to ${filteredMovies.length}`);
     }
     
-    // Return a random selection of movies, prioritizing more popular ones
-    const shuffled = filteredMovies.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
+    // Strategic hint selection - mix of recognizable and diverse movies
+    const strategicMovies = this.selectStrategicHintMovies(filteredMovies, count);
+    return strategicMovies;
+  }
+
+  /**
+   * Select strategic hint movies that provide good gameplay value
+   */
+  private selectStrategicHintMovies(movies: Movie[], count: number): Movie[] {
+    if (movies.length <= count) return movies;
+    
+    // Separate movies by decade for diversity
+    const moviesByDecade = new Map<number, Movie[]>();
+    movies.forEach(movie => {
+      if (movie.release_date) {
+        const decade = Math.floor(new Date(movie.release_date).getFullYear() / 10) * 10;
+        if (!moviesByDecade.has(decade)) {
+          moviesByDecade.set(decade, []);
+        }
+        moviesByDecade.get(decade)!.push(movie);
+      }
+    });
+    
+    const selectedMovies: Movie[] = [];
+    const decades = Array.from(moviesByDecade.keys()).sort((a, b) => b - a); // Start with most recent
+    
+    // Try to get at least one movie from each decade, up to our count
+    for (const decade of decades) {
+      if (selectedMovies.length >= count) break;
+      
+      const decadeMovies = moviesByDecade.get(decade)!;
+      // Prefer movies with longer titles (often more distinctive) but add some randomness
+      const sortedMovies = decadeMovies.sort((a, b) => {
+        const randomFactor = Math.random() * 0.3; // 30% randomness
+        const titleLengthFactor = (b.title.length - a.title.length) * 0.1;
+        return titleLengthFactor + randomFactor;
+      });
+      
+      selectedMovies.push(sortedMovies[0]);
+    }
+    
+    // If we still need more movies, fill randomly from remaining
+    if (selectedMovies.length < count) {
+      const remainingMovies = movies.filter(movie => !selectedMovies.includes(movie));
+      const shuffled = remainingMovies.sort(() => 0.5 - Math.random());
+      selectedMovies.push(...shuffled.slice(0, count - selectedMovies.length));
+    }
+    
+    // Final shuffle to not reveal the selection strategy
+    return selectedMovies.sort(() => 0.5 - Math.random()).slice(0, count);
   }
 
   /**
