@@ -54,11 +54,18 @@ interface TMDbPersonMovies {
     release_date: string;
     poster_path: string | null;
     character: string;
+    genre_ids: number[];
   }>;
 }
 
 class TMDbService {
   private config: TMDbConfig;
+  
+  // Genre IDs to filter out
+  private readonly EXCLUDED_GENRES = {
+    ANIMATION: 16,
+    DOCUMENTARY: 99,
+  };
 
   constructor() {
     this.config = {
@@ -107,8 +114,11 @@ class TMDbService {
           known_for_department: person.known_for_department,
         }));
 
+      // Filter out actors who only appear in documentaries or animated movies
+      const filteredActors = await this.filterActorsByGenre(actors);
+
       // Return top 20 results to keep it manageable
-      return actors.slice(0, 20);
+      return filteredActors.slice(0, 20);
     } catch (error) {
       console.error("Error searching actors:", error);
       return [];
@@ -191,6 +201,85 @@ class TMDbService {
     return shuffled.slice(0, count);
   }
 
+  /**
+   * Filter out actors who primarily appear in documentaries or animated movies
+   */
+  private async filterActorsByGenre(actors: Actor[]): Promise<Actor[]> {
+    const validActors: Actor[] = [];
+
+    // Process actors in smaller batches to avoid rate limits
+    for (let i = 0; i < actors.length; i += 5) {
+      const batch = actors.slice(i, i + 5);
+      const batchPromises = batch.map(async (actor) => {
+        try {
+          const movies = await this.getActorMovies(actor.id);
+          
+          if (movies.length === 0) {
+            return null; // Skip actors with no movies
+          }
+
+          // Check if actor has significant non-documentary/non-animated work
+          const liveActionMovies = await this.getNonDocumentaryNonAnimatedMovies(actor.id);
+          
+          // Actor must have at least 2 live-action movies to be included
+          if (liveActionMovies.length >= 2) {
+            return actor;
+          }
+          
+          return null;
+        } catch (error) {
+          console.error(`Error checking actor ${actor.name}:`, error);
+          return null; // Skip on error to avoid blocking the search
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      validActors.push(...batchResults.filter((actor): actor is Actor => actor !== null));
+      
+      // Add small delay between batches to respect API limits
+      if (i + 5 < actors.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    return validActors;
+  }
+
+  /**
+   * Get movies for an actor, excluding documentaries and animated movies
+   */
+  private async getNonDocumentaryNonAnimatedMovies(actorId: number): Promise<Movie[]> {
+    try {
+      const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
+      
+      return response.cast
+        .filter(movie => {
+          // Only include movies from 1970 onwards
+          if (!movie.release_date) return false;
+          const releaseYear = new Date(movie.release_date).getFullYear();
+          if (releaseYear < 1970) return false;
+
+          // Exclude documentaries and animated movies if genre_ids are available
+          if (movie.genre_ids && movie.genre_ids.length > 0) {
+            return !movie.genre_ids.includes(this.EXCLUDED_GENRES.ANIMATION) &&
+                   !movie.genre_ids.includes(this.EXCLUDED_GENRES.DOCUMENTARY);
+          }
+
+          // If no genre_ids, include the movie (we'll filter by other means)
+          return true;
+        })
+        .map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          release_date: movie.release_date,
+          poster_path: movie.poster_path,
+        }));
+    } catch (error) {
+      console.error("Error getting non-documentary/non-animated movies:", error);
+      return [];
+    }
+  }
+
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {
     try {
       const credits = await this.getMovieCredits(movieId);
@@ -210,7 +299,7 @@ class TMDbService {
       
       const allResults = [...page1.results, ...page2.results, ...page3.results];
       
-      return allResults
+      const actors = allResults
         .filter(person => person.known_for_department === "Acting")
         .map(person => ({
           id: person.id,
@@ -218,9 +307,36 @@ class TMDbService {
           profile_path: person.profile_path,
           known_for_department: person.known_for_department,
         }));
+
+      // Apply genre filtering to exclude documentary/animation-only actors
+      console.log("Applying genre filtering to popular actors...");
+      const filteredActors = await this.filterActorsByGenre(actors);
+      console.log(`Filtered from ${actors.length} to ${filteredActors.length} popular actors`);
+      
+      return filteredActors.length > 0 ? filteredActors : actors; // Fallback if filtering is too restrictive
     } catch (error) {
       console.error("Error getting popular actors:", error);
       return [];
+    }
+  }
+
+  async getRandomTopActors(): Promise<{ actor1: Actor; actor2: Actor } | null> {
+    try {
+      const actors = await this.getPopularActors();
+      
+      if (actors.length < 2) {
+        return null;
+      }
+
+      // Pick two random actors
+      const shuffled = actors.sort(() => 0.5 - Math.random());
+      return {
+        actor1: shuffled[0],
+        actor2: shuffled[1],
+      };
+    } catch (error) {
+      console.error("Error getting random top actors:", error);
+      return null;
     }
   }
 }

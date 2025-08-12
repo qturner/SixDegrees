@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "No challenge found for today" });
       }
 
-      if (challenge.hintsUsed >= 2) {
+      if ((challenge.hintsUsed || 0) >= 2) {
         return res.status(400).json({ message: "All hints have been used for today" });
       }
 
@@ -122,13 +122,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update hints used count
       const updatedChallenge = await storage.updateDailyChallengeHints(
         challenge.id, 
-        challenge.hintsUsed + 1
+        (challenge.hintsUsed || 0) + 1
       );
       
       res.json({
         actorName,
         movies,
-        hintsRemaining: 2 - updatedChallenge.hintsUsed,
+        hintsRemaining: 2 - (updatedChallenge.hintsUsed || 0),
       });
     } catch (error) {
       console.error("Error getting hint:", error);
