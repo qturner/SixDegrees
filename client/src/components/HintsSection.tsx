@@ -31,10 +31,25 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   const [startActorHint, setStartActorHint] = useState<HintResponse | null>(null);
   const [endActorHint, setEndActorHint] = useState<HintResponse | null>(null);
   const [activeHintType, setActiveHintType] = useState<'start' | 'end' | null>(null);
+  const [lastChallengeActors, setLastChallengeActors] = useState<string>('');
   const { toast } = useToast();
   
   const hintsRemaining = 2 - (dailyChallenge.hintsUsed || 0);
   const activeHint = activeHintType === 'start' ? startActorHint : endActorHint;
+  
+  // Reset hint state when challenge actors change
+  useEffect(() => {
+    const currentChallengeActors = `${dailyChallenge.startActorName}-${dailyChallenge.endActorName}`;
+    if (lastChallengeActors && lastChallengeActors !== currentChallengeActors) {
+      // Actors changed - reset all hint state
+      setStartActorHint(null);
+      setEndActorHint(null);
+      setActiveHintType(null);
+      // Invalidate React Query cache for hints
+      queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge/hints"] });
+    }
+    setLastChallengeActors(currentChallengeActors);
+  }, [dailyChallenge.startActorName, dailyChallenge.endActorName, lastChallengeActors]);
 
   // Load stored hints on component mount
   const { data: storedHints } = useQuery({
