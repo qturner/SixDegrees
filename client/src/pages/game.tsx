@@ -9,24 +9,27 @@ import { HintsSection } from "@/components/HintsSection";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 
 // Helper functions for localStorage persistence
-const saveGameState = (connections: Connection[], validationResults: ValidationResult[], gameResult: ValidationResult | null, isFlipped: boolean) => {
+const saveGameState = (connections: Connection[], validationResults: ValidationResult[], gameResult: ValidationResult | null, isFlipped: boolean, challengeDate?: string) => {
   const gameState = {
     connections,
     validationResults,
     gameResult,
     isFlipped,
+    challengeDate,
     savedAt: Date.now()
   };
   localStorage.setItem('gameState', JSON.stringify(gameState));
 };
 
-const loadGameState = () => {
+const loadGameState = (currentChallengeDate?: string) => {
   try {
     const saved = localStorage.getItem('gameState');
     if (saved) {
       const state = JSON.parse(saved);
       // Only load if saved within last 6 hours to avoid stale state
-      if (Date.now() - state.savedAt < 6 * 60 * 60 * 1000) {
+      // AND if it's for the same daily challenge date
+      if (Date.now() - state.savedAt < 6 * 60 * 60 * 1000 && 
+          state.challengeDate === currentChallengeDate) {
         return state;
       }
     }
@@ -37,29 +40,41 @@ const loadGameState = () => {
 };
 
 export default function Game() {
-  // Initialize state from localStorage if available
-  const [connections, setConnections] = useState<Connection[]>(() => {
-    const saved = loadGameState();
-    return saved?.connections || [];
-  });
-  const [validationResults, setValidationResults] = useState<ValidationResult[]>(() => {
-    const saved = loadGameState();
-    return saved?.validationResults || [];
-  });
-  const [gameResult, setGameResult] = useState<ValidationResult | null>(() => {
-    const saved = loadGameState();
-    return saved?.gameResult || null;
-  });
+  // Initialize state - will be reset when challenge loads if needed
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
+  const [gameResult, setGameResult] = useState<ValidationResult | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [gameStateInitialized, setGameStateInitialized] = useState(false);
 
   const { data: challenge, isLoading } = useQuery<DailyChallenge>({
     queryKey: ["/api/daily-challenge"],
   });
 
+  // Initialize or reset game state when challenge loads
+  useEffect(() => {
+    if (challenge && !gameStateInitialized) {
+      const saved = loadGameState(challenge.date);
+      if (saved) {
+        // Load saved state if it's for the current challenge
+        setConnections(saved.connections || []);
+        setValidationResults(saved.validationResults || []);
+        setGameResult(saved.gameResult || null);
+        setIsFlipped(saved.isFlipped || false);
+      } else {
+        // Reset to clean state if no valid saved state or new challenge
+        resetGame();
+      }
+      setGameStateInitialized(true);
+    }
+  }, [challenge, gameStateInitialized]);
+
   // Save state to localStorage whenever it changes
   useEffect(() => {
-    saveGameState(connections, validationResults, gameResult, isFlipped);
-  }, [connections, validationResults, gameResult, isFlipped]);
+    if (challenge) {
+      saveGameState(connections, validationResults, gameResult, isFlipped, challenge.date);
+    }
+  }, [connections, validationResults, gameResult, isFlipped, challenge]);
 
   const handleConnectionUpdate = (index: number, connection: Partial<Connection>) => {
     setConnections(prev => {
@@ -85,6 +100,7 @@ export default function Game() {
     setConnections([]);
     setValidationResults([]);
     setGameResult(null);
+    setIsFlipped(false);
     localStorage.removeItem('gameState');
   };
 
