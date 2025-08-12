@@ -440,12 +440,24 @@ class TMDbService {
 
   async getPopularActors(): Promise<Actor[]> {
     try {
-      // Get popular actors from multiple pages to have more options
-      const page1 = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: "1" });
-      const page2 = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: "2" });
-      const page3 = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: "3" });
+      // Get popular actors from many more pages to have much larger pool
+      // TMDB popular endpoint typically returns 20 actors per page
+      const pages = [];
+      const totalPages = 10; // Get 200 actors instead of 60
       
-      const allResults = [...page1.results, ...page2.results, ...page3.results];
+      console.log(`Fetching ${totalPages} pages of popular actors (${totalPages * 20} total)...`);
+      
+      for (let i = 1; i <= totalPages; i++) {
+        const page = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: i.toString() });
+        pages.push(page);
+        
+        // Add small delay between API calls to be respectful
+        if (i < totalPages) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+      
+      const allResults = pages.flatMap(page => page.results);
       
       const actors = allResults
         .filter(person => person.known_for_department === "Acting")
@@ -456,9 +468,9 @@ class TMDbService {
           known_for_department: person.known_for_department,
         }));
 
-      console.log(`Found ${actors.length} popular actors, applying career activity filtering...`);
+      console.log(`Found ${actors.length} actors from ${totalPages} pages, applying career activity filtering...`);
       
-      // First filter by career activity (post-1980)
+      // First filter by career activity (post-1980) and living status
       const careerFilteredActors = await this.filterActorsByCareerActivity(actors);
       
       console.log("Applying genre filtering to career-filtered actors...");
@@ -466,8 +478,9 @@ class TMDbService {
       // Then apply genre filtering to exclude documentary/animation-only actors  
       const finalFilteredActors = await this.filterActorsByGenre(careerFilteredActors);
       console.log(`Final filtered actors: ${finalFilteredActors.length}`);
+      console.log(`Actor pool diversity: ${finalFilteredActors.map(a => a.name).slice(0, 10).join(', ')}...`);
       
-      return finalFilteredActors.length > 0 ? finalFilteredActors : careerFilteredActors; // Fallback to career-filtered if genre filtering is too restrictive
+      return finalFilteredActors.length > 10 ? finalFilteredActors : careerFilteredActors; // Fallback to career-filtered if genre filtering is too restrictive
     } catch (error) {
       console.error("Error getting popular actors:", error);
       return [];
@@ -482,8 +495,10 @@ class TMDbService {
         return null;
       }
 
-      // Pick two random actors
+      // Pick two random actors from different parts of the pool for more diversity
       const shuffled = actors.sort(() => 0.5 - Math.random());
+      console.log(`Selecting from pool of ${actors.length} qualified actors`);
+      
       return {
         actor1: shuffled[0],
         actor2: shuffled[1],

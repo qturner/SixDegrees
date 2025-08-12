@@ -16,6 +16,7 @@ Hints Toggle Feature: Users can now toggle between both hints after using them -
 Mobile Responsive Design: Full mobile optimization with stacked layouts, touch-friendly buttons, proper viewport settings, and mobile-specific CSS improvements (August 2025).
 Data Quality Enhancement: Fixed hint system to filter movies by actor death dates, ensuring deceased actors only show movies from their actual career periods (August 2025).
 Actor Selection Update: Enhanced filtering to exclude deceased actors from daily challenges, focusing on living actors for better game relevance (August 2025).
+Actor Pool Expansion: Increased actor pool from 60 to 200 actors (10 pages vs 3 pages) to dramatically improve challenge diversity and reduce repetition (August 2025).
 
 # System Architecture
 
