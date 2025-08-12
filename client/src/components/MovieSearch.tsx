@@ -36,12 +36,16 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
 
   const handleInputChange = (value: string) => {
     setDisplayValue(value);
-    if (value.length > 2 && movies.length > 0) {
+  };
+
+  // Open dropdown when we have results and input is long enough
+  useEffect(() => {
+    if (displayValue.length > 2 && movies.length > 0) {
       setOpen(true);
-    } else {
+    } else if (displayValue.length <= 2) {
       setOpen(false);
     }
-  };
+  }, [movies, displayValue]);
 
   const formatYear = (date: string | undefined) => {
     if (!date) return "";

@@ -36,12 +36,16 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
 
   const handleInputChange = (value: string) => {
     setDisplayValue(value);
-    if (value.length > 2 && actors.length > 0) {
+  };
+
+  // Open dropdown when we have results and input is long enough
+  useEffect(() => {
+    if (displayValue.length > 2 && actors.length > 0) {
       setOpen(true);
-    } else {
+    } else if (displayValue.length <= 2) {
       setOpen(false);
     }
-  };
+  }, [actors, displayValue]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
