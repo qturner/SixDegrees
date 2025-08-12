@@ -98,7 +98,7 @@ class TMDbService {
         include_adult: "false",
       });
 
-      return response.results
+      const actors = response.results
         .filter(person => person.known_for_department === "Acting")
         .map(person => ({
           id: person.id,
@@ -106,6 +106,9 @@ class TMDbService {
           profile_path: person.profile_path,
           known_for_department: person.known_for_department,
         }));
+
+      // Return top 20 results to keep it manageable
+      return actors.slice(0, 20);
     } catch (error) {
       console.error("Error searching actors:", error);
       return [];
@@ -119,15 +122,23 @@ class TMDbService {
       const response = await this.makeRequest<TMDbResponse<TMDbMovie>>("/search/movie", {
         query: query.trim(),
         include_adult: "false",
+        "primary_release_date.gte": "1970-01-01", // Only movies from 1970 onwards
       });
 
-      return response.results.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        release_date: movie.release_date,
-        poster_path: movie.poster_path,
-        overview: movie.overview,
-      }));
+      return response.results
+        .filter(movie => {
+          // Additional filter to ensure movies are from 1970+
+          if (!movie.release_date) return false;
+          const releaseYear = new Date(movie.release_date).getFullYear();
+          return releaseYear >= 1970;
+        })
+        .map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          release_date: movie.release_date,
+          poster_path: movie.poster_path,
+          overview: movie.overview,
+        }));
     } catch (error) {
       console.error("Error searching movies:", error);
       return [];
@@ -154,12 +165,19 @@ class TMDbService {
     try {
       const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
       
-      return response.cast.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        release_date: movie.release_date,
-        poster_path: movie.poster_path,
-      }));
+      return response.cast
+        .filter(movie => {
+          // Only include movies from 1970 onwards
+          if (!movie.release_date) return false;
+          const releaseYear = new Date(movie.release_date).getFullYear();
+          return releaseYear >= 1970;
+        })
+        .map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          release_date: movie.release_date,
+          poster_path: movie.poster_path,
+        }));
     } catch (error) {
       console.error("Error getting actor movies:", error);
       return [];
@@ -178,9 +196,14 @@ class TMDbService {
 
   async getPopularActors(): Promise<Actor[]> {
     try {
-      const response = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular");
+      // Get popular actors from multiple pages to have more options
+      const page1 = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: "1" });
+      const page2 = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: "2" });
+      const page3 = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: "3" });
       
-      return response.results
+      const allResults = [...page1.results, ...page2.results, ...page3.results];
+      
+      return allResults
         .filter(person => person.known_for_department === "Acting")
         .map(person => ({
           id: person.id,

@@ -5,6 +5,7 @@ This is a React-based "6 Degrees of Separation" game application that challenges
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+Content filtering: Only include actors and movies from 1970 onwards for more modern, relevant gameplay.
 
 # System Architecture
 
