@@ -167,13 +167,12 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Admin Access Button - Repositioned for mobile */}
-      <div className="fixed top-2 right-2 sm:top-4 sm:right-4 z-50">
+      {/* Admin Access Button - Bottom right */}
+      <div className="fixed bottom-4 right-4 z-50">
         <Link href="/admin-login">
-          <Button variant="outline" size="sm" className="flex items-center gap-1 sm:gap-2 bg-white/90 backdrop-blur-sm shadow-sm text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
-            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Admin</span>
-            <span className="xs:hidden text-xs">A</span>
+          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-sm">
+            <Shield className="h-4 w-4" />
+            Admin
           </Button>
         </Link>
       </div>
