@@ -50,21 +50,14 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
         >
           {gameResult.completed ? (
             <div className="space-y-4">
-              {/* Centered congratulations message */}
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
+              {/* Congratulations message with share button */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
                   <Trophy className="w-6 h-6 mr-2" />
                   <div className="text-lg font-semibold text-white">
                     Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
                   </div>
                 </div>
-              </div>
-              
-              {/* Bottom row with message and share button */}
-              <div className="flex items-center justify-between">
-                <AlertDescription>
-                  <div>{gameResult.message}</div>
-                </AlertDescription>
                 
                 <Button
                   onClick={handleShare}
@@ -75,6 +68,13 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
                   <Share className="w-4 h-4 mr-2" />
                   Share Victory
                 </Button>
+              </div>
+              
+              {/* Bottom row with message */}
+              <div>
+                <AlertDescription>
+                  <div>{gameResult.message}</div>
+                </AlertDescription>
               </div>
             </div>
           ) : (
