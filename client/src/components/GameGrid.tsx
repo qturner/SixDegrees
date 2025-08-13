@@ -54,6 +54,26 @@ export default function GameGrid({
       actorId: actor.id,
       actorName: actor.name,
     });
+
+    // Validate the connection when both actor and movie are selected
+    const connection = connections[index];
+    if (connection?.movieId) {
+      setValidatingIndex(index);
+
+      const previousActorId = index === 0 ? challenge.startActorId : connections[index - 1]?.actorId;
+      const nextActorId = index === connections.length - 1 ? challenge.endActorId : connections[index + 1]?.actorId;
+
+      // Use setTimeout to ensure state updates complete before validation
+      setTimeout(() => {
+        validateConnectionMutation.mutate({
+          index,
+          actorId: actor.id,
+          movieId: connection.movieId,
+          previousActorId,
+          nextActorId,
+        });
+      }, 10);
+    }
   };
 
   const handleMovieSelect = (index: number, movie: any) => {
@@ -67,33 +87,31 @@ export default function GameGrid({
         actorId: challenge.endActorId,
         actorName: challenge.endActorName,
       });
-    } else {
-      onConnectionUpdate(index, {
-        movieId: movie.id,
-        movieTitle: movie.title,
-      });
-    }
-
-    // Validate the connection when both actor and movie are selected
-    const connection = connections[index];
-    const actorId = isLastConnection ? challenge.endActorId : connection?.actorId;
-    
-    if (actorId) {
-      setValidatingIndex(index);
       
+      // Validate immediately for last connection since actor is set automatically
+      setValidatingIndex(index);
       const previousActorId = index === 0 ? challenge.startActorId : connections[index - 1]?.actorId;
-      const nextActorId = index === connections.length - 1 ? challenge.endActorId : connections[index + 1]?.actorId;
-
-      // Use setTimeout to ensure state updates complete before validation
+      
       setTimeout(() => {
         validateConnectionMutation.mutate({
           index,
-          actorId: actorId,
+          actorId: challenge.endActorId,
           movieId: movie.id,
           previousActorId,
-          nextActorId,
         });
       }, 10);
+    } else {
+      // For non-last connections, just update the movie and clear the actor
+      // This prevents validation with mismatched movie/actor pairs
+      onConnectionUpdate(index, {
+        movieId: movie.id,
+        movieTitle: movie.title,
+        actorId: 0, // Clear actor so user must select new one
+        actorName: "", // Clear actor name
+      });
+      
+      // Clear any existing validation result since movie changed
+      onValidationResult(index, null);
     }
   };
 
