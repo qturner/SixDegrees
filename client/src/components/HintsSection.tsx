@@ -233,12 +233,12 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               disabled={(hintsRemaining <= 0 && !startActorHint) || hintMutation.isPending}
               variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
               className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 ${
-                startActorHint && activeHintType === 'start' ? 'text-white' : ''
+                startActorHint ? 'text-white' : ''
               }`}
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
-                <span className={`truncate ${startActorHint && activeHintType === 'start' ? 'text-white' : ''}`}>
+                <span className={`truncate ${startActorHint ? 'text-white' : ''}`}>
                   {startActorHint ? `Show ${dailyChallenge.startActorName} hint` : `Hint for ${dailyChallenge.startActorName}`}
                 </span>
               )}
@@ -248,12 +248,12 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               disabled={(hintsRemaining <= 0 && !endActorHint) || hintMutation.isPending}
               variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
               className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 ${
-                endActorHint && activeHintType === 'end' ? 'text-white' : ''
+                endActorHint ? 'text-white' : ''
               }`}
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
-                <span className={`truncate ${endActorHint && activeHintType === 'end' ? 'text-white' : ''}`}>
+                <span className={`truncate ${endActorHint ? 'text-white' : ''}`}>
                   {endActorHint ? `Show ${dailyChallenge.endActorName} hint` : `Hint for ${dailyChallenge.endActorName}`}
                 </span>
               )}
