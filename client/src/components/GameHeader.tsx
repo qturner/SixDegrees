@@ -133,16 +133,16 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                 <img
                   src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
                   alt={displayChallenge.startActorName}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 mr-3 sm:mr-4"
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 mr-3 sm:mr-4"
                 />
               ) : (
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0 mr-3 sm:mr-4">
-                  <span className="text-base font-medium text-white">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0 mr-3 sm:mr-4">
+                  <span className="text-lg font-medium text-white">
                     {displayChallenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </span>
                 </div>
               )}
-              <span className="truncate flex-1 text-center sm:text-left">{displayChallenge.startActorName}</span>
+              <span className="truncate flex-1 text-center">{displayChallenge.startActorName}</span>
             </div>
             <div className="text-xl sm:text-2xl text-muted-light rotate-90 sm:rotate-0 transition-transform duration-300">
               <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -152,16 +152,16 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                 <img
                   src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
                   alt={displayChallenge.endActorName}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 mr-3 sm:mr-4"
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 mr-3 sm:mr-4"
                 />
               ) : (
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0 mr-3 sm:mr-4">
-                  <span className="text-base font-medium text-white">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0 mr-3 sm:mr-4">
+                  <span className="text-lg font-medium text-white">
                     {displayChallenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </span>
                 </div>
               )}
-              <span className="truncate flex-1 text-center sm:text-left">{displayChallenge.endActorName}</span>
+              <span className="truncate flex-1 text-center">{displayChallenge.endActorName}</span>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 text-body-sm">
