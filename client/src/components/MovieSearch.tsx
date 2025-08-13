@@ -55,11 +55,8 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
   };
 
   const handleFocus = () => {
-    // Immediately make input ready for typing and trigger search if there's existing content
-    if (displayValue.length > 2) {
-      setSearchQuery(displayValue);
-      setOpen(true);
-    }
+    // Just ensure input is ready for typing - no automatic search
+    // This fixes the double-click issue without triggering unwanted searches
   };
 
   // Open dropdown when we have search results
