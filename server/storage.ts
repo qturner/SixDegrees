@@ -80,6 +80,8 @@ export class DatabaseStorage implements IStorage {
       ? [challenge[0].startActorId.toString(), challenge[0].endActorId.toString()]
       : [];
     
+
+    
     const totalAttempts = attempts.length;
     const completedAttempts = attempts.filter(a => a.completed).length;
     const completionRate = totalAttempts > 0 ? (completedAttempts / totalAttempts) * 100 : 0;
@@ -114,9 +116,10 @@ export class DatabaseStorage implements IStorage {
               });
             }
             // Count actors (excluding start/end actors which are the same for everyone)
-            if (connection.actorId && connection.actorName && !excludedActorIds.includes(connection.actorId)) {
-              const existing = actorUsage.get(connection.actorId);
-              actorUsage.set(connection.actorId, {
+            const actorIdStr = connection.actorId.toString();
+            if (connection.actorId && connection.actorName && !excludedActorIds.includes(actorIdStr)) {
+              const existing = actorUsage.get(actorIdStr);
+              actorUsage.set(actorIdStr, {
                 name: connection.actorName,
                 count: (existing?.count || 0) + 1
               });
