@@ -12,6 +12,69 @@ let challengeCreationPromise: Promise<any> | null = null;
 let lastChallengeDate: string | null = null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Force reset daily challenge (used by cron job and admin)
+  app.post("/api/daily-challenge", async (req, res) => {
+    try {
+      const { date, forceNew } = req.body;
+      const today = date || new Date().toISOString().split('T')[0];
+      
+      if (forceNew) {
+        console.log(`Force generating new challenge for ${today}`);
+        // Delete existing challenge if it exists
+        const existingChallenge = await storage.getDailyChallenge(today);
+        if (existingChallenge) {
+          console.log(`Deleting existing challenge: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
+          await storage.deleteDailyChallenge(today);
+        }
+        
+        // Generate new challenge
+        const actors = await gameLogicService.generateDailyActors();
+        if (!actors) {
+          return res.status(500).json({ message: "Unable to generate daily challenge" });
+        }
+
+        const newChallenge = await storage.createDailyChallenge({
+          date: today,
+          startActorId: actors.actor1.id,
+          startActorName: actors.actor1.name,
+          startActorProfilePath: actors.actor1.profile_path,
+          endActorId: actors.actor2.id,
+          endActorName: actors.actor2.name,
+          endActorProfilePath: actors.actor2.profile_path,
+          hintsUsed: 0,
+        });
+        
+        console.log(`Force-created new challenge for ${today}: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
+        return res.json(newChallenge);
+      }
+      
+      // Regular generation logic (same as GET)
+      let challenge = await storage.getDailyChallenge(today);
+      if (!challenge) {
+        const actors = await gameLogicService.generateDailyActors();
+        if (!actors) {
+          return res.status(500).json({ message: "Unable to generate daily challenge" });
+        }
+
+        challenge = await storage.createDailyChallenge({
+          date: today,
+          startActorId: actors.actor1.id,
+          startActorName: actors.actor1.name,
+          startActorProfilePath: actors.actor1.profile_path,
+          endActorId: actors.actor2.id,
+          endActorName: actors.actor2.name,
+          endActorProfilePath: actors.actor2.profile_path,
+          hintsUsed: 0,
+        });
+      }
+      
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error in POST daily challenge:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Get today's daily challenge
   app.get("/api/daily-challenge", async (req, res) => {
     try {
