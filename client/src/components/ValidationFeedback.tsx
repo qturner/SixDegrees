@@ -102,19 +102,24 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
               </div>
             </div>
           ) : (
-            <div className="flex items-center">
+            <div className={gameResult.valid ? "flex items-center" : "flex justify-center items-center"}>
               {gameResult.valid ? (
-                <CheckCircle className="w-4 h-4 mr-3" />
-              ) : (
-                <XCircle className="w-4 h-4 mr-3" />
-              )}
-              <div>
-                <AlertDescription>
-                  <div className={gameResult.valid ? "" : "text-white"}>
-                    {gameResult.valid ? gameResult.message : "Try harder you bum"}
+                <>
+                  <CheckCircle className="w-4 h-4 mr-3" />
+                  <div>
+                    <AlertDescription>
+                      <div>{gameResult.message}</div>
+                    </AlertDescription>
                   </div>
-                </AlertDescription>
-              </div>
+                </>
+              ) : (
+                <div className="flex items-center">
+                  <XCircle className="w-4 h-4 mr-3" />
+                  <AlertDescription>
+                    <div className="text-white font-medium">Try harder you bum</div>
+                  </AlertDescription>
+                </div>
+              )}
             </div>
           )}
         </Alert>
