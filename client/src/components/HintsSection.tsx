@@ -238,7 +238,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
-                <span className="truncate">
+                <span className={`truncate ${startActorHint && activeHintType === 'start' ? 'text-white' : ''}`}>
                   {startActorHint ? `Show ${dailyChallenge.startActorName} hint` : `Hint for ${dailyChallenge.startActorName}`}
                 </span>
               )}
@@ -253,7 +253,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
-                <span className="truncate">
+                <span className={`truncate ${endActorHint && activeHintType === 'end' ? 'text-white' : ''}`}>
                   {endActorHint ? `Show ${dailyChallenge.endActorName} hint` : `Hint for ${dailyChallenge.endActorName}`}
                 </span>
               )}
