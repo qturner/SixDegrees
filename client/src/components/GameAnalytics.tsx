@@ -46,7 +46,7 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
   return (
     <Card className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="text-lg flex items-center justify-center gap-2">
           <Users className="h-5 w-5 text-blue-600" />
           Today's Challenge Stats
         </CardTitle>
