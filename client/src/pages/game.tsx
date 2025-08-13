@@ -11,6 +11,7 @@ import ValidationFeedback from "@/components/ValidationFeedback";
 import { HintsSection } from "@/components/HintsSection";
 import GameAnalytics from "@/components/GameAnalytics";
 import { AboutModal } from "@/components/AboutModal";
+import { ContactModal } from "@/components/ContactModal";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 
 // Helper functions for localStorage persistence
@@ -51,6 +52,7 @@ export default function Game() {
   const [gameResult, setGameResult] = useState<ValidationResult | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [gameStateInitialized, setGameStateInitialized] = useState(false);
 
   const { data: challenge, isLoading } = useQuery<DailyChallenge>({
@@ -230,7 +232,13 @@ export default function Game() {
             >
               About
             </button>
-            <a href="#" className="hover:text-game-blue transition-all duration-200">Contact</a>
+            <button 
+              onClick={() => setIsContactModalOpen(true)}
+              className="hover:text-game-blue transition-all duration-200 cursor-pointer"
+              data-testid="button-contact"
+            >
+              Contact
+            </button>
           </div>
         </footer>
       </main>
@@ -238,6 +246,11 @@ export default function Game() {
       <AboutModal 
         open={isAboutModalOpen} 
         onOpenChange={setIsAboutModalOpen} 
+      />
+      
+      <ContactModal 
+        open={isContactModalOpen} 
+        onOpenChange={setIsContactModalOpen} 
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface AboutModalProps {
   open: boolean;
@@ -8,11 +8,14 @@ interface AboutModalProps {
 export function AboutModal({ open, onOpenChange }: AboutModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-4 bg-white dark:bg-gray-800 border-2 border-game-border rounded-lg">
+      <DialogContent className="max-w-md mx-auto my-auto bg-white dark:bg-gray-800 border-2 border-game-border rounded-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
         <DialogHeader>
           <DialogTitle className="text-game-primary text-xl font-bold text-center">
             About Six Degrees
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Learn about the origins of the Six Degrees of Separation game
+          </DialogDescription>
         </DialogHeader>
         <div className="p-4 text-gray-700 dark:text-gray-300 leading-relaxed">
           <p>
