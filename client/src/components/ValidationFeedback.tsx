@@ -116,7 +116,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
                 <div className="flex items-center">
                   <XCircle className="w-4 h-4 mr-3" />
                   <AlertDescription>
-                    <div className="text-white font-medium">Try harder you bum</div>
+                    <div className="text-white font-medium text-[17px]">Try harder you bum</div>
                   </AlertDescription>
                 </div>
               )}
