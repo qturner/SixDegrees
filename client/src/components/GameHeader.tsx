@@ -45,7 +45,33 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-game-primary mb-2">Six Degrees of Separation</h1>
+          <div className="flex items-center justify-center mb-3">
+            <svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" className="mr-3">
+              <defs>
+                <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style={{stopColor: '#667eea', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: '#764ba2', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              
+              {/* Chain of hexagons */}
+              <polygon points="5,20 10,12 20,12 25,20 20,28 10,28" fill="url(#hexGrad)" opacity="0.9"/>
+              <polygon points="20,20 25,12 35,12 40,20 35,28 25,28" fill="url(#hexGrad)" opacity="0.8"/>
+              <polygon points="35,20 40,12 50,12 55,20 50,28 40,28" fill="url(#hexGrad)" opacity="0.7"/>
+              <polygon points="50,20 55,12 65,12 70,20 65,28 55,28" fill="url(#hexGrad)" opacity="0.6"/>
+              <polygon points="65,20 70,12 80,12 85,20 80,28 70,28" fill="url(#hexGrad)" opacity="0.5"/>
+              <polygon points="80,20 85,12 95,12 100,20 95,28 85,28" fill="url(#hexGrad)" opacity="0.4"/>
+              
+              {/* Numbers */}
+              <text x="15" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">1</text>
+              <text x="30" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">2</text>
+              <text x="45" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">3</text>
+              <text x="60" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">4</text>
+              <text x="75" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">5</text>
+              <text x="90" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">6</text>
+            </svg>
+            <h1 className="text-2xl sm:text-3xl font-bold text-game-primary">Six Degrees of Separation</h1>
+          </div>
           <p className="text-gray-600 text-base sm:text-lg">Connect two actors through movies in 6 moves or less</p>
           <div className="mt-3 sm:mt-4 text-sm text-gray-500">
             <Calendar className="inline-block w-4 h-4 mr-2" />
