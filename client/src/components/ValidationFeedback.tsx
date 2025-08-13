@@ -24,18 +24,17 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
       const shareData = {
         title: "6 Degrees of Separation",
         text,
-        url: window.location.href,
       };
 
       try {
         if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
           await navigator.share(shareData);
         } else if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(`${text} ${window.location.href}`);
+          await navigator.clipboard.writeText(text);
         } else {
           // Fallback: create a temporary textarea for copying
           const textArea = document.createElement('textarea');
-          textArea.value = `${text} ${window.location.href}`;
+          textArea.value = text;
           document.body.appendChild(textArea);
           textArea.select();
           document.execCommand('copy');
@@ -46,7 +45,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
         // Fallback to manual copy
         try {
           const textArea = document.createElement('textarea');
-          textArea.value = `${text} ${window.location.href}`;
+          textArea.value = text;
           document.body.appendChild(textArea);
           textArea.select();
           document.execCommand('copy');
@@ -90,7 +89,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
                   onClick={handleShare}
                   variant="outline"
                   size="sm"
-                  className="border-game-success text-game-success hover:bg-game-success hover:text-white"
+                  className="border-game-success text-game-success hover:bg-gray-100 hover:text-gray-800"
                 >
                   <Share className="w-4 h-4 mr-2" />
                   Share Victory
