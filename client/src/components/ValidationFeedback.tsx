@@ -36,7 +36,6 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
   return (
     <div className="space-y-4 mb-8">
       {/* Individual connection validation is now shown inline with icons */}
-
       {/* Game completion result */}
       {gameResult && (
         <Alert
@@ -54,7 +53,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
               <div className="flex justify-center">
                 <div className="flex items-center">
                   <Trophy className="w-5 h-5 mr-2" />
-                  <div className="text-base font-semibold text-white">
+                  <div className="font-semibold text-white text-center text-[15px]">
                     Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
                   </div>
                 </div>
