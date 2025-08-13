@@ -165,12 +165,8 @@ export default function GameGrid({
           let previousActorName;
           if (index === 0) {
             previousActorName = challenge.startActorName;
-          } else if (isLastConnection) {
-            // For the final connection, get the actor from the connection before the previous one
-            // because the immediate previous connection has the target actor
-            const actualPrevConnection = connections[index - 2];
-            previousActorName = actualPrevConnection?.actorName || 'previous actor';
           } else {
+            // For all other connections (including the last one), get the actor from the previous connection
             const prevConnection = connections[index - 1];
             previousActorName = prevConnection?.actorName || 'previous actor';
           }
