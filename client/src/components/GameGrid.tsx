@@ -84,13 +84,16 @@ export default function GameGrid({
       const previousActorId = index === 0 ? challenge.startActorId : connections[index - 1]?.actorId;
       const nextActorId = index === connections.length - 1 ? challenge.endActorId : connections[index + 1]?.actorId;
 
-      validateConnectionMutation.mutate({
-        index,
-        actorId: actorId,
-        movieId: movie.id,
-        previousActorId,
-        nextActorId,
-      });
+      // Use setTimeout to ensure state updates complete before validation
+      setTimeout(() => {
+        validateConnectionMutation.mutate({
+          index,
+          actorId: actorId,
+          movieId: movie.id,
+          previousActorId,
+          nextActorId,
+        });
+      }, 10);
     }
   };
 

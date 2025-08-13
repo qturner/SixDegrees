@@ -653,8 +653,26 @@ class TMDbService {
 
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {
     try {
+      console.log(`Validating actor ${actorId} in movie ${movieId}`);
       const credits = await this.getMovieCredits(movieId);
-      const isValid = credits.some(actor => actor.id === actorId);
+      console.log(`Found ${credits.length} cast members for movie ${movieId}`);
+      
+      // Log first few cast members to debug
+      const firstFew = credits.slice(0, 5).map(actor => `${actor.name}(${actor.id})`);
+      console.log(`First cast members: ${firstFew.join(', ')}`);
+      
+      const isValid = credits.some(actor => {
+        const match = actor.id === actorId;
+        if (match) {
+          console.log(`✓ Found matching actor: ${actor.name} (${actor.id})`);
+        }
+        return match;
+      });
+      
+      if (!isValid) {
+        const actorIds = credits.map(a => a.id);
+        console.log(`✗ Actor ${actorId} not found in cast. Available actor IDs: [${actorIds.slice(0, 10).join(', ')}...]`);
+      }
       
       return isValid;
     } catch (error) {
