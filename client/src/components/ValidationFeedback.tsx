@@ -21,20 +21,17 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
   const handleShare = async () => {
     if (gameResult?.completed) {
       const text = `I just completed today's 6 Degrees of Separation challenge in ${gameResult.moves} moves! Can you do better?`;
-      const shareData = {
-        title: "6 Degrees of Separation",
-        text,
-      };
 
       try {
-        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-          await navigator.share(shareData);
-        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        // Try clipboard first since it's cleaner
+        if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(text);
         } else {
           // Fallback: create a temporary textarea for copying
           const textArea = document.createElement('textarea');
           textArea.value = text;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-9999px';
           document.body.appendChild(textArea);
           textArea.select();
           document.execCommand('copy');
@@ -42,10 +39,12 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
         }
       } catch (error) {
         console.error('Error sharing:', error);
-        // Fallback to manual copy
+        // Final fallback to manual copy
         try {
           const textArea = document.createElement('textarea');
           textArea.value = text;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-9999px';
           document.body.appendChild(textArea);
           textArea.select();
           document.execCommand('copy');
