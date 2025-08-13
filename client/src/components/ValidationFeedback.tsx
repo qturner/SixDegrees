@@ -110,7 +110,9 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
               )}
               <div>
                 <AlertDescription>
-                  <div>{gameResult.valid ? gameResult.message : "Try harder you bum"}</div>
+                  <div className={gameResult.valid ? "" : "text-white"}>
+                    {gameResult.valid ? gameResult.message : "Try harder you bum"}
+                  </div>
                 </AlertDescription>
               </div>
             </div>
