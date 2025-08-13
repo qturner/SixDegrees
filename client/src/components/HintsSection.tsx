@@ -234,11 +234,6 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
                     </div>
                   ))}
                 </div>
-                {activeHint.hintsRemaining > 0 && (
-                  <p className="text-sm text-muted-foreground mt-3">
-                    You have {activeHint.hintsRemaining} hint{activeHint.hintsRemaining !== 1 ? 's' : ''} remaining today.
-                  </p>
-                )}
               </CardContent>
             </Card>
           )}
