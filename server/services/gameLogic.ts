@@ -60,10 +60,10 @@ class GameLogicService {
       };
     }
 
-    if (connections.length > 5) {
+    if (connections.length > 6) {
       return {
         valid: false,
-        message: "Too many connections. Maximum is 5 moves.",
+        message: "Too many connections. Maximum is 6 moves.",
       };
     }
 
