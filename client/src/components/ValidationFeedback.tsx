@@ -54,7 +54,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
               <div className="text-center">
                 <div className="flex items-center justify-center">
                   <Trophy className="w-5 h-5 mr-2" />
-                  <div className="text-base font-semibold text-white">
+                  <div className="text-base font-semibold text-white text-center">
                     Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
                   </div>
                 </div>
