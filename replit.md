@@ -23,6 +23,7 @@ Enhanced Hint Movie Selection: Upgraded hint algorithm to prioritize popular, re
 Admin Authentication System: Complete PostgreSQL-based admin system with secure bcrypt authentication, JWT sessions, and manual actor selection with real-time TMDB search functionality - reset dialogs remain open until explicit user action while set challenge dialogs auto-dismiss after confirmation (August 2025).
 Anonymous Analytics System: Added comprehensive player statistics tracking showing attempt counts, success rates, best completion moves, and average moves for daily challenges - analytics appear for users after validation attempts and provide full admin dashboard with charts and insights while maintaining complete user privacy (August 2025).
 User-Facing Analytics Enhancement: Added most-used movies and actors tracking in daily challenge analytics, with intelligent filtering to exclude required start/end actors from popularity counts, showing only intermediate connection strategies used by successful players (August 2025).
+Failed Attempt Tracking: Fixed analytics to properly track both successful AND failed validation attempts, providing accurate completion rates instead of showing 100% success - now records all user attempts regardless of validation outcome for honest player statistics (August 2025).
 
 # System Architecture
 

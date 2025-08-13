@@ -311,6 +311,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Validate complete game chain
   app.post("/api/validate-game", async (req, res) => {
+    let validationResult = null;
+    let connections = [];
+    
     try {
       const parseResult = gameConnectionSchema.safeParse(req.body);
       if (!parseResult.success) {
@@ -320,16 +323,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const { connections, startActorId, endActorId } = parseResult.data;
+      connections = parseResult.data.connections;
+      const { startActorId, endActorId } = parseResult.data;
 
-      const result = await gameLogicService.validateCompleteChain({
-        startActorId,
-        endActorId,
-        connections,
-      });
+      try {
+        validationResult = await gameLogicService.validateCompleteChain({
+          startActorId,
+          endActorId,
+          connections,
+        });
+      } catch (validationError) {
+        console.error("Validation error:", validationError);
+        // Create a failed result even if validation throws an error
+        validationResult = {
+          valid: false,
+          completed: false,
+          message: "Validation failed due to an error"
+        };
+      }
 
-      // If the game is completed, save the attempt
-      if (result.completed) {
+      // Save ALL attempts (both completed and failed) - ALWAYS save, even if validation had errors
+      try {
         const today = new Date().toISOString().split('T')[0];
         const challenge = await storage.getDailyChallenge(today);
         
@@ -337,13 +351,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.createGameAttempt({
             challengeId: challenge.id,
             moves: connections.length,
-            completed: true,
+            completed: validationResult.completed || false,
             connections: JSON.stringify(connections),
           });
         }
+      } catch (dbError) {
+        console.error("Error saving game attempt:", dbError);
+        // Don't let database save errors affect the validation response
       }
 
-      res.json(result);
+      res.json(validationResult);
     } catch (error) {
       console.error("Error validating game:", error);
       res.status(500).json({ message: "Internal server error" });
