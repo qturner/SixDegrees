@@ -13,6 +13,7 @@ Bug fixes: Critical race condition in daily challenge generation resolved (Augus
 UI Enhancement: Compact validation feedback using checkmarks/X icons instead of large alert boxes (August 2025).
 Daily Reset: Automated daily challenge reset at midnight EST with proper timezone handling (August 2025).
 Hints Toggle Feature: Users can now toggle between both hints after using them - both hints remain accessible instead of the first disappearing (August 2025).
+Unrestricted Hints Access: Removed all hint usage restrictions - users can view daily hints anytime without 400 errors, ensuring hints remain permanently accessible (August 2025).
 Mobile Responsive Design: Full mobile optimization with stacked layouts, touch-friendly buttons, proper viewport settings, and mobile-specific CSS improvements (August 2025).
 Data Quality Enhancement: Fixed hint system to filter movies by actor death dates, ensuring deceased actors only show movies from their actual career periods (August 2025).
 Actor Selection Update: Enhanced filtering to exclude deceased actors from daily challenges, focusing on living actors for better game relevance (August 2025).

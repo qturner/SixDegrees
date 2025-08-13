@@ -213,28 +213,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "No challenge found for today" });
       }
 
-      if ((challenge.hintsUsed || 0) >= 2) {
-        return res.status(400).json({ message: "All hints have been used for today" });
-      }
+      // Allow users to access hints anytime - no restriction on viewing hints
 
       const actorId = actorType === 'start' ? challenge.startActorId : challenge.endActorId;
       const actorName = actorType === 'start' ? challenge.startActorName : challenge.endActorName;
       
       const movies = await tmdbService.getActorHintMovies(actorId, 5);
       
-      // Store the hint content and update hints used count
-      const hintContent = JSON.stringify(movies);
-      const updatedChallenge = await storage.updateDailyChallengeHints(
-        challenge.id, 
-        (challenge.hintsUsed || 0) + 1,
-        actorType === 'start' ? hintContent : undefined,
-        actorType === 'end' ? hintContent : undefined
-      );
+      // Check if this hint has already been generated and stored
+      const existingHintField = actorType === 'start' ? challenge.startActorHint : challenge.endActorHint;
+      let updatedChallenge = challenge;
+      
+      if (!existingHintField) {
+        // Only increment hint count and store hint if it hasn't been generated before
+        const hintContent = JSON.stringify(movies);
+        updatedChallenge = await storage.updateDailyChallengeHints(
+          challenge.id, 
+          (challenge.hintsUsed || 0) + 1,
+          actorType === 'start' ? hintContent : undefined,
+          actorType === 'end' ? hintContent : undefined
+        );
+      }
       
       res.json({
         actorName,
         movies,
-        hintsRemaining: 2 - (updatedChallenge.hintsUsed || 0),
+        hintsRemaining: Math.max(0, 2 - (updatedChallenge.hintsUsed || 0)),
       });
     } catch (error) {
       console.error("Error getting hint:", error);
