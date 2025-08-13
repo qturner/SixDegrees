@@ -78,16 +78,8 @@ export default function AdminPanel() {
   const [startActorResults, setStartActorResults] = useState<any[]>([]);
   const [endActorResults, setEndActorResults] = useState<any[]>([]);
   
-  // Auto-dismiss dialogs after 1 second
-  useEffect(() => {
-    if (isResetDialogOpen) {
-      const timer = setTimeout(() => {
-        setIsResetDialogOpen(false);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isResetDialogOpen]);
+  // Auto-dismiss only the set challenge dialog after 1 second
+  // Reset dialog remains open until user action
   
   useEffect(() => {
     if (isSetChallengeDialogOpen) {
