@@ -49,26 +49,19 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
           }`}
         >
           {gameResult.completed ? (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {/* Congratulations message */}
               <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Trophy className="w-6 h-6 mr-2" />
-                  <div className="text-lg font-semibold text-white">
+                <div className="flex items-center justify-center">
+                  <Trophy className="w-5 h-5 mr-2" />
+                  <div className="text-base font-semibold text-white">
                     Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
                   </div>
                 </div>
               </div>
               
-              {/* Success message */}
-              <div className="text-center">
-                <AlertDescription>
-                  <div>{gameResult.message}</div>
-                </AlertDescription>
-              </div>
-              
               {/* Share button at bottom center */}
-              <div className="flex justify-center pt-2">
+              <div className="flex justify-center pt-1">
                 <Button
                   onClick={handleShare}
                   variant="outline"
