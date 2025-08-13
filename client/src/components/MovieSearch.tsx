@@ -54,6 +54,14 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
     }
   };
 
+  const handleFocus = () => {
+    // Immediately make input ready for typing and trigger search if there's existing content
+    if (displayValue.length > 2) {
+      setSearchQuery(displayValue);
+      setOpen(true);
+    }
+  };
+
   // Open dropdown when we have search results
   useEffect(() => {
     if (searchQuery && movies.length > 0) {
@@ -73,6 +81,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
           <Input
             value={displayValue}
             onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={handleFocus}
             onKeyPress={handleKeyPress}
             placeholder={placeholder}
             disabled={disabled}
