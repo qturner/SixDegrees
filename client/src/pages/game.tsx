@@ -222,7 +222,6 @@ export default function Game() {
           </div>
           <div className="flex justify-center space-x-6">
             <a href="#" className="hover:text-game-blue transition-all duration-200">About</a>
-            <a href="#" className="hover:text-game-blue transition-all duration-200">Rules</a>
             <a href="#" className="hover:text-game-blue transition-all duration-200">Contact</a>
           </div>
         </footer>
