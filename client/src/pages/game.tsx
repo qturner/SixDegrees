@@ -9,6 +9,7 @@ import GameGrid from "@/components/GameGrid";
 import GameInstructions from "@/components/GameInstructions";
 import ValidationFeedback from "@/components/ValidationFeedback";
 import { HintsSection } from "@/components/HintsSection";
+import GameAnalytics from "@/components/GameAnalytics";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 
 // Helper functions for localStorage persistence
@@ -204,6 +205,12 @@ export default function Game() {
         <ValidationFeedback 
           validationResults={validationResults}
           gameResult={gameResult}
+        />
+        
+        {/* Show analytics after user validates their game */}
+        <GameAnalytics 
+          challengeId={challenge.id}
+          show={gameResult !== null}
         />
         
         <GameInstructions />

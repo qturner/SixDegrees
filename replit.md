@@ -21,6 +21,7 @@ Actor Pool Expansion: Increased actor pool from 60 to 200 actors (10 pages vs 3 
 Mainstream Focus Enhancement: Added sophisticated voice actor detection (60% animated work threshold) and expanded exclusion list to focus on live-action movie stars with post-1990 mainstream appeal (August 2025).
 Enhanced Hint Movie Selection: Upgraded hint algorithm to prioritize popular, recognizable movies while maintaining decade diversity - uses composite scoring based on release year sweet spots (1980-2020), title distinctiveness, and strategic selection from each decade of actor's career (August 2025).
 Admin Authentication System: Complete PostgreSQL-based admin system with secure bcrypt authentication, JWT sessions, and manual actor selection with real-time TMDB search functionality - reset dialogs remain open until explicit user action while set challenge dialogs auto-dismiss after confirmation (August 2025).
+Anonymous Analytics System: Added comprehensive player statistics tracking showing attempt counts, success rates, best completion moves, and average moves for daily challenges - analytics appear for users after validation attempts and provide full admin dashboard with charts and insights while maintaining complete user privacy (August 2025).
 
 # System Architecture
 
