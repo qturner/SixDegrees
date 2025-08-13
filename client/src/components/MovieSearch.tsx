@@ -67,38 +67,27 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
   };
 
   return (
-    <div className="relative">
-      <div className="relative flex">
-        <Input
-          value={displayValue}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyPress={handleKeyPress}
-          onFocus={() => {
-            if (displayValue.length > 2) {
-              setSearchQuery(displayValue);
-              setOpen(true);
-            }
-          }}
-          placeholder={placeholder}
-          disabled={disabled}
-          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
-          data-testid="input-movie-search"
-        />
-        <Button
-          onClick={handleSearch}
-          disabled={disabled || displayValue.length <= 2}
-          className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
-          data-testid="button-movie-search"
-        >
-          <Search className="w-4 h-4" />
-        </Button>
-      </div>
-      
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <div className="absolute inset-0 pointer-events-none" />
-        </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div className="relative flex">
+          <Input
+            value={displayValue}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={placeholder}
+            disabled={disabled}
+            className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
+          />
+          <Button
+            onClick={handleSearch}
+            disabled={disabled || displayValue.length <= 2}
+            className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Search className="w-4 h-4" />
+          </Button>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandList>
             {isLoading && (
@@ -143,8 +132,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
             )}
           </CommandList>
         </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
