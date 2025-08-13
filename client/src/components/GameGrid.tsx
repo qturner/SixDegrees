@@ -138,16 +138,21 @@ export default function GameGrid({
       <div className="space-y-6">
         {connectionSlots.map((connection, index) => {
           const validationResult = validationResults?.[index];
-          let previousActorName;
+          const isLastConnection = index === connectionSlots.length - 1;
           
+          // Calculate previous actor name based on the connection index
+          let previousActorName;
           if (index === 0) {
             previousActorName = challenge.startActorName;
+          } else if (isLastConnection) {
+            // For the final connection, get the actor from the connection before the previous one
+            // because the immediate previous connection has the target actor
+            const actualPrevConnection = connections[index - 2];
+            previousActorName = actualPrevConnection?.actorName || 'previous actor';
           } else {
-            const prevConnection = connections[index - 1]; // Use connections array instead of connectionSlots
+            const prevConnection = connections[index - 1];
             previousActorName = prevConnection?.actorName || 'previous actor';
           }
-          
-          const isLastConnection = index === connectionSlots.length - 1;
           
           return (
             <div key={`connection-${index}`} className="border border-gray-200 rounded-lg p-4 space-y-4">
