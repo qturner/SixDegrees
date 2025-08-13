@@ -656,8 +656,6 @@ class TMDbService {
       const credits = await this.getMovieCredits(movieId);
       const isValid = credits.some(actor => actor.id === actorId);
       
-      // Remove excessive logging for production use
-      
       return isValid;
     } catch (error) {
       console.error("Error validating actor in movie:", error);
