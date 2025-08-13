@@ -74,6 +74,12 @@ export class DatabaseStorage implements IStorage {
   async getChallengeAnalytics(challengeId: string) {
     const attempts = await this.getGameAttemptsByChallenge(challengeId);
     
+    // Get the challenge to know which actors to exclude (start and end actors)
+    const challenge = await db.select().from(dailyChallenges).where(eq(dailyChallenges.id, challengeId)).limit(1);
+    const excludedActorIds = challenge.length > 0 
+      ? [challenge[0].startActorId.toString(), challenge[0].endActorId.toString()]
+      : [];
+    
     const totalAttempts = attempts.length;
     const completedAttempts = attempts.filter(a => a.completed).length;
     const completionRate = totalAttempts > 0 ? (completedAttempts / totalAttempts) * 100 : 0;
@@ -108,7 +114,7 @@ export class DatabaseStorage implements IStorage {
               });
             }
             // Count actors (excluding start/end actors which are the same for everyone)
-            if (connection.actorId && connection.actorName) {
+            if (connection.actorId && connection.actorName && !excludedActorIds.includes(connection.actorId)) {
               const existing = actorUsage.get(connection.actorId);
               actorUsage.set(connection.actorId, {
                 name: connection.actorName,
