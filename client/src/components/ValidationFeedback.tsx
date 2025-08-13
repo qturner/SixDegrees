@@ -68,7 +68,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
       {/* Game completion result */}
       {gameResult && (
         <Alert
-          className={`${
+          className={`card-radius shadow-card transition-all duration-300 ${
             gameResult.valid && gameResult.completed
               ? "bg-game-success bg-opacity-10 border-game-success text-game-success"
               : gameResult.valid
@@ -82,7 +82,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
               <div className="flex justify-center">
                 <div className="flex items-center">
                   <Trophy className="w-5 h-5 mr-2" />
-                  <div className="font-semibold text-white text-center text-[15px]">
+                  <div className="font-semibold text-white text-center text-body">
                     Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
                   </div>
                 </div>
@@ -94,7 +94,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
                   onClick={handleShare}
                   variant="outline"
                   size="sm"
-                  className="border-game-success text-game-success hover:bg-gray-100 hover:text-gray-800"
+                  className="border-game-success text-game-success hover:bg-gray-100 hover:text-gray-800 btn-hover button-radius transition-all duration-200"
                 >
                   <Share className="w-4 h-4 mr-2" />
                   Share Victory

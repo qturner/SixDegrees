@@ -122,14 +122,14 @@ export default function GameGrid({
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-8">
+    <div className="bg-white card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-md sm:spacing-lg mb-8">
       {/* Starting Actor */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-game-primary mb-3 text-center">
+        <h3 className="text-heading-md text-game-primary mb-3 text-center">
           <User className="inline-block w-5 h-5 mr-2" />
           Starting Actor
         </h3>
-        <div className="p-4 bg-game-blue text-white rounded-lg text-center font-medium">
+        <div className="spacing-md bg-game-blue text-white button-radius text-center font-medium transition-all duration-200 hover:shadow-card-hover">
           {challenge.startActorName}
         </div>
       </div>
@@ -155,8 +155,8 @@ export default function GameGrid({
           }
           
           return (
-            <div key={`connection-${index}`} className="border border-gray-200 rounded-lg p-4 space-y-4">
-              <h4 className="text-sm font-medium text-gray-600 text-center">
+            <div key={`connection-${index}`} className="border border-gray-200 input-radius spacing-md space-y-4 transition-all duration-200 hover:border-gray-300 hover:shadow-card">
+              <h4 className="text-body-sm font-medium text-muted text-center">
                 Connection {index + 1} of {connectionSlots.length}
               </h4>
               
@@ -245,11 +245,11 @@ export default function GameGrid({
 
       {/* Target Actor */}
       <div className="mt-6">
-        <h3 className="text-lg font-semibold text-game-primary mb-3 text-center">
+        <h3 className="text-heading-md text-game-primary mb-3 text-center">
           <User className="inline-block w-5 h-5 mr-2" />
           Target Actor
         </h3>
-        <div className="p-4 bg-game-blue text-white rounded-lg text-center font-medium">
+        <div className="spacing-md bg-game-blue text-white button-radius text-center font-medium transition-all duration-200 hover:shadow-card-hover">
           {challenge.endActorName}
         </div>
       </div>
@@ -259,7 +259,7 @@ export default function GameGrid({
         <Button 
           onClick={handleValidateGame}
           disabled={validateGameMutation.isPending || connections.length === 0}
-          className="px-6 py-3 bg-game-blue text-white hover:bg-blue-600"
+          className="px-6 py-3 bg-game-blue text-white hover:bg-blue-600 btn-hover button-radius transition-all duration-200"
         >
           <CheckCircle className="w-4 h-4 mr-2" />
           {validateGameMutation.isPending ? "Validating..." : "Validate Connection"}
@@ -268,7 +268,7 @@ export default function GameGrid({
         <Button 
           onClick={handleReset}
           variant="secondary"
-          className="px-6 py-3 bg-gray-500 text-white hover:bg-gray-600"
+          className="px-6 py-3 bg-gray-500 text-white hover:bg-gray-600 btn-hover button-radius transition-all duration-200"
         >
           <RotateCcw className="w-4 h-4 mr-2" />
           Reset Game

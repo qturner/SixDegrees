@@ -166,15 +166,15 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full card-radius shadow-card hover:shadow-card-hover transition-all duration-300">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-heading-md text-game-primary">
           <Lightbulb className="h-5 w-5 text-yellow-500" />
           Daily Hints
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-body">
           Get movie titles for either actor to help find connections. You have{" "}
-          <Badge variant="secondary">{hintsRemaining} hints remaining</Badge> today.
+          <Badge variant="secondary" className="button-radius">{hintsRemaining} hints remaining</Badge> today.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -185,7 +185,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || hintMutation.isPending}
               variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
-              className="flex-1 text-sm"
+              className="flex-1 text-body-sm btn-hover button-radius transition-all duration-200"
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
@@ -198,7 +198,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || hintMutation.isPending}
               variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
-              className="flex-1 text-sm"
+              className="flex-1 text-body-sm btn-hover button-radius transition-all duration-200"
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
@@ -211,9 +211,9 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
 
           {/* Active Hint Display */}
           {activeHint && (
-            <Card>
+            <Card className="card-radius shadow-card transition-all duration-300">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="text-heading-sm flex items-center gap-2 text-game-primary">
                   <Film className="h-4 w-4" />
                   Movies featuring {activeHint.actorName}
                 </CardTitle>
@@ -223,11 +223,11 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
                   {activeHint.movies.map((movie) => (
                     <div 
                       key={movie.id}
-                      className="p-3 rounded-lg border bg-muted/50"
+                      className="spacing-sm input-radius border bg-muted/50 transition-all duration-200 hover:bg-muted/70 hover:shadow-card"
                     >
-                      <div className="font-medium">{movie.title}</div>
+                      <div className="font-medium text-body-sm">{movie.title}</div>
                       {movie.release_date && (
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-body-sm text-muted-light">
                           ({new Date(movie.release_date).getFullYear()})
                         </div>
                       )}
@@ -239,7 +239,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
           )}
 
           {hintsRemaining === 0 && !activeHint && (
-            <div className="text-center text-muted-foreground py-4">
+            <div className="text-center text-muted py-4 text-body">
               You've used all your daily hints. Come back tomorrow for more!
             </div>
           )}

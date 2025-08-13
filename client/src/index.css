@@ -120,6 +120,52 @@
 
   body {
     @apply font-sans antialiased bg-gray-50 text-foreground;
+    line-height: 1.6;
+  }
+  
+  /* Smooth transitions for all interactive elements */
+  button, [role="button"], input, select, textarea {
+    @apply transition-all duration-200 ease-in-out;
+  }
+  
+  /* Consistent focus states */
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    @apply outline-none ring-2 ring-game-blue ring-offset-2;
+  }
+  
+  /* Standardized border radius */
+  .card-radius {
+    border-radius: 12px;
+  }
+  
+  .button-radius {
+    border-radius: 8px;
+  }
+  
+  .input-radius {
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  /* Standardized spacing utilities */
+  .spacing-xs { @apply p-2; }
+  .spacing-sm { @apply p-3; }
+  .spacing-md { @apply p-4; }
+  .spacing-lg { @apply p-6; }
+  .spacing-xl { @apply p-8; }
+  
+  /* Consistent shadow system */
+  .shadow-card { 
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+  
+  .shadow-card-hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  
+  .shadow-card-focus {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
 }
 
@@ -208,4 +254,57 @@
 
 .bg-game-warning {
   background-color: var(--game-warning);
+}
+
+/* Enhanced button hover states */
+.btn-hover:hover {
+  transform: translateY(-1px);
+  @apply shadow-card-hover;
+}
+
+.btn-hover:active {
+  transform: translateY(0);
+  @apply shadow-card;
+}
+
+/* Typography improvements */
+.text-heading-xl {
+  @apply text-2xl sm:text-3xl md:text-4xl font-bold leading-tight;
+}
+
+.text-heading-lg {
+  @apply text-xl sm:text-2xl md:text-3xl font-semibold leading-tight;
+}
+
+.text-heading-md {
+  @apply text-lg sm:text-xl font-semibold leading-snug;
+}
+
+.text-heading-sm {
+  @apply text-base sm:text-lg font-medium leading-snug;
+}
+
+.text-body-lg {
+  @apply text-base sm:text-lg leading-relaxed;
+}
+
+.text-body {
+  @apply text-sm sm:text-base leading-relaxed;
+}
+
+.text-body-sm {
+  @apply text-xs sm:text-sm leading-normal;
+}
+
+/* Consistent color palette extensions */
+.text-muted {
+  @apply text-gray-600;
+}
+
+.text-muted-light {
+  @apply text-gray-500;
+}
+
+.text-muted-dark {
+  @apply text-gray-700;
 }

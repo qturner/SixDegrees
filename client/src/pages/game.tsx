@@ -170,7 +170,7 @@ export default function Game() {
       {/* Admin Access Button - Bottom right */}
       <div className="fixed bottom-4 right-4 z-50">
         <Link href="/admin-login">
-          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-sm">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200">
             <Shield className="h-4 w-4" />
             Admin
           </Button>
@@ -208,15 +208,15 @@ export default function Game() {
         
         <GameInstructions />
         
-        <footer className="text-center text-gray-500 text-sm mt-12">
+        <footer className="text-center text-muted text-body-sm mt-12">
           <div className="mb-4">
-            <div className="text-game-primary font-medium mb-2">6 Degrees of Separation</div>
+            <div className="text-game-primary font-medium mb-2 text-heading-sm">6 Degrees of Separation</div>
             <div>A new daily challenge connecting Hollywood's finest</div>
           </div>
           <div className="flex justify-center space-x-6">
-            <a href="#" className="hover:text-game-blue transition-colors">About</a>
-            <a href="#" className="hover:text-game-blue transition-colors">Rules</a>
-            <a href="#" className="hover:text-game-blue transition-colors">Contact</a>
+            <a href="#" className="hover:text-game-blue transition-all duration-200">About</a>
+            <a href="#" className="hover:text-game-blue transition-all duration-200">Rules</a>
+            <a href="#" className="hover:text-game-blue transition-all duration-200">Contact</a>
           </div>
         </footer>
       </main>
