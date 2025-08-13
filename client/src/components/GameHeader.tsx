@@ -46,29 +46,30 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
       <div className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         <div className="text-center">
           <div className="flex items-center justify-center mb-3">
-            <svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" className="mr-3">
-              <defs>
-                <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style={{stopColor: '#667eea', stopOpacity: 1}} />
-                  <stop offset="100%" style={{stopColor: '#764ba2', stopOpacity: 1}} />
-                </linearGradient>
-              </defs>
+            <svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" className="mr-4">
+              {/* Network connections */}
+              <line x1="12" y1="8" x2="25" y2="15" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="25" y1="15" x2="38" y2="8" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="12" y1="8" x2="12" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="38" y1="8" x2="38" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="12" y1="25" x2="25" y2="35" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="38" y1="25" x2="25" y2="35" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="25" y1="15" x2="25" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="12" y1="25" x2="25" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="25" y1="25" x2="38" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="8" y1="42" x2="12" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
+              <line x1="42" y1="42" x2="38" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
               
-              {/* Chain of hexagons */}
-              <polygon points="5,20 10,12 20,12 25,20 20,28 10,28" fill="url(#hexGrad)" opacity="0.9"/>
-              <polygon points="20,20 25,12 35,12 40,20 35,28 25,28" fill="url(#hexGrad)" opacity="0.8"/>
-              <polygon points="35,20 40,12 50,12 55,20 50,28 40,28" fill="url(#hexGrad)" opacity="0.7"/>
-              <polygon points="50,20 55,12 65,12 70,20 65,28 55,28" fill="url(#hexGrad)" opacity="0.6"/>
-              <polygon points="65,20 70,12 80,12 85,20 80,28 70,28" fill="url(#hexGrad)" opacity="0.5"/>
-              <polygon points="80,20 85,12 95,12 100,20 95,28 85,28" fill="url(#hexGrad)" opacity="0.4"/>
-              
-              {/* Numbers */}
-              <text x="15" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">1</text>
-              <text x="30" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">2</text>
-              <text x="45" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">3</text>
-              <text x="60" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">4</text>
-              <text x="75" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">5</text>
-              <text x="90" y="22" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">6</text>
+              {/* Network nodes */}
+              <circle cx="12" cy="8" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
+              <circle cx="25" cy="15" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
+              <circle cx="38" cy="8" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
+              <circle cx="12" cy="25" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
+              <circle cx="25" cy="25" r="4" fill="#1e3a8a"/>
+              <circle cx="38" cy="25" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
+              <circle cx="25" cy="35" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
+              <circle cx="8" cy="42" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
+              <circle cx="42" cy="42" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
             </svg>
             <h1 className="text-2xl sm:text-3xl font-bold text-game-primary">Six Degrees of Separation</h1>
           </div>
