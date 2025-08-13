@@ -221,7 +221,7 @@ export default function Game() {
         
         <footer className="text-center text-muted text-body-sm mt-12">
           <div className="mb-4">
-            <div className="text-game-primary font-medium mb-2 text-heading-sm">6 Degrees of Separation</div>
+            <div className="text-game-primary font-medium mb-2 text-heading-sm">Six Degrees of Separation</div>
             <div>A new daily challenge connecting Hollywood's finest</div>
           </div>
           <div className="flex justify-center space-x-6">
