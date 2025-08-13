@@ -446,6 +446,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin set custom challenge
+  app.post("/api/admin/set-challenge", requireAdminAuth, async (req, res) => {
+    try {
+      const { startActorId, startActorName, endActorId, endActorName } = req.body;
+      
+      if (!startActorId || !startActorName || !endActorId || !endActorName) {
+        return res.status(400).json({ message: "All actor fields are required" });
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Delete existing challenge for today
+      await storage.deleteDailyChallenge(today);
+      
+      // Create new challenge with selected actors
+      const challenge = await storage.createDailyChallenge({
+        date: today,
+        startActorId,
+        startActorName,
+        endActorId,
+        endActorName,
+      });
+      
+      console.log(`Admin set custom challenge for ${today}: ${startActorName} to ${endActorName}`);
+      res.json({ message: "Custom challenge set successfully", challenge });
+    } catch (error) {
+      console.error("Admin set challenge error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

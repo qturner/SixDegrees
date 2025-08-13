@@ -4,6 +4,8 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,9 +17,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Shield, RefreshCw, LogOut, Users, Calendar } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Users, Calendar, Search, UserPlus } from "lucide-react";
 
 interface DailyChallenge {
   date: string;
@@ -61,8 +70,15 @@ function useAdminAuth() {
 export default function AdminPanel() {
   const [_, setLocation] = useLocation();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [isSetChallengeDialogOpen, setIsSetChallengeDialogOpen] = useState(false);
+  const [startActorSearch, setStartActorSearch] = useState("");
+  const [endActorSearch, setEndActorSearch] = useState("");
+  const [selectedStartActor, setSelectedStartActor] = useState<{id: string, name: string} | null>(null);
+  const [selectedEndActor, setSelectedEndActor] = useState<{id: string, name: string} | null>(null);
+  const [startActorResults, setStartActorResults] = useState<any[]>([]);
+  const [endActorResults, setEndActorResults] = useState<any[]>([]);
   
-  // Auto-dismiss dialog after 1 second
+  // Auto-dismiss dialogs after 1 second
   useEffect(() => {
     if (isResetDialogOpen) {
       const timer = setTimeout(() => {
@@ -72,6 +88,16 @@ export default function AdminPanel() {
       return () => clearTimeout(timer);
     }
   }, [isResetDialogOpen]);
+  
+  useEffect(() => {
+    if (isSetChallengeDialogOpen) {
+      const timer = setTimeout(() => {
+        setIsSetChallengeDialogOpen(false);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isSetChallengeDialogOpen]);
   const { toast } = useToast();
   const token = useAdminAuth();
 
@@ -143,12 +169,113 @@ export default function AdminPanel() {
     },
   });
 
+  const setChallengeActorsMutation = useMutation({
+    mutationFn: async ({ startActorId, startActorName, endActorId, endActorName }: {
+      startActorId: string;
+      startActorName: string; 
+      endActorId: string;
+      endActorName: string;
+    }) => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found');
+      }
+      
+      const response = await fetch("/api/admin/set-challenge", {
+        method: "POST",
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          startActorId,
+          startActorName,
+          endActorId,
+          endActorName
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to set challenge');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      setIsSetChallengeDialogOpen(false);
+      setSelectedStartActor(null);
+      setSelectedEndActor(null);
+      setStartActorSearch("");
+      setEndActorSearch("");
+      queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
+      toast({
+        title: "Challenge updated",
+        description: "Daily challenge actors have been updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      setIsSetChallengeDialogOpen(false);
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update challenge",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Actor search functionality
+  const searchActors = async (query: string, type: 'start' | 'end') => {
+    if (!query || query.length < 2) {
+      if (type === 'start') setStartActorResults([]);
+      else setEndActorResults([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/search-actors?query=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const results = await response.json();
+        if (type === 'start') setStartActorResults(results.slice(0, 5));
+        else setEndActorResults(results.slice(0, 5));
+      }
+    } catch (error) {
+      console.error('Error searching actors:', error);
+    }
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchActors(startActorSearch, 'start');
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [startActorSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchActors(endActorSearch, 'end');
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [endActorSearch]);
+
   const handleLogout = () => {
     logoutMutation.mutate();
   };
 
   const handleResetChallenge = () => {
     resetChallengeMutation.mutate();
+  };
+
+  const handleSetChallenge = () => {
+    if (selectedStartActor && selectedEndActor) {
+      setChallengeActorsMutation.mutate({
+        startActorId: selectedStartActor.id,
+        startActorName: selectedStartActor.name,
+        endActorId: selectedEndActor.id,
+        endActorName: selectedEndActor.name,
+      });
+    }
   };
 
   if (!token) {
@@ -265,6 +392,118 @@ export default function AdminPanel() {
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Reset Challenge
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Set Custom Challenge</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Manually select two specific actors for today's challenge.
+                  All hints will be reset to 0.
+                </p>
+                
+                <div className="space-y-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Start Actor Search */}
+                    <div className="space-y-2">
+                      <Label htmlFor="start-actor">Start Actor</Label>
+                      <div className="relative">
+                        <Input
+                          id="start-actor"
+                          placeholder="Search for start actor..."
+                          value={startActorSearch}
+                          onChange={(e) => setStartActorSearch(e.target.value)}
+                          className="pr-8"
+                        />
+                        <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                      </div>
+                      {selectedStartActor && (
+                        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border">
+                          <span className="text-sm font-medium">{selectedStartActor.name}</span>
+                        </div>
+                      )}
+                      {startActorResults.length > 0 && !selectedStartActor && (
+                        <div className="max-h-32 overflow-y-auto border rounded">
+                          {startActorResults.map((actor) => (
+                            <button
+                              key={actor.id}
+                              onClick={() => {
+                                setSelectedStartActor({id: actor.id.toString(), name: actor.name});
+                                setStartActorSearch("");
+                                setStartActorResults([]);
+                              }}
+                              className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                            >
+                              {actor.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* End Actor Search */}
+                    <div className="space-y-2">
+                      <Label htmlFor="end-actor">End Actor</Label>
+                      <div className="relative">
+                        <Input
+                          id="end-actor"
+                          placeholder="Search for end actor..."
+                          value={endActorSearch}
+                          onChange={(e) => setEndActorSearch(e.target.value)}
+                          className="pr-8"
+                        />
+                        <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                      </div>
+                      {selectedEndActor && (
+                        <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded border">
+                          <span className="text-sm font-medium">{selectedEndActor.name}</span>
+                        </div>
+                      )}
+                      {endActorResults.length > 0 && !selectedEndActor && (
+                        <div className="max-h-32 overflow-y-auto border rounded">
+                          {endActorResults.map((actor) => (
+                            <button
+                              key={actor.id}
+                              onClick={() => {
+                                setSelectedEndActor({id: actor.id.toString(), name: actor.name});
+                                setEndActorSearch("");
+                                setEndActorResults([]);
+                              }}
+                              className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                            >
+                              {actor.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <AlertDialog open={isSetChallengeDialogOpen} onOpenChange={setIsSetChallengeDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      disabled={setChallengeActorsMutation.isPending || !selectedStartActor || !selectedEndActor}
+                      className="flex items-center gap-2"
+                    >
+                      <UserPlus className={`h-4 w-4 ${setChallengeActorsMutation.isPending ? 'animate-spin' : ''}`} />
+                      {setChallengeActorsMutation.isPending ? "Setting..." : "Set Custom Challenge"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Set Custom Challenge</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Set today's challenge to {selectedStartActor?.name} → {selectedEndActor?.name}?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleSetChallenge}>
+                        Set Challenge
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
