@@ -121,11 +121,6 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
             </div>
           </div>
           <p className="text-gray-600 text-base sm:text-lg">Connect two actors through movies in 6 moves or less</p>
-          <div className="mt-3 sm:mt-4 text-sm text-gray-500">
-            <Calendar className="inline-block w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Today's Challenge - {getCurrentDate()}</span>
-            <span className="sm:hidden">Today's Challenge</span>
-          </div>
         </div>
       </div>
 
