@@ -48,39 +48,49 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
               : "bg-game-error bg-opacity-10 border-game-error text-game-error"
           }`}
         >
-          <div className="flex items-center justify-between">
+          {gameResult.completed ? (
+            <div className="space-y-4">
+              {/* Centered congratulations message */}
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Trophy className="w-6 h-6 mr-2" />
+                  <div className="text-lg font-semibold text-white">
+                    Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
+                  </div>
+                </div>
+              </div>
+              
+              {/* Bottom row with message and share button */}
+              <div className="flex items-center justify-between">
+                <AlertDescription>
+                  <div>{gameResult.message}</div>
+                </AlertDescription>
+                
+                <Button
+                  onClick={handleShare}
+                  variant="outline"
+                  size="sm"
+                  className="border-game-success text-game-success hover:bg-game-success hover:text-white"
+                >
+                  <Share className="w-4 h-4 mr-2" />
+                  Share Victory
+                </Button>
+              </div>
+            </div>
+          ) : (
             <div className="flex items-center">
-              {gameResult.valid && gameResult.completed ? (
-                <Trophy className="w-4 h-4 mr-3" />
-              ) : gameResult.valid ? (
+              {gameResult.valid ? (
                 <CheckCircle className="w-4 h-4 mr-3" />
               ) : (
                 <XCircle className="w-4 h-4 mr-3" />
               )}
               <div>
                 <AlertDescription>
-                  {gameResult.completed && (
-                    <div className="text-lg font-semibold mb-1 text-white text-center">
-                      Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
-                    </div>
-                  )}
                   <div>{gameResult.message}</div>
                 </AlertDescription>
               </div>
             </div>
-            
-            {gameResult.completed && (
-              <Button
-                onClick={handleShare}
-                variant="outline"
-                size="sm"
-                className="ml-4 border-game-success text-game-success hover:bg-game-success hover:text-white"
-              >
-                <Share className="w-4 h-4 mr-2" />
-                Share Victory
-              </Button>
-            )}
-          </div>
+          )}
         </Alert>
       )}
     </div>
