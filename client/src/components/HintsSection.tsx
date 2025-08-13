@@ -80,37 +80,84 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       setUserHintsUsed(0);
       saveHintState(challengeDate, 0);
     } else {
-      // Same challenge - load saved state
+      // Same challenge - load saved state but validate it matches current actors
       const savedState = loadHintState(challengeDate);
-      setUserHintsUsed(savedState.hintsUsed);
-      setStartActorHint(savedState.startHint);
-      setEndActorHint(savedState.endHint);
-      if (savedState.startHint && !savedState.endHint) {
+      
+      // Check if saved hints match current actors
+      let validStartHint = null;
+      let validEndHint = null;
+      
+      if (savedState.startHint && savedState.startHint.actorName === dailyChallenge.startActorName) {
+        validStartHint = savedState.startHint;
+      }
+      
+      if (savedState.endHint && savedState.endHint.actorName === dailyChallenge.endActorName) {
+        validEndHint = savedState.endHint;
+      }
+      
+      // Only use hints that match current actors
+      const validHintsCount = (validStartHint ? 1 : 0) + (validEndHint ? 1 : 0);
+      
+      setUserHintsUsed(validHintsCount);
+      setStartActorHint(validStartHint);
+      setEndActorHint(validEndHint);
+      
+      if (validStartHint && !validEndHint) {
         setActiveHintType('start');
-      } else if (savedState.endHint) {
+      } else if (validEndHint) {
         setActiveHintType('end');
+      } else {
+        setActiveHintType(null);
+      }
+      
+      // Save the corrected state
+      if (validHintsCount !== savedState.hintsUsed || 
+          validStartHint !== savedState.startHint || 
+          validEndHint !== savedState.endHint) {
+        saveHintState(challengeDate, validHintsCount, validStartHint || undefined, validEndHint || undefined);
       }
     }
     setLastChallengeActors(currentChallengeActors);
   }, [dailyChallenge.startActorName, dailyChallenge.endActorName, lastChallengeActors]);
 
-  // Initialize hint state on component mount
+  // Initialize hint state on component mount - validate against current actors
   useEffect(() => {
     const challengeDate = new Date().toISOString().split('T')[0];
     const savedState = loadHintState(challengeDate);
     
     if (savedState.hintsUsed > 0) {
-      setUserHintsUsed(savedState.hintsUsed);
-      if (savedState.startHint) {
-        setStartActorHint(savedState.startHint);
-        setActiveHintType('start');
+      // Validate saved hints against current actors
+      let validStartHint = null;
+      let validEndHint = null;
+      
+      if (savedState.startHint && savedState.startHint.actorName === dailyChallenge.startActorName) {
+        validStartHint = savedState.startHint;
       }
-      if (savedState.endHint) {
-        setEndActorHint(savedState.endHint);
-        if (!savedState.startHint) setActiveHintType('end');
+      
+      if (savedState.endHint && savedState.endHint.actorName === dailyChallenge.endActorName) {
+        validEndHint = savedState.endHint;
+      }
+      
+      const validHintsCount = (validStartHint ? 1 : 0) + (validEndHint ? 1 : 0);
+      
+      setUserHintsUsed(validHintsCount);
+      setStartActorHint(validStartHint);
+      setEndActorHint(validEndHint);
+      
+      if (validStartHint && !validEndHint) {
+        setActiveHintType('start');
+      } else if (validEndHint) {
+        setActiveHintType('end');
+      }
+      
+      // Update localStorage with corrected state if needed
+      if (validHintsCount !== savedState.hintsUsed || 
+          validStartHint !== savedState.startHint || 
+          validEndHint !== savedState.endHint) {
+        saveHintState(challengeDate, validHintsCount, validStartHint || undefined, validEndHint || undefined);
       }
     }
-  }, []);
+  }, [dailyChallenge.startActorName, dailyChallenge.endActorName]);
 
   const hintMutation = useMutation({
     mutationFn: async (actorType: 'start' | 'end'): Promise<HintResponse> => {
@@ -185,7 +232,9 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || hintMutation.isPending}
               variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
-              className="flex-1 text-body-sm btn-hover button-radius transition-all duration-200"
+              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 ${
+                startActorHint && activeHintType === 'start' ? 'text-white' : ''
+              }`}
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
@@ -198,7 +247,9 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || hintMutation.isPending}
               variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
-              className="flex-1 text-body-sm btn-hover button-radius transition-all duration-200"
+              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 ${
+                endActorHint && activeHintType === 'end' ? 'text-white' : ''
+              }`}
               size="sm"
             >
               {hintMutation.isPending ? "Getting hint..." : (
