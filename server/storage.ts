@@ -20,6 +20,8 @@ export interface IStorage {
     completionRate: number;
     avgMoves: number;
     moveDistribution: { moves: number; count: number }[];
+    mostUsedMovies: { id: string; title: string; count: number }[];
+    mostUsedActors: { id: string; name: string; count: number }[];
   }>;
   
   // Admin methods
@@ -88,12 +90,57 @@ export class DatabaseStorage implements IStorage {
       return { moves, count };
     });
 
+    // Analyze connection chains from completed attempts
+    const movieUsage = new Map<string, { title: string; count: number }>();
+    const actorUsage = new Map<string, { name: string; count: number }>();
+
+    for (const attempt of attempts.filter(a => a.completed)) {
+      if (attempt.connectionChain) {
+        try {
+          const connections = JSON.parse(attempt.connectionChain);
+          for (const connection of connections) {
+            // Count movies
+            if (connection.movieId && connection.movieTitle) {
+              const existing = movieUsage.get(connection.movieId);
+              movieUsage.set(connection.movieId, {
+                title: connection.movieTitle,
+                count: (existing?.count || 0) + 1
+              });
+            }
+            // Count actors (excluding start/end actors which are the same for everyone)
+            if (connection.actorId && connection.actorName) {
+              const existing = actorUsage.get(connection.actorId);
+              actorUsage.set(connection.actorId, {
+                name: connection.actorName,
+                count: (existing?.count || 0) + 1
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing connection chain:', error);
+        }
+      }
+    }
+
+    // Convert to sorted arrays (top 5)
+    const mostUsedMovies = Array.from(movieUsage.entries())
+      .map(([id, data]) => ({ id, title: data.title, count: data.count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const mostUsedActors = Array.from(actorUsage.entries())
+      .map(([id, data]) => ({ id, name: data.name, count: data.count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
     return {
       totalAttempts,
       completedAttempts,
       completionRate: Math.round(completionRate * 100) / 100,
       avgMoves: Math.round(avgMoves * 100) / 100,
       moveDistribution,
+      mostUsedMovies,
+      mostUsedActors,
     };
   }
 
@@ -220,6 +267,40 @@ export class MemStorage implements IStorage {
     return Array.from(this.gameAttempts.values()).filter(
       (attempt) => attempt.challengeId === challengeId
     );
+  }
+
+  async getChallengeAnalytics(challengeId: string) {
+    const attempts = await this.getGameAttemptsByChallenge(challengeId);
+    
+    const totalAttempts = attempts.length;
+    const completedAttempts = attempts.filter(a => a.completed).length;
+    const completionRate = totalAttempts > 0 ? (completedAttempts / totalAttempts) * 100 : 0;
+    
+    const completedMoves = attempts.filter(a => a.completed).map(a => a.moves);
+    const avgMoves = completedMoves.length > 0 
+      ? completedMoves.reduce((sum, moves) => sum + moves, 0) / completedMoves.length 
+      : 0;
+    
+    // Create move distribution (1-6 moves)
+    const moveDistribution = Array.from({ length: 6 }, (_, i) => {
+      const moves = i + 1;
+      const count = completedMoves.filter(m => m === moves).length;
+      return { moves, count };
+    });
+
+    // For MemStorage, return empty arrays since this is just for development
+    const mostUsedMovies: { id: string; title: string; count: number }[] = [];
+    const mostUsedActors: { id: string; name: string; count: number }[] = [];
+
+    return {
+      totalAttempts,
+      completedAttempts,
+      completionRate: Math.round(completionRate * 100) / 100,
+      avgMoves: Math.round(avgMoves * 100) / 100,
+      moveDistribution,
+      mostUsedMovies,
+      mostUsedActors,
+    };
   }
 
   // Admin methods (stub implementations for MemStorage)

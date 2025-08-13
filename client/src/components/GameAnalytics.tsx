@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Target, Users } from 'lucide-react';
+import { TrendingUp, Target, Users, Film, UserCheck } from 'lucide-react';
 
 interface GameAnalyticsProps {
   challengeId: string;
@@ -14,6 +14,8 @@ interface AnalyticsData {
   completionRate: number;
   avgMoves: number;
   moveDistribution: { moves: number; count: number }[];
+  mostUsedMovies: { id: string; title: string; count: number }[];
+  mostUsedActors: { id: string; name: string; count: number }[];
 }
 
 export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps) {
@@ -87,9 +89,56 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
 
         {analytics.completedAttempts > 0 && (
           <div className="mt-4 pt-3 border-t border-blue-200">
-            <p className="text-xs text-center text-gray-600">
+            <p className="text-xs text-center text-gray-600 mb-3">
               {analytics.completionRate}% success rate • Anonymous player data
             </p>
+          </div>
+        )}
+
+        {/* Most Used Movies and Actors */}
+        {(analytics.mostUsedMovies.length > 0 || analytics.mostUsedActors.length > 0) && (
+          <div className="mt-4 pt-3 border-t border-blue-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {analytics.mostUsedMovies.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Film className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-gray-700">Popular Movies</span>
+                </div>
+                <div className="space-y-2">
+                  {analytics.mostUsedMovies.slice(0, 3).map((movie, index) => (
+                    <div key={movie.id} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600 truncate mr-2">
+                        {index + 1}. {movie.title}
+                      </span>
+                      <span className="text-amber-600 font-medium">
+                        {movie.count}x
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {analytics.mostUsedActors.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <UserCheck className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-medium text-gray-700">Popular Actors</span>
+                </div>
+                <div className="space-y-2">
+                  {analytics.mostUsedActors.slice(0, 3).map((actor, index) => (
+                    <div key={actor.id} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600 truncate mr-2">
+                        {index + 1}. {actor.name}
+                      </span>
+                      <span className="text-emerald-600 font-medium">
+                        {actor.count}x
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
