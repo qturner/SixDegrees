@@ -36,9 +36,11 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
   }
 
   // Find the minimum number of moves (best completion)
-  const bestCompletion = analytics.moveDistribution
-    .filter(item => item.count > 0)
-    .reduce((min, curr) => curr.moves < min ? curr.moves : min, 6);
+  const bestCompletion = analytics.moveDistribution && analytics.moveDistribution.length > 0
+    ? analytics.moveDistribution
+        .filter(item => item.count > 0)
+        .reduce((min, curr) => curr.moves < min ? curr.moves : min, 6)
+    : 6;
 
   // Only show if there's actual data
   if (analytics.totalAttempts === 0) {
@@ -96,9 +98,9 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
         )}
 
         {/* Most Used Movies and Actors */}
-        {(analytics.mostUsedMovies.length > 0 || analytics.mostUsedActors.length > 0) && (
+        {(analytics.mostUsedMovies?.length > 0 || analytics.mostUsedActors?.length > 0) && (
           <div className="mt-4 pt-3 border-t border-blue-200 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {analytics.mostUsedMovies.length > 0 && (
+            {analytics.mostUsedMovies && analytics.mostUsedMovies.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Film className="h-4 w-4 text-amber-600" />
@@ -119,7 +121,7 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
               </div>
             )}
 
-            {analytics.mostUsedActors.length > 0 && (
+            {analytics.mostUsedActors && analytics.mostUsedActors.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <UserCheck className="h-4 w-4 text-emerald-600" />

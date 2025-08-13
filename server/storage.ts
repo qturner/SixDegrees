@@ -95,9 +95,9 @@ export class DatabaseStorage implements IStorage {
     const actorUsage = new Map<string, { name: string; count: number }>();
 
     for (const attempt of attempts.filter(a => a.completed)) {
-      if (attempt.connectionChain) {
+      if (attempt.connections) {
         try {
-          const connections = JSON.parse(attempt.connectionChain);
+          const connections = JSON.parse(attempt.connections);
           for (const connection of connections) {
             // Count movies
             if (connection.movieId && connection.movieTitle) {
