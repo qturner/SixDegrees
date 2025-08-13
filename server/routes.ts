@@ -350,6 +350,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics endpoint for anonymous game statistics
+  app.get("/api/analytics", async (req, res) => {
+    try {
+      const { challengeId } = req.query;
+      
+      if (!challengeId || typeof challengeId !== 'string') {
+        return res.status(400).json({ message: "Challenge ID required" });
+      }
+
+      const stats = await storage.getChallengeAnalytics(challengeId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting analytics:", error);
+      res.status(500).json({ message: "Failed to get analytics" });
+    }
+  });
+
   // Get movie credits (actors in a movie)
   app.get("/api/movie/:id/credits", async (req, res) => {
     try {

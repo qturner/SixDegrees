@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Shield, RefreshCw, LogOut, Users, Calendar, Search, UserPlus } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Users, Calendar, Search, UserPlus, BarChart3 } from "lucide-react";
+import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 
 interface DailyChallenge {
   date: string;
@@ -69,6 +70,7 @@ function useAdminAuth() {
 
 export default function AdminPanel() {
   const [_, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState<"dashboard" | "analytics">("dashboard");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isSetChallengeDialogOpen, setIsSetChallengeDialogOpen] = useState(false);
   const [startActorSearch, setStartActorSearch] = useState("");
@@ -519,6 +521,14 @@ export default function AdminPanel() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Analytics Dashboard */}
+        {challenge && (
+          <AnalyticsDashboard 
+            challengeId={challenge.id} 
+            challengeName={`${challenge.startActorName} → ${challenge.endActorName}`}
+          />
+        )}
       </div>
     </div>
   );

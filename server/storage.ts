@@ -14,6 +14,13 @@ export interface IStorage {
   // Game Attempt methods
   createGameAttempt(attempt: InsertGameAttempt): Promise<GameAttempt>;
   getGameAttemptsByChallenge(challengeId: string): Promise<GameAttempt[]>;
+  getChallengeAnalytics(challengeId: string): Promise<{
+    totalAttempts: number;
+    completedAttempts: number;
+    completionRate: number;
+    avgMoves: number;
+    moveDistribution: { moves: number; count: number }[];
+  }>;
   
   // Admin methods
   createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
@@ -60,6 +67,34 @@ export class DatabaseStorage implements IStorage {
 
   async getGameAttemptsByChallenge(challengeId: string): Promise<GameAttempt[]> {
     return await db.select().from(gameAttempts).where(eq(gameAttempts.challengeId, challengeId));
+  }
+
+  async getChallengeAnalytics(challengeId: string) {
+    const attempts = await this.getGameAttemptsByChallenge(challengeId);
+    
+    const totalAttempts = attempts.length;
+    const completedAttempts = attempts.filter(a => a.completed).length;
+    const completionRate = totalAttempts > 0 ? (completedAttempts / totalAttempts) * 100 : 0;
+    
+    const completedMoves = attempts.filter(a => a.completed).map(a => a.moves);
+    const avgMoves = completedMoves.length > 0 
+      ? completedMoves.reduce((sum, moves) => sum + moves, 0) / completedMoves.length 
+      : 0;
+    
+    // Create move distribution (1-6 moves)
+    const moveDistribution = Array.from({ length: 6 }, (_, i) => {
+      const moves = i + 1;
+      const count = completedMoves.filter(m => m === moves).length;
+      return { moves, count };
+    });
+
+    return {
+      totalAttempts,
+      completedAttempts,
+      completionRate: Math.round(completionRate * 100) / 100,
+      avgMoves: Math.round(avgMoves * 100) / 100,
+      moveDistribution,
+    };
   }
 
   // Admin methods
