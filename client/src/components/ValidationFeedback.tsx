@@ -18,17 +18,42 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
   // Count the number of valid connections (green checkmarks)
   const validConnectionsCount = validationResults.filter(result => result?.valid).length;
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (gameResult?.completed) {
       const text = `I just completed today's 6 Degrees of Separation challenge in ${gameResult.moves} moves! Can you do better?`;
-      if (navigator.share) {
-        navigator.share({
-          title: "6 Degrees of Separation",
-          text,
-          url: window.location.href,
-        });
-      } else {
-        navigator.clipboard.writeText(`${text} ${window.location.href}`);
+      const shareData = {
+        title: "6 Degrees of Separation",
+        text,
+        url: window.location.href,
+      };
+
+      try {
+        if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(`${text} ${window.location.href}`);
+        } else {
+          // Fallback: create a temporary textarea for copying
+          const textArea = document.createElement('textarea');
+          textArea.value = `${text} ${window.location.href}`;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // Fallback to manual copy
+        try {
+          const textArea = document.createElement('textarea');
+          textArea.value = `${text} ${window.location.href}`;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        } catch (fallbackError) {
+          console.error('Fallback copy failed:', fallbackError);
+        }
       }
     }
   };
