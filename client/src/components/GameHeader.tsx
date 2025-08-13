@@ -46,30 +46,34 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
       <div className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         <div className="text-center">
           <div className="flex items-center justify-center mb-3">
-            <svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" className="mr-4">
-              {/* Network connections */}
-              <line x1="12" y1="8" x2="25" y2="15" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="25" y1="15" x2="38" y2="8" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="12" y1="8" x2="12" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="38" y1="8" x2="38" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="12" y1="25" x2="25" y2="35" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="38" y1="25" x2="25" y2="35" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="25" y1="15" x2="25" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="12" y1="25" x2="25" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="25" y1="25" x2="38" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="8" y1="42" x2="12" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
-              <line x1="42" y1="42" x2="38" y2="25" stroke="#1e3a8a" strokeWidth="3"/>
+            <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" className="mr-4">
+              {/* Network connections - hexagonal pattern */}
+              <line x1="15" y1="10" x2="30" y2="5" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="30" y1="5" x2="45" y2="10" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="15" y1="10" x2="10" y2="25" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="45" y1="10" x2="50" y2="25" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="10" y1="25" x2="15" y2="40" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="50" y1="25" x2="45" y2="40" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="15" y1="40" x2="30" y2="45" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="45" y1="40" x2="30" y2="45" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="15" y1="10" x2="30" y2="25" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="45" y1="10" x2="30" y2="25" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="10" y1="25" x2="30" y2="25" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="50" y1="25" x2="30" y2="25" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="15" y1="40" x2="30" y2="25" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="45" y1="40" x2="30" y2="25" stroke="#1e40af" strokeWidth="4" strokeLinecap="round"/>
               
-              {/* Network nodes */}
-              <circle cx="12" cy="8" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
-              <circle cx="25" cy="15" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
-              <circle cx="38" cy="8" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
-              <circle cx="12" cy="25" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
-              <circle cx="25" cy="25" r="4" fill="#1e3a8a"/>
-              <circle cx="38" cy="25" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
-              <circle cx="25" cy="35" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
-              <circle cx="8" cy="42" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
-              <circle cx="42" cy="42" r="6" fill="#1e3a8a" stroke="white" strokeWidth="2"/>
+              {/* Network nodes - hollow circles with blue rings */}
+              <circle cx="30" cy="5" r="6" fill="white" stroke="#1e40af" strokeWidth="4"/>
+              <circle cx="15" cy="10" r="6" fill="white" stroke="#1e40af" strokeWidth="4"/>
+              <circle cx="45" cy="10" r="6" fill="white" stroke="#1e40af" strokeWidth="4"/>
+              <circle cx="10" cy="25" r="6" fill="white" stroke="#1e40af" strokeWidth="4"/>
+              <circle cx="50" cy="25" r="6" fill="white" stroke="#1e40af" strokeWidth="4"/>
+              <circle cx="15" cy="40" r="6" fill="white" stroke="#1e40af" strokeWidth="4"/>
+              <circle cx="45" cy="40" r="6" fill="white" stroke="#1e40af" strokeWidth="4"/>
+              <circle cx="30" cy="45" r="6" fill="white" stroke="#1e40af" strokeWidth="4"/>
+              {/* Center node - solid */}
+              <circle cx="30" cy="25" r="4" fill="#1e40af"/>
             </svg>
             <h1 className="text-2xl sm:text-3xl font-bold text-game-primary">Six Degrees of Separation</h1>
           </div>
