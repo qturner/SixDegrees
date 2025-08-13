@@ -10,6 +10,7 @@ import GameInstructions from "@/components/GameInstructions";
 import ValidationFeedback from "@/components/ValidationFeedback";
 import { HintsSection } from "@/components/HintsSection";
 import GameAnalytics from "@/components/GameAnalytics";
+import { AboutModal } from "@/components/AboutModal";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 
 // Helper functions for localStorage persistence
@@ -49,6 +50,7 @@ export default function Game() {
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
   const [gameResult, setGameResult] = useState<ValidationResult | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [gameStateInitialized, setGameStateInitialized] = useState(false);
 
   const { data: challenge, isLoading } = useQuery<DailyChallenge>({
@@ -221,11 +223,22 @@ export default function Game() {
             <div>A new daily challenge connecting Hollywood's finest</div>
           </div>
           <div className="flex justify-center space-x-6">
-            <a href="#" className="hover:text-game-blue transition-all duration-200">About</a>
+            <button 
+              onClick={() => setIsAboutModalOpen(true)}
+              className="hover:text-game-blue transition-all duration-200 cursor-pointer"
+              data-testid="button-about"
+            >
+              About
+            </button>
             <a href="#" className="hover:text-game-blue transition-all duration-200">Contact</a>
           </div>
         </footer>
       </main>
+
+      <AboutModal 
+        open={isAboutModalOpen} 
+        onOpenChange={setIsAboutModalOpen} 
+      />
     </div>
   );
 }
