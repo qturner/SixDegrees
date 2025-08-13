@@ -21,10 +21,16 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
   const handleShare = async () => {
     if (gameResult?.completed) {
       const text = `I just completed today's 6 Degrees of Separation challenge in ${gameResult.moves} moves! Can you do better?`;
+      const shareData = {
+        title: "6 Degrees of Separation Challenge",
+        text: text,
+        url: window.location.origin, // Just the domain without path
+      };
 
       try {
-        // Try clipboard first since it's cleaner
-        if (navigator.clipboard && navigator.clipboard.writeText) {
+        if (navigator.share) {
+          await navigator.share(shareData);
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(text);
         } else {
           // Fallback: create a temporary textarea for copying
