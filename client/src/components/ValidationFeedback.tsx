@@ -51,8 +51,8 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
           {gameResult.completed ? (
             <div className="space-y-4">
               {/* Centered congratulations message */}
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
+              <div className="flex items-center justify-center min-h-[80px]">
+                <div className="flex items-center">
                   <Trophy className="w-6 h-6 mr-2" />
                   <div className="text-lg font-semibold text-white">
                     Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
