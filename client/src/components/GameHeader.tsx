@@ -128,40 +128,44 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         <div className="text-center mb-4 sm:mb-6">
           <h2 className="text-heading-md text-game-primary mb-4">Today's Challenge</h2>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 mb-4">
-            <div className="flex items-center bg-game-blue text-white spacing-sm sm:px-6 sm:py-3 button-radius font-medium text-body w-full sm:w-auto transition-all duration-200 hover:shadow-card-hover">
-              {displayChallenge.startActorProfilePath ? (
-                <img
-                  src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
-                  alt={displayChallenge.startActorName}
-                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 mr-3 sm:mr-4"
-                />
-              ) : (
-                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0 mr-3 sm:mr-4">
-                  <span className="text-lg font-medium text-white">
-                    {displayChallenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </span>
-                </div>
-              )}
-              <span className="truncate flex-1 text-center">{displayChallenge.startActorName}</span>
+            <div className="relative bg-game-blue text-white spacing-sm sm:px-6 sm:py-3 button-radius font-medium text-body w-full sm:w-auto transition-all duration-200 hover:shadow-card-hover flex items-center justify-center">
+              <div className="absolute left-3 sm:left-6 flex items-center">
+                {displayChallenge.startActorProfilePath ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
+                    alt={displayChallenge.startActorName}
+                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200"
+                  />
+                ) : (
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0">
+                    <span className="text-lg font-medium text-white">
+                      {displayChallenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <span className="truncate text-center px-20 sm:px-24">{displayChallenge.startActorName}</span>
             </div>
             <div className="text-xl sm:text-2xl text-muted-light rotate-90 sm:rotate-0 transition-transform duration-300">
               <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="flex items-center bg-game-blue text-white spacing-sm sm:px-6 sm:py-3 button-radius font-medium text-body w-full sm:w-auto transition-all duration-200 hover:shadow-card-hover">
-              {displayChallenge.endActorProfilePath ? (
-                <img
-                  src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
-                  alt={displayChallenge.endActorName}
-                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 mr-3 sm:mr-4"
-                />
-              ) : (
-                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0 mr-3 sm:mr-4">
-                  <span className="text-lg font-medium text-white">
-                    {displayChallenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </span>
-                </div>
-              )}
-              <span className="truncate flex-1 text-center">{displayChallenge.endActorName}</span>
+            <div className="relative bg-game-blue text-white spacing-sm sm:px-6 sm:py-3 button-radius font-medium text-body w-full sm:w-auto transition-all duration-200 hover:shadow-card-hover flex items-center justify-center">
+              <div className="absolute left-3 sm:left-6 flex items-center">
+                {displayChallenge.endActorProfilePath ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
+                    alt={displayChallenge.endActorName}
+                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200"
+                  />
+                ) : (
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0">
+                    <span className="text-lg font-medium text-white">
+                      {displayChallenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <span className="truncate text-center px-20 sm:px-24">{displayChallenge.endActorName}</span>
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 text-body-sm">
