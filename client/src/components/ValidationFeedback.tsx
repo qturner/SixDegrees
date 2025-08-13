@@ -1,7 +1,9 @@
-import { CheckCircle, XCircle, Trophy, Share } from "lucide-react";
+import { CheckCircle, XCircle, Trophy, Share, Mail, MessageCircle, Copy } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ValidationResult } from "@shared/schema";
+import { useState } from "react";
 
 interface ValidationFeedbackProps {
   validationResults: ValidationResult[];
@@ -10,6 +12,7 @@ interface ValidationFeedbackProps {
 
 export default function ValidationFeedback({ validationResults, gameResult }: ValidationFeedbackProps) {
   const hasResults = validationResults.length > 0 || gameResult;
+  const [showShareModal, setShowShareModal] = useState(false);
 
   if (!hasResults) {
     return null;
@@ -18,24 +21,25 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
   // Count the number of valid connections (green checkmarks)
   const validConnectionsCount = validationResults.filter(result => result?.valid).length;
 
-  const handleShare = async () => {
-    if (gameResult?.completed) {
-      const text = `I just completed today's 6 Degrees of Separation challenge in ${gameResult.moves} moves! Can you do better?`;
-      const shareData = {
-        title: "6 Degrees of Separation Challenge",
-        text: text,
-        url: window.location.origin, // Just the domain without path
-      };
+  const handleShare = () => {
+    setShowShareModal(true);
+  };
 
+  const shareText = `I just completed today's 6 Degrees of Separation challenge in ${gameResult?.moves || validConnectionsCount} moves! Can you do better?`;
+
+  const handleShareOption = async (type: 'mail' | 'copy') => {
+    if (type === 'mail') {
+      const subject = encodeURIComponent('6 Degrees of Separation Challenge');
+      const body = encodeURIComponent(shareText);
+      window.open(`mailto:?subject=${subject}&body=${body}`);
+    } else if (type === 'copy') {
       try {
-        if (navigator.share) {
-          await navigator.share(shareData);
-        } else if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(text);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shareText);
         } else {
           // Fallback: create a temporary textarea for copying
           const textArea = document.createElement('textarea');
-          textArea.value = text;
+          textArea.value = shareText;
           textArea.style.position = 'fixed';
           textArea.style.left = '-9999px';
           document.body.appendChild(textArea);
@@ -44,22 +48,10 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
           document.body.removeChild(textArea);
         }
       } catch (error) {
-        console.error('Error sharing:', error);
-        // Final fallback to manual copy
-        try {
-          const textArea = document.createElement('textarea');
-          textArea.value = text;
-          textArea.style.position = 'fixed';
-          textArea.style.left = '-9999px';
-          document.body.appendChild(textArea);
-          textArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textArea);
-        } catch (fallbackError) {
-          console.error('Fallback copy failed:', fallbackError);
-        }
+        console.error('Error copying:', error);
       }
     }
+    setShowShareModal(false);
   };
 
   return (
@@ -117,6 +109,33 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
           )}
         </Alert>
       )}
+
+      {/* Custom Share Modal */}
+      <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Victory</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4 py-4">
+            <Button
+              variant="ghost"
+              className="flex items-center justify-start space-x-3 h-12"
+              onClick={() => handleShareOption('mail')}
+            >
+              <Mail className="h-5 w-5" />
+              <span>Mail</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="flex items-center justify-start space-x-3 h-12"
+              onClick={() => handleShareOption('copy')}
+            >
+              <Copy className="h-5 w-5" />
+              <span>Copy to Clipboard</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
