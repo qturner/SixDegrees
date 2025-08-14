@@ -7,6 +7,19 @@ import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSche
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
 import cron from "node-cron";
 
+function getESTDateString(): string {
+  // Get current date in EST/EDT timezone using proper Intl formatting
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit'
+  });
+  
+  return formatter.format(now); // Returns YYYY-MM-DD format
+}
+
 // Prevent race conditions in challenge creation
 let challengeCreationPromise: Promise<any> | null = null;
 let lastChallengeDate: string | null = null;
@@ -16,7 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/daily-challenge", async (req, res) => {
     try {
       const { date, forceNew } = req.body;
-      const today = date || new Date().toISOString().split('T')[0];
+      const today = date || getESTDateString();
       
       if (forceNew) {
         console.log(`Force generating new challenge for ${today}`);
@@ -78,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get today's daily challenge
   app.get("/api/daily-challenge", async (req, res) => {
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = getESTDateString(); // Use EST date, not UTC
       let challenge = await storage.getDailyChallenge(today);
 
       if (!challenge) {
