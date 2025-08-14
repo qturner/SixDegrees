@@ -6,6 +6,7 @@ import { gameLogicService } from "./services/gameLogic";
 import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema } from "@shared/schema";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
 import { emailService } from "./services/email";
+import { registerTestEmailRoutes } from "./routes/testEmail";
 import cron from "node-cron";
 
 function getESTDateString(): string {
@@ -26,6 +27,11 @@ let challengeCreationPromise: Promise<any> | null = null;
 let lastChallengeDate: string | null = null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Test email service on startup
+  setTimeout(async () => {
+    const { emailService } = await import("./services/email");
+    await emailService.testConnection();
+  }, 2000);
   // Force reset daily challenge (used by cron job and admin)
   app.post("/api/daily-challenge", async (req, res) => {
     try {
@@ -672,6 +678,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+  // Register test email routes
+  registerTestEmailRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

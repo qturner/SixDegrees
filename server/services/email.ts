@@ -78,15 +78,30 @@ export class EmailService {
 
   async testConnection(): Promise<boolean> {
     if (!this.transporter) {
+      console.log('No transporter available for testing');
       return false;
     }
 
     try {
+      console.log('Testing Gmail SMTP connection...');
       await this.transporter.verify();
-      console.log('Email service connection verified');
+      console.log('✅ Email service connection verified successfully');
       return true;
-    } catch (error) {
-      console.error('Email service connection failed:', error);
+    } catch (error: any) {
+      console.error('❌ Email service connection failed:');
+      console.error('Error code:', error.code);
+      console.error('Response:', error.response);
+      
+      if (error.code === 'EAUTH') {
+        console.error('\n🔧 Gmail Authentication Fix Required:');
+        console.error('1. Go to https://myaccount.google.com');
+        console.error('2. Navigate to Security → 2-Step Verification (enable if not active)');
+        console.error('3. Go to Security → App passwords');
+        console.error('4. Generate new app password for "Mail"');
+        console.error('5. Update GMAIL_APP_PASSWORD secret with the 16-character code');
+        console.error('6. Ensure GMAIL_USER is your full Gmail address');
+      }
+      
       return false;
     }
   }
