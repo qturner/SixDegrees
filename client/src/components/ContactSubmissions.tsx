@@ -20,6 +20,7 @@ export default function ContactSubmissions() {
 
   const { data: submissions, isLoading, error } = useQuery<ContactSubmission[]>({
     queryKey: ["/api/admin/contacts"],
+    staleTime: 0, // Always refetch to get latest unread submissions
     queryFn: async () => {
       const token = localStorage.getItem('adminToken');
       if (!token) {
