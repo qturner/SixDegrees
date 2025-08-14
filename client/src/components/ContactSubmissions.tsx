@@ -20,11 +20,43 @@ export default function ContactSubmissions() {
 
   const { data: submissions, isLoading, error } = useQuery<ContactSubmission[]>({
     queryKey: ["/api/admin/contacts"],
+    queryFn: async () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found');
+      }
+      
+      const response = await fetch('/api/admin/contacts', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const response = await apiRequest("PATCH", `/api/admin/contacts/${id}`, { status });
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found');
+      }
+      
+      const response = await fetch(`/api/admin/contacts/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+      
       if (!response.ok) {
         throw new Error("Failed to update status");
       }

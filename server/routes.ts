@@ -627,7 +627,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoint to view contact submissions
-  app.get("/api/admin/contacts", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/contacts", async (req, res) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ message: "Admin authentication required" });
+    }
+    
+    const adminUser = await validateAdminSession(token);
+    if (!adminUser) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
     try {
       const submissions = await storage.getContactSubmissions();
       res.json(submissions);
@@ -638,7 +647,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoint to update contact submission status
-  app.patch("/api/admin/contacts/:id", requireAdminAuth, async (req, res) => {
+  app.patch("/api/admin/contacts/:id", async (req, res) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ message: "Admin authentication required" });
+    }
+    
+    const adminUser = await validateAdminSession(token);
+    if (!adminUser) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
     try {
       const { id } = req.params;
       const { status } = req.body;

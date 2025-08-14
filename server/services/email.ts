@@ -14,6 +14,8 @@ export class EmailService {
 
     if (!emailUser || !emailPassword) {
       console.warn('Gmail credentials not provided - email notifications disabled');
+      console.log('GMAIL_USER:', emailUser ? 'provided' : 'missing');
+      console.log('GMAIL_APP_PASSWORD:', emailPassword ? 'provided' : 'missing');
       return;
     }
 
