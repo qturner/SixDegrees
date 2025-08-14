@@ -277,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Actor type must be 'start' or 'end'" });
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getESTDateString();
       const challenge = await storage.getDailyChallenge(today);
       
       console.log(`Hint request for ${today}, challenge found: ${challenge ? 'YES' : 'NO'}`);
@@ -357,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save ALL attempts (both completed and failed) - ALWAYS save, even if validation had errors
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getESTDateString();
         const challenge = await storage.getDailyChallenge(today);
         
         if (challenge) {
@@ -383,13 +383,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics endpoint for anonymous game statistics
   app.get("/api/analytics", async (req, res) => {
     try {
-      const { challengeId } = req.query;
+      // Get today's challenge to use its ID for analytics
+      const today = getESTDateString();
+      const challenge = await storage.getDailyChallenge(today);
       
-      if (!challengeId || typeof challengeId !== 'string') {
-        return res.status(400).json({ message: "Challenge ID required" });
+      if (!challenge) {
+        return res.status(404).json({ message: "No challenge found for today" });
       }
 
-      const stats = await storage.getChallengeAnalytics(challengeId);
+      const stats = await storage.getChallengeAnalytics(challenge.id);
       res.json(stats);
     } catch (error) {
       console.error("Error getting analytics:", error);
