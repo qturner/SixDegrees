@@ -645,7 +645,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     try {
       const submissions = await storage.getContactSubmissions();
-      res.json(submissions);
+      // Filter to only show submissions that haven't been read
+      const unreadSubmissions = submissions.filter(submission => submission.status === 'new');
+      res.json(unreadSubmissions);
     } catch (error) {
       console.error("Error getting contact submissions:", error);
       res.status(500).json({ message: "Internal server error" });

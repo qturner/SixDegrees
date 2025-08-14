@@ -106,7 +106,7 @@ export default function ContactSubmissions() {
         <Mail className="w-6 h-6 text-blue-600" />
         <h2 className="text-2xl font-bold">Contact Submissions</h2>
         <Badge variant="secondary" className="ml-2">
-          {submissions?.length || 0} total
+          {submissions?.length || 0} new
         </Badge>
       </div>
 
@@ -114,9 +114,9 @@ export default function ContactSubmissions() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Mail className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Contact Submissions</h3>
+            <h3 className="text-lg font-semibold mb-2">No New Contact Submissions</h3>
             <p className="text-muted-foreground text-center">
-              Contact form submissions will appear here when users send feedback.
+              New contact form submissions will appear here. Previously read messages have been hidden.
             </p>
           </CardContent>
         </Card>
