@@ -1,4 +1,4 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, adminUsers, adminSessions, dailyChallenges, gameAttempts } from "@shared/schema";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gt } from "drizzle-orm";
@@ -31,6 +31,11 @@ export interface IStorage {
   getValidAdminSession(token: string): Promise<AdminSession | undefined>;
   deleteAdminSession(token: string): Promise<void>;
   updateAdminLastLogin(userId: string): Promise<void>;
+  
+  // Contact methods
+  createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission>;
+  getContactSubmissions(): Promise<ContactSubmission[]>;
+  updateContactSubmissionStatus(id: string, status: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -191,6 +196,22 @@ export class DatabaseStorage implements IStorage {
       .set({ lastLoginAt: new Date() })
       .where(eq(adminUsers.id, userId));
   }
+  
+  // Contact methods
+  async createContactSubmission(insertSubmission: InsertContactSubmission): Promise<ContactSubmission> {
+    const [submission] = await db.insert(contactSubmissions).values(insertSubmission).returning();
+    return submission;
+  }
+
+  async getContactSubmissions(): Promise<ContactSubmission[]> {
+    return await db.select().from(contactSubmissions).orderBy(contactSubmissions.createdAt);
+  }
+
+  async updateContactSubmissionStatus(id: string, status: string): Promise<void> {
+    await db.update(contactSubmissions)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(contactSubmissions.id, id));
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -335,6 +356,19 @@ export class MemStorage implements IStorage {
 
   async updateAdminLastLogin(userId: string): Promise<void> {
     throw new Error("Admin functionality requires database storage");
+  }
+
+  // Contact methods (stub implementations for MemStorage)
+  async createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission> {
+    throw new Error("Contact functionality requires database storage");
+  }
+
+  async getContactSubmissions(): Promise<ContactSubmission[]> {
+    throw new Error("Contact functionality requires database storage");
+  }
+
+  async updateContactSubmissionStatus(id: string, status: string): Promise<void> {
+    throw new Error("Contact functionality requires database storage");
   }
 }
 

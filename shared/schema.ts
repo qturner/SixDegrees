@@ -112,3 +112,23 @@ export const adminSessions = pgTable("admin_sessions", {
 
 export type AdminSession = typeof adminSessions.$inferSelect;
 export type InsertAdminSession = typeof adminSessions.$inferInsert;
+
+// Contact form submissions table
+export const contactSubmissions = pgTable("contact_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  status: varchar("status", { length: 50 }).default("new"), // new, read, responded
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type ContactSubmission = typeof contactSubmissions.$inferSelect;
+export type InsertContactSubmission = typeof contactSubmissions.$inferInsert;
+export const insertContactSubmissionSchema = createInsertSchema(contactSubmissions).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true, 
+  status: true 
+});

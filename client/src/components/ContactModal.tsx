@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ContactModalProps {
   open: boolean;
@@ -33,23 +34,32 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
     setIsSubmitting(true);
 
     try {
-      // Simulate form submission (replace with actual endpoint if needed)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Message Sent!",
-        description: "Thank you for your feedback. We'll get back to you soon.",
+      const response = await apiRequest("POST", "/api/contact", {
+        name: name.trim(),
+        email: email.trim(),
+        message: message.trim(),
       });
       
-      // Reset form
-      setName("");
-      setEmail("");
-      setMessage("");
-      onOpenChange(false);
+      if (response.ok) {
+        toast({
+          title: "Message Sent!",
+          description: "Thank you for your feedback. We'll get back to you soon.",
+        });
+        
+        // Reset form
+        setName("");
+        setEmail("");
+        setMessage("");
+        onOpenChange(false);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to send message");
+      }
     } catch (error) {
+      console.error("Contact form error:", error);
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again later.",
+        description: error instanceof Error ? error.message : "Failed to send message. Please try again later.",
         variant: "destructive",
       });
     } finally {

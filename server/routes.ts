@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { tmdbService } from "./services/tmdb";
 import { gameLogicService } from "./services/gameLogic";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema } from "@shared/schema";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema } from "@shared/schema";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
 import cron from "node-cron";
 
@@ -593,6 +593,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Custom challenge set successfully", challenge });
     } catch (error) {
       console.error("Admin set challenge error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Contact form submission endpoint
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const parseResult = insertContactSubmissionSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request format",
+          errors: parseResult.error.errors 
+        });
+      }
+
+      const submission = await storage.createContactSubmission(parseResult.data);
+      
+      res.json({ 
+        message: "Contact submission received successfully",
+        id: submission.id 
+      });
+    } catch (error) {
+      console.error("Error creating contact submission:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin endpoint to view contact submissions
+  app.get("/api/admin/contacts", requireAdminAuth, async (req, res) => {
+    try {
+      const submissions = await storage.getContactSubmissions();
+      res.json(submissions);
+    } catch (error) {
+      console.error("Error getting contact submissions:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin endpoint to update contact submission status
+  app.patch("/api/admin/contacts/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status || typeof status !== 'string') {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      await storage.updateContactSubmissionStatus(id, status);
+      res.json({ message: "Status updated successfully" });
+    } catch (error) {
+      console.error("Error updating contact submission status:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
