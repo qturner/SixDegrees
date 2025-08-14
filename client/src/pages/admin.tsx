@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Shield, RefreshCw, LogOut, Users, Calendar, Search, UserPlus, BarChart3 } from "lucide-react";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
+import ContactSubmissions from "@/components/ContactSubmissions";
 
 interface DailyChallenge {
   date: string;
@@ -529,6 +530,13 @@ export default function AdminPanel() {
             challengeName={`${challenge.startActorName} → ${challenge.endActorName}`}
           />
         )}
+
+        {/* Contact Submissions */}
+        <Card>
+          <CardContent className="p-6">
+            <ContactSubmissions />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
