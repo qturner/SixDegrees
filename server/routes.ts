@@ -5,6 +5,7 @@ import { tmdbService } from "./services/tmdb";
 import { gameLogicService } from "./services/gameLogic";
 import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema } from "@shared/schema";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
+import { emailService } from "./services/email";
 import cron from "node-cron";
 
 function getESTDateString(): string {
@@ -609,6 +610,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const submission = await storage.createContactSubmission(parseResult.data);
+      
+      // Send email notification (non-blocking)
+      emailService.sendContactNotification(submission).catch(error => {
+        console.error('Email notification failed:', error);
+      });
       
       res.json({ 
         message: "Contact submission received successfully",
