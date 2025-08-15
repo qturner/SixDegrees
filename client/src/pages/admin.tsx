@@ -228,7 +228,7 @@ export default function AdminPanel() {
     }
 
     try {
-      const response = await fetch(`/api/search-actors?query=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/search/actors?q=${encodeURIComponent(query)}`);
       if (response.ok) {
         const results = await response.json();
         if (type === 'start') setStartActorResults(results.slice(0, 5));

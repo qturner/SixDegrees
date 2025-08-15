@@ -26,6 +26,7 @@ User-Facing Analytics Enhancement: Added most-used movies and actors tracking in
 Failed Attempt Tracking: Fixed analytics to properly track both successful AND failed validation attempts, providing accurate completion rates instead of showing 100% success - now records all user attempts regardless of validation outcome for honest player statistics (August 2025).
 Actor Thumbnail Enhancement: Enlarged actor profile photos from 32px/40px to final 64px/72px (100% larger), repositioned to left side with absolute positioning, and centered actor names within full card width for professional layout alignment with mobile page center (August 2025).
 Email Notification System: Implemented Gmail SMTP integration for contact form submissions - automatically sends formatted email notifications to admin when users submit feedback, includes user details and enables direct reply functionality for seamless customer support. Gmail authentication successfully configured and verified working (August 2025).
+Admin Set Custom Challenge Fix: Fixed actor search functionality in admin panel's Set Custom Challenge feature - corrected API endpoint from '/api/search-actors' to '/api/search/actors' and changed query parameter from 'query' to 'q' to match TMDB service expectations, enabling proper actor selection for custom daily challenges (August 2025).
 
 # System Architecture
 
