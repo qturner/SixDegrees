@@ -60,8 +60,8 @@ export default function GameGrid({
     if (connection?.movieId) {
       setValidatingIndex(index);
 
-      const previousActorId = index === 0 ? challenge.startActorId : connections[index - 1]?.actorId;
-      const nextActorId = index === connections.length - 1 ? challenge.endActorId : connections[index + 1]?.actorId;
+      const previousActorId = index === 0 ? challenge.startActorId : (connections[index - 1]?.actorId || 0);
+      const nextActorId = index === connections.length - 1 ? challenge.endActorId : (connections[index + 1]?.actorId || 0);
 
       // Use setTimeout to ensure state updates complete before validation
       setTimeout(() => {
@@ -90,7 +90,7 @@ export default function GameGrid({
       
       // Validate immediately for last connection since actor is set automatically
       setValidatingIndex(index);
-      const previousActorId = index === 0 ? challenge.startActorId : connections[index - 1]?.actorId;
+      const previousActorId = connections[index - 1]?.actorId || 0;
       
       setTimeout(() => {
         validateConnectionMutation.mutate({
@@ -111,7 +111,7 @@ export default function GameGrid({
       });
       
       // Clear any existing validation result since movie changed
-      onValidationResult(index, null);
+      onValidationResult(index, { valid: false, message: "" });
     }
   };
 
