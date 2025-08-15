@@ -76,10 +76,16 @@ export default function AdminPanel() {
   const [isSetChallengeDialogOpen, setIsSetChallengeDialogOpen] = useState(false);
   const [startActorSearch, setStartActorSearch] = useState("");
   const [endActorSearch, setEndActorSearch] = useState("");
-  const [selectedStartActor, setSelectedStartActor] = useState<{id: string, name: string} | null>(null);
-  const [selectedEndActor, setSelectedEndActor] = useState<{id: string, name: string} | null>(null);
-  const [startActorResults, setStartActorResults] = useState<any[]>([]);
-  const [endActorResults, setEndActorResults] = useState<any[]>([]);
+  const [selectedStartActor, setSelectedStartActor] = useState<{id: string, name: string, profile_path?: string | null} | null>(null);
+  const [selectedEndActor, setSelectedEndActor] = useState<{id: string, name: string, profile_path?: string | null} | null>(null);
+  interface ActorResult {
+    id: number;
+    name: string;
+    profile_path: string | null;
+  }
+  
+  const [startActorResults, setStartActorResults] = useState<ActorResult[]>([]);
+  const [endActorResults, setEndActorResults] = useState<ActorResult[]>([]);
   
   // Auto-dismiss only the set challenge dialog after 1 second
   // Reset dialog remains open until user action
@@ -416,23 +422,49 @@ export default function AdminPanel() {
                         <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
                       </div>
                       {selectedStartActor && (
-                        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border flex items-center space-x-3">
+                          {selectedStartActor.profile_path ? (
+                            <img
+                              src={`https://image.tmdb.org/t/p/w92${selectedStartActor.profile_path}`}
+                              alt={selectedStartActor.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-700 flex items-center justify-center">
+                              <span className="text-xs font-medium text-blue-600 dark:text-blue-300">
+                                {selectedStartActor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                              </span>
+                            </div>
+                          )}
                           <span className="text-sm font-medium">{selectedStartActor.name}</span>
                         </div>
                       )}
                       {startActorResults.length > 0 && !selectedStartActor && (
-                        <div className="max-h-32 overflow-y-auto border rounded">
+                        <div className="max-h-32 overflow-y-auto border rounded bg-white dark:bg-gray-800 shadow-lg">
                           {startActorResults.map((actor) => (
                             <button
                               key={actor.id}
                               onClick={() => {
-                                setSelectedStartActor({id: actor.id.toString(), name: actor.name});
+                                setSelectedStartActor({id: actor.id.toString(), name: actor.name, profile_path: actor.profile_path});
                                 setStartActorSearch("");
                                 setStartActorResults([]);
                               }}
-                              className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                              className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center space-x-3"
                             >
-                              {actor.name}
+                              {actor.profile_path ? (
+                                <img
+                                  src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                                  alt={actor.name}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    {actor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                  </span>
+                                </div>
+                              )}
+                              <span>{actor.name}</span>
                             </button>
                           ))}
                         </div>
@@ -453,23 +485,49 @@ export default function AdminPanel() {
                         <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
                       </div>
                       {selectedEndActor && (
-                        <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded border">
+                        <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded border flex items-center space-x-3">
+                          {selectedEndActor.profile_path ? (
+                            <img
+                              src={`https://image.tmdb.org/t/p/w92${selectedEndActor.profile_path}`}
+                              alt={selectedEndActor.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-green-200 dark:bg-green-700 flex items-center justify-center">
+                              <span className="text-xs font-medium text-green-600 dark:text-green-300">
+                                {selectedEndActor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                              </span>
+                            </div>
+                          )}
                           <span className="text-sm font-medium">{selectedEndActor.name}</span>
                         </div>
                       )}
                       {endActorResults.length > 0 && !selectedEndActor && (
-                        <div className="max-h-32 overflow-y-auto border rounded">
+                        <div className="max-h-32 overflow-y-auto border rounded bg-white dark:bg-gray-800 shadow-lg">
                           {endActorResults.map((actor) => (
                             <button
                               key={actor.id}
                               onClick={() => {
-                                setSelectedEndActor({id: actor.id.toString(), name: actor.name});
+                                setSelectedEndActor({id: actor.id.toString(), name: actor.name, profile_path: actor.profile_path});
                                 setEndActorSearch("");
                                 setEndActorResults([]);
                               }}
-                              className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                              className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center space-x-3"
                             >
-                              {actor.name}
+                              {actor.profile_path ? (
+                                <img
+                                  src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                                  alt={actor.name}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    {actor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                  </span>
+                                </div>
+                              )}
+                              <span>{actor.name}</span>
                             </button>
                           ))}
                         </div>
