@@ -193,6 +193,7 @@ export default function Game() {
         isFlipped={isFlipped}
         onFlip={handleFlipActors}
         canFlip={!connections.some(c => c.actorId || c.movieId)}
+        gameResult={gameResult}
       />
       
       <main className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">

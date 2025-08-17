@@ -1,6 +1,6 @@
 import { Calendar, ArrowRight, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DailyChallenge } from "@shared/schema";
+import { DailyChallenge, ValidationResult } from "@shared/schema";
 
 interface GameHeaderProps {
   challenge: DailyChallenge;
@@ -8,9 +8,10 @@ interface GameHeaderProps {
   isFlipped?: boolean;
   onFlip?: () => void;
   canFlip?: boolean;
+  gameResult?: ValidationResult | null;
 }
 
-export default function GameHeader({ challenge, currentMoves, isFlipped = false, onFlip, canFlip = true }: GameHeaderProps) {
+export default function GameHeader({ challenge, currentMoves, isFlipped = false, onFlip, canFlip = true, gameResult }: GameHeaderProps) {
   // Get the effective actors to display based on flip state
   const displayChallenge = isFlipped ? {
     ...challenge,
@@ -29,6 +30,9 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
   };
 
   const getGameStatus = () => {
+    // Check if game has been successfully completed
+    if (gameResult?.valid && gameResult?.completed) return "Complete";
+    
     if (currentMoves === 0) return "Ready to Start";
     if (currentMoves >= 6) return "Game Over";
     return "In Progress";
@@ -37,6 +41,7 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
   const getStatusColor = () => {
     const status = getGameStatus();
     if (status === "Ready to Start") return "text-game-blue";
+    if (status === "Complete") return "text-game-success";
     if (status === "Game Over") return "text-game-error";
     return "text-game-warning";
   };
