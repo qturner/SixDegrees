@@ -66,6 +66,13 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
     }
   }, [movies, searchQuery]);
 
+  // Close dropdown when input field is completely cleared
+  useEffect(() => {
+    if (displayValue.length === 0) {
+      setOpen(false);
+    }
+  }, [displayValue]);
+
   const formatYear = (date: string | undefined) => {
     if (!date) return "";
     return ` (${new Date(date).getFullYear()})`;

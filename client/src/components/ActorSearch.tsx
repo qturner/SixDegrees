@@ -61,6 +61,13 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
     }
   }, [actors, searchQuery]);
 
+  // Close dropdown when input field is completely cleared
+  useEffect(() => {
+    if (displayValue.length === 0) {
+      setOpen(false);
+    }
+  }, [displayValue]);
+
   return (
     <div className="relative">
       <div className="relative flex">
