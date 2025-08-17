@@ -172,7 +172,7 @@ export default function GameGrid({
           }
           
           return (
-            <div key={`connection-${index}`} className="border border-gray-200 input-radius spacing-md space-y-4 transition-all duration-200 hover:border-gray-300 hover:shadow-card">
+            <div key={`connection-${index}`} className="bg-card border border-gray-200 input-radius spacing-md space-y-4 transition-all duration-200 hover:border-gray-300 hover:shadow-card">
               <h4 className="text-body-sm font-medium text-muted text-center">
                 Connection {index + 1} of {connectionSlots.length}
               </h4>
