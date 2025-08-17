@@ -244,6 +244,14 @@ export default function Game() {
             >
               Contact
             </button>
+            <a 
+              href="/theme-samples"
+              target="_blank"
+              className="hover:text-game-blue transition-all duration-200 cursor-pointer"
+              data-testid="link-theme-samples"
+            >
+              Theme Samples
+            </a>
           </div>
         </footer>
       </main>
