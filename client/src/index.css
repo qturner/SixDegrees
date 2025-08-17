@@ -5,11 +5,11 @@
 
 :root {
   /* Classic Hollywood Glamour Theme - Rich golds and deep blacks */
-  --background: hsl(46 44% 93%);      /* #F7E7CE - light cream background */
-  --foreground: hsl(0 0% 5%);         /* #0D0D0D - deep black text */
-  --card: hsl(46 44% 90%);            /* slightly darker cream for cards */
+  --background: hsl(0 0% 5%);         /* #0D0D0D - deep black background */
+  --foreground: hsl(0 0% 97%);        /* #F8F8FF - ghost white text */
+  --card: hsl(46 44% 93%);            /* #F7E7CE - light cream for cards */
   --card-foreground: hsl(0 0% 5%);    /* #0D0D0D - deep black on cards */
-  --popover: hsl(46 44% 90%);         /* cream for popovers */
+  --popover: hsl(46 44% 93%);         /* cream for popovers */
   --popover-foreground: hsl(0 0% 5%); /* deep black text */
   --primary: hsl(43 74% 37%);         /* #B8860B - dark goldenrod */
   --primary-foreground: hsl(0 0% 100%); /* white text on gold */
