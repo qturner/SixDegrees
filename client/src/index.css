@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(240 33% 4%); /* Near Black #0D0D0D */
+  --background: hsl(210 11% 21%); /* Charcoal #36454F - matches card color */
   --foreground: hsl(60 100% 97%); /* Pearl White #F8F8FF */
   --card: hsl(210 11% 21%); /* Charcoal #36454F */
   --card-foreground: hsl(60 100% 97%); /* Pearl White #F8F8FF */
@@ -21,7 +21,7 @@
   --destructive: hsl(0 84.2% 60.2%);
   --destructive-foreground: hsl(0 0% 100%);
   --border: hsl(0 0% 75%); /* Silver #C0C0C0 */
-  --input: hsl(210 11% 21%); /* Charcoal #36454F */
+  --input: hsl(41 69% 36%); /* Deep Gold #B8860B for input fields */
   --ring: hsl(41 69% 36%); /* Deep Gold #B8860B */
   --chart-1: hsl(217.2 91.2% 59.8%);
   --chart-2: hsl(159.7826 100% 36.0784%);
