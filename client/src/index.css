@@ -4,25 +4,25 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(210 11% 21%); /* Charcoal #36454F - matches card color */
-  --foreground: hsl(60 100% 97%); /* Pearl White #F8F8FF */
-  --card: hsl(210 11% 21%); /* Charcoal #36454F */
-  --card-foreground: hsl(60 100% 97%); /* Pearl White #F8F8FF */
-  --popover: hsl(210 11% 21%); /* Charcoal #36454F */
-  --popover-foreground: hsl(60 100% 97%); /* Pearl White #F8F8FF */
-  --primary: hsl(41 69% 36%); /* Deep Gold */
-  --primary-foreground: hsl(60 100% 97%); /* Pearl White */
-  --secondary: hsl(210 11% 21%); /* Charcoal */
-  --secondary-foreground: hsl(60 100% 97%); /* Pearl White */
-  --muted: hsl(210 11% 21%); /* Charcoal #36454F */
-  --muted-foreground: hsl(0 0% 75%); /* Silver #C0C0C0 */
-  --accent: hsl(41 91% 91%); /* Champagne Gold #F7E7CE */
-  --accent-foreground: hsl(240 33% 4%); /* Dark text on light accent */
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(210 25% 7.8431%);
+  --card: hsl(180 6.6667% 97.0588%);
+  --card-foreground: hsl(210 25% 7.8431%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(210 25% 7.8431%);
+  --primary: hsl(217.2 91.2% 59.8%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 25% 7.8431%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --muted: hsl(240 1.9608% 90%);
+  --muted-foreground: hsl(210 25% 7.8431%);
+  --accent: hsl(211.5789 51.3514% 92.7451%);
+  --accent-foreground: hsl(217.2 91.2% 59.8%);
   --destructive: hsl(0 84.2% 60.2%);
   --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(0 0% 75%); /* Silver #C0C0C0 */
-  --input: hsl(41 69% 36%); /* Deep Gold #B8860B for input fields */
-  --ring: hsl(41 69% 36%); /* Deep Gold #B8860B */
+  --border: hsl(201.4286 30.4348% 90.9804%);
+  --input: hsl(200 23.0769% 97.4510%);
+  --ring: hsl(217.2 91.2% 59.8%);
   --chart-1: hsl(217.2 91.2% 59.8%);
   --chart-2: hsl(159.7826 100% 36.0784%);
   --chart-3: hsl(42.0290 92.8251% 56.2745%);
@@ -51,12 +51,12 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Classic Hollywood Glamour Theme - Game specific colors */
-  --game-primary: hsl(41 69% 36%); /* Deep Gold #B8860B */
-  --game-blue: hsl(41 69% 36%); /* Deep Gold #B8860B */
-  --game-success: hsl(41 69% 36%); /* Deep Gold #B8860B */
-  --game-error: hsl(0 84.2% 60.2%); /* Keep red for errors */
-  --game-warning: hsl(47.9 95.8% 53.1%); /* Keep yellow for warnings */
+  /* Game specific colors */
+  --game-primary: hsl(210 25% 14%);
+  --game-blue: hsl(217.2 91.2% 59.8%);
+  --game-success: hsl(142.1 76.2% 36.3%);
+  --game-error: hsl(0 84.2% 60.2%);
+  --game-warning: hsl(47.9 95.8% 53.1%);
 }
 
 .dark {
@@ -119,23 +119,13 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-gray-50 text-foreground;
     line-height: 1.6;
   }
   
   /* Smooth transitions for all interactive elements */
   button, [role="button"], input, select, textarea {
     @apply transition-all duration-200 ease-in-out;
-  }
-  
-  /* Input fields with gold background */
-  input, textarea, select {
-    background-color: hsl(41 69% 36%) !important; /* Deep Gold */
-    color: hsl(60 100% 97%) !important; /* Pearl White text */
-  }
-  
-  input::placeholder, textarea::placeholder {
-    color: hsl(60 100% 85%) !important; /* Lighter pearl for placeholder */
   }
   
   /* Consistent focus states */
