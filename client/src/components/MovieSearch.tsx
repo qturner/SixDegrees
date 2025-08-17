@@ -88,7 +88,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 p-4 border-2 border-border rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
+          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
         />
         <Button
           onClick={handleSearch}
@@ -99,7 +99,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
         </Button>
       </div>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg z-50 p-0">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-0">
           <Command>
             <CommandList>
               {isLoading && (
@@ -125,8 +125,8 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
                             className="w-8 h-12 object-cover rounded"
                           />
                         ) : (
-                          <div className="w-8 h-12 bg-muted flex items-center justify-center rounded">
-                            <span className="text-xs font-medium text-muted-foreground">
+                          <div className="w-8 h-12 bg-gray-200 flex items-center justify-center rounded">
+                            <span className="text-xs font-medium text-gray-600">
                               {movie.title.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                             </span>
                           </div>

@@ -4,60 +4,59 @@
 @tailwind utilities;
 
 :root {
-  /* Classic Hollywood Glamour Theme - Rich golds and deep blacks */
-  --background: hsl(0 0% 5%);         /* #0D0D0D - deep black background */
-  --foreground: hsl(0 0% 97%);        /* #F8F8FF - ghost white text */
-  --card: hsl(46 44% 93%);            /* #F7E7CE - light cream for cards */
-  --card-foreground: hsl(0 0% 5%);    /* #0D0D0D - deep black on cards */
-  --popover: hsl(46 44% 93%);         /* cream for popovers */
-  --popover-foreground: hsl(0 0% 5%); /* deep black text */
-  --primary: hsl(43 74% 37%);         /* #B8860B - dark goldenrod */
-  --primary-foreground: hsl(0 0% 100%); /* white text on gold */
-  --secondary: hsl(0 0% 76%);         /* #C0C0C0 - silver */
-  --secondary-foreground: hsl(0 0% 5%); /* deep black on silver */
-  --muted: hsl(46 30% 85%);           /* muted cream */
-  --muted-foreground: hsl(0 0% 25%);  /* dark gray text */
-  --accent: hsl(43 65% 50%);          /* #DAA520 - goldenrod accent */
-  --accent-foreground: hsl(0 0% 5%);  /* deep black on gold accent */
-  --destructive: hsl(0 65% 51%);      /* red for errors */
-  --destructive-foreground: hsl(0 0% 100%); /* white on red */
-  --border: hsl(43 40% 70%);          /* golden border */
-  --input: hsl(46 35% 88%);           /* cream input background */
-  --ring: hsl(43 74% 37%);            /* gold focus ring */
-  --chart-1: hsl(43 74% 37%);         /* gold */
-  --chart-2: hsl(43 65% 50%);         /* lighter gold */
-  --chart-3: hsl(0 0% 76%);           /* silver */
-  --chart-4: hsl(0 0% 45%);           /* dark gray */
-  --chart-5: hsl(0 0% 25%);           /* darker gray */
-  --sidebar: hsl(46 44% 90%);         /* cream sidebar */
-  --sidebar-foreground: hsl(0 0% 5%); /* deep black sidebar text */
-  --sidebar-primary: hsl(43 74% 37%); /* gold sidebar primary */
-  --sidebar-primary-foreground: hsl(0 0% 100%); /* white text */
-  --sidebar-accent: hsl(43 65% 50%);  /* gold sidebar accent */
-  --sidebar-accent-foreground: hsl(0 0% 5%); /* deep black */
-  --sidebar-border: hsl(43 40% 70%);  /* golden sidebar border */
-  --sidebar-ring: hsl(43 74% 37%);    /* gold sidebar ring */
+  --background: hsl(210 11% 21%); /* Charcoal #36454F - matches card color */
+  --foreground: hsl(60 100% 97%); /* Pearl White #F8F8FF */
+  --card: hsl(210 11% 21%); /* Charcoal #36454F */
+  --card-foreground: hsl(60 100% 97%); /* Pearl White #F8F8FF */
+  --popover: hsl(210 11% 21%); /* Charcoal #36454F */
+  --popover-foreground: hsl(60 100% 97%); /* Pearl White #F8F8FF */
+  --primary: hsl(41 69% 36%); /* Deep Gold */
+  --primary-foreground: hsl(60 100% 97%); /* Pearl White */
+  --secondary: hsl(210 11% 21%); /* Charcoal */
+  --secondary-foreground: hsl(60 100% 97%); /* Pearl White */
+  --muted: hsl(210 11% 21%); /* Charcoal #36454F */
+  --muted-foreground: hsl(0 0% 75%); /* Silver #C0C0C0 */
+  --accent: hsl(41 91% 91%); /* Champagne Gold #F7E7CE */
+  --accent-foreground: hsl(240 33% 4%); /* Dark text on light accent */
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(0 0% 75%); /* Silver #C0C0C0 */
+  --input: hsl(41 69% 36%); /* Deep Gold #B8860B for input fields */
+  --ring: hsl(41 69% 36%); /* Deep Gold #B8860B */
+  --chart-1: hsl(217.2 91.2% 59.8%);
+  --chart-2: hsl(159.7826 100% 36.0784%);
+  --chart-3: hsl(42.0290 92.8251% 56.2745%);
+  --chart-4: hsl(147.1429 78.5047% 41.9608%);
+  --chart-5: hsl(341.4894 75.2000% 50.9804%);
+  --sidebar: hsl(180 6.6667% 97.0588%);
+  --sidebar-foreground: hsl(210 25% 7.8431%);
+  --sidebar-primary: hsl(217.2 91.2% 59.8%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(211.5789 51.3514% 92.7451%);
+  --sidebar-accent-foreground: hsl(217.2 91.2% 59.8%);
+  --sidebar-border: hsl(205.0000 25.0000% 90.5882%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: 1.3rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 5% / 0.1);
-  --shadow-xs: 0px 2px 0px 0px hsl(0 0% 5% / 0.1);
-  --shadow-sm: 0px 2px 0px 0px hsl(0 0% 5% / 0.1), 0px 1px 2px -1px hsl(0 0% 5% / 0.1);
-  --shadow: 0px 2px 0px 0px hsl(0 0% 5% / 0.1), 0px 1px 2px -1px hsl(0 0% 5% / 0.1);
-  --shadow-md: 0px 2px 0px 0px hsl(0 0% 5% / 0.1), 0px 2px 4px -1px hsl(0 0% 5% / 0.1);
-  --shadow-lg: 0px 2px 0px 0px hsl(0 0% 5% / 0.1), 0px 4px 6px -1px hsl(0 0% 5% / 0.1);
-  --shadow-xl: 0px 2px 0px 0px hsl(0 0% 5% / 0.1), 0px 8px 10px -1px hsl(0 0% 5% / 0.1);
-  --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 5% / 0.1);
+  --shadow-2xs: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 1px 2px -1px hsl(217.2 91.2% 59.8% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 1px 2px -1px hsl(217.2 91.2% 59.8% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 2px 4px -1px hsl(217.2 91.2% 59.8% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 4px 6px -1px hsl(217.2 91.2% 59.8% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 8px 10px -1px hsl(217.2 91.2% 59.8% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Game specific colors - Classic Hollywood Glamour */
-  --game-primary: hsl(0 0% 5%);       /* #0D0D0D - deep black */
-  --game-blue: hsl(43 74% 37%);       /* #B8860B - dark goldenrod */
-  --game-success: hsl(142 60% 40%);   /* green for success */
-  --game-error: hsl(0 65% 51%);       /* red for errors */
-  --game-warning: hsl(43 85% 50%);    /* gold for warnings */
+  /* Classic Hollywood Glamour Theme - Game specific colors */
+  --game-primary: hsl(41 69% 36%); /* Deep Gold #B8860B */
+  --game-blue: hsl(41 69% 36%); /* Deep Gold #B8860B */
+  --game-success: hsl(41 69% 36%); /* Deep Gold #B8860B */
+  --game-error: hsl(0 84.2% 60.2%); /* Keep red for errors */
+  --game-warning: hsl(47.9 95.8% 53.1%); /* Keep yellow for warnings */
 }
 
 .dark {
@@ -120,13 +119,23 @@
   }
 
   body {
-    @apply font-sans antialiased bg-gray-50 text-foreground;
+    @apply font-sans antialiased bg-background text-foreground;
     line-height: 1.6;
   }
   
   /* Smooth transitions for all interactive elements */
   button, [role="button"], input, select, textarea {
     @apply transition-all duration-200 ease-in-out;
+  }
+  
+  /* Input fields with gold background */
+  input, textarea, select {
+    background-color: hsl(41 69% 36%) !important; /* Deep Gold */
+    color: hsl(60 100% 97%) !important; /* Pearl White text */
+  }
+  
+  input::placeholder, textarea::placeholder {
+    color: hsl(60 100% 85%) !important; /* Lighter pearl for placeholder */
   }
   
   /* Consistent focus states */

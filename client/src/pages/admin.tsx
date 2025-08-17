@@ -284,15 +284,15 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
+            <Shield className="h-8 w-8 text-blue-600" />
             <div>
               <h1 className="text-3xl font-bold">Admin Panel</h1>
-              <p className="text-muted-foreground">Six Degrees Game Management</p>
+              <p className="text-gray-600 dark:text-gray-400">Six Degrees Game Management</p>
             </div>
           </div>
           <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2">
@@ -321,12 +321,12 @@ export default function AdminPanel() {
             ) : challenge ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-accent rounded-lg">
-                    <h3 className="font-semibold text-accent-foreground">Start Actor</h3>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">Start Actor</h3>
                     <p className="text-lg font-medium">{challenge.startActorName}</p>
                   </div>
-                  <div className="p-4 bg-secondary rounded-lg">
-                    <h3 className="font-semibold text-secondary-foreground">End Actor</h3>
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <h3 className="font-semibold text-green-900 dark:text-green-100">End Actor</h3>
                     <p className="text-lg font-medium">{challenge.endActorName}</p>
                   </div>
                 </div>
@@ -344,7 +344,7 @@ export default function AdminPanel() {
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground">No challenge data available</p>
+              <p className="text-gray-500">No challenge data available</p>
             )}
           </CardContent>
         </Card>
@@ -364,7 +364,7 @@ export default function AdminPanel() {
             <div className="space-y-4">
               <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2">Reset Daily Challenge</h3>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   This will delete the current challenge and generate a new one with different actors.
                   All hints will be reset to 0.
                 </p>
@@ -401,7 +401,7 @@ export default function AdminPanel() {
 
               <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2">Set Custom Challenge</h3>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   Manually select two specific actors for today's challenge.
                   All hints will be reset to 0.
                 </p>

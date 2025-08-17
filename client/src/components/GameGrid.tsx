@@ -143,7 +143,7 @@ export default function GameGrid({
   );
 
   return (
-    <div className="bg-card card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-md sm:spacing-lg mb-8">
+    <div className="bg-white card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-md sm:spacing-lg mb-8">
       {/* Starting Actor */}
       <div className="mb-6">
         <h3 className="text-heading-md text-game-primary mb-3 text-center">
@@ -172,14 +172,14 @@ export default function GameGrid({
           }
           
           return (
-            <div key={`connection-${index}`} className="border border-border input-radius spacing-md space-y-4 transition-all duration-200 hover:border-border hover:shadow-card">
+            <div key={`connection-${index}`} className="bg-card border border-gray-200 input-radius spacing-md space-y-4 transition-all duration-200 hover:border-gray-300 hover:shadow-card">
               <h4 className="text-body-sm font-medium text-muted text-center">
                 Connection {index + 1} of {connectionSlots.length}
               </h4>
               
               {/* Movie Input (Primary) */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center">
+                <label className="text-sm font-medium text-gray-700 flex items-center">
                   <Film className="w-4 h-4 mr-1" />
                   Movie featuring {previousActorName || 'previous actor'}
                   {isLastConnection && ` and ${challenge.endActorName}`}
@@ -203,8 +203,8 @@ export default function GameGrid({
 
               {/* Actor Input (Subfield) - Not shown for last connection */}
               {!isLastConnection && (
-                <div className="space-y-2 ml-4 border-l-2 border-border pl-4">
-                  <label className="text-sm font-medium text-foreground flex items-center">
+                <div className="space-y-2 ml-4 border-l-2 border-gray-200 pl-4">
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
                     <User className="w-4 h-4 mr-1" />
                     Co-star in {connection.movieTitle || 'this movie'}
                   </label>

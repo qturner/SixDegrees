@@ -42,7 +42,7 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
   };
 
   return (
-    <header className="bg-card shadow-sm border-b border-border">
+    <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-3">
