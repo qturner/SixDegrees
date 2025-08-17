@@ -12,7 +12,7 @@ interface GameGridProps {
   connections: Connection[];
   validationResults: ValidationResult[];
   onConnectionUpdate: (index: number, connection: Partial<Connection>) => void;
-  onValidationResult: (index: number, result: ValidationResult) => void;
+  onValidationResult: (index: number, result: ValidationResult | null) => void;
   onGameResult: (result: ValidationResult) => void;
   onReset: () => void;
 }
@@ -111,7 +111,7 @@ export default function GameGrid({
       });
       
       // Clear any existing validation result since movie changed
-      onValidationResult(index, { valid: false, message: "" });
+      onValidationResult(index, null);
     }
   };
 

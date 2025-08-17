@@ -92,10 +92,15 @@ export default function Game() {
     });
   };
 
-  const handleValidationResult = (index: number, result: ValidationResult) => {
+  const handleValidationResult = (index: number, result: ValidationResult | null) => {
     setValidationResults(prev => {
       const newResults = [...prev];
-      newResults[index] = result;
+      if (result === null) {
+        // Clear the validation result at this index
+        newResults[index] = null as any;
+      } else {
+        newResults[index] = result;
+      }
       return newResults;
     });
   };

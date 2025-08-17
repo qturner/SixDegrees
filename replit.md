@@ -31,6 +31,7 @@ Search Input Double-Click Fix: Resolved critical UX issue where users had to cli
 Auto-Hide Dropdown Enhancement: Added smart dropdown behavior where search results automatically disappear when input field is completely cleared, improving user experience by preventing stale results from persisting after field cleanup (August 2025).
 Validation Timing Fix: Corrected premature error display in GameGrid - validation feedback now only appears when both movie AND actor are selected, eliminating confusing red error messages that appeared on partial input (August 2025).
 Hint Loading State Fix: Resolved issue where both hint buttons showed "Getting Hint..." simultaneously - now only the clicked hint button displays loading state while the other remains interactive (August 2025).
+Validation Flash Fix: Eliminated jarring red-to-green flash during validation by properly clearing validation results instead of setting failed states, creating smooth validation feedback without confusing intermediate error states (August 2025).
 
 # System Architecture
 
