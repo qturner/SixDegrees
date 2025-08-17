@@ -119,13 +119,23 @@
   }
 
   body {
-    @apply font-sans antialiased bg-gray-50 text-foreground;
+    @apply font-sans antialiased bg-background text-foreground;
     line-height: 1.6;
   }
   
   /* Smooth transitions for all interactive elements */
   button, [role="button"], input, select, textarea {
     @apply transition-all duration-200 ease-in-out;
+  }
+  
+  /* Input fields with gold background */
+  input, textarea, select {
+    background-color: hsl(41 69% 36%) !important; /* Deep Gold */
+    color: hsl(60 100% 97%) !important; /* Pearl White text */
+  }
+  
+  input::placeholder, textarea::placeholder {
+    color: hsl(60 100% 85%) !important; /* Lighter pearl for placeholder */
   }
   
   /* Consistent focus states */
