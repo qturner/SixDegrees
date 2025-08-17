@@ -72,73 +72,73 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div className="relative flex">
-          <Input
-            value={displayValue}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onFocus={handleFocus}
-            onKeyPress={handleKeyPress}
-            placeholder={placeholder}
-            disabled={disabled}
-            className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
-          />
-          <Button
-            onClick={handleSearch}
-            disabled={disabled || displayValue.length <= 2}
-            className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Search className="w-4 h-4" />
-          </Button>
-        </div>
-      </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-        <Command>
-          <CommandList>
-            {isLoading && (
-              <CommandEmpty>Searching movies...</CommandEmpty>
-            )}
-            {!isLoading && movies.length === 0 && searchQuery.length > 2 && (
-              <CommandEmpty>No movies found.</CommandEmpty>
-            )}
-            {movies.length > 0 && (
-              <CommandGroup>
-                {movies.slice(0, 10).map((movie) => (
-                  <CommandItem
-                    key={movie.id}
-                    value={movie.title}
-                    onSelect={() => handleSelect(movie)}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3">
-                      {movie.poster_path ? (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
-                          alt={movie.title}
-                          className="w-8 h-12 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-8 h-12 bg-gray-200 flex items-center justify-center rounded">
-                          <span className="text-xs font-medium text-gray-600">
-                            {movie.title.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                          </span>
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-medium">{movie.title}</div>
-                        <div className="text-sm text-gray-500">
-                          {formatYear(movie.release_date)}
+    <div className="relative">
+      <div className="relative flex">
+        <Input
+          value={displayValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onFocus={handleFocus}
+          onKeyPress={handleKeyPress}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
+        />
+        <Button
+          onClick={handleSearch}
+          disabled={disabled || displayValue.length <= 2}
+          className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Search className="w-4 h-4" />
+        </Button>
+      </div>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-0">
+          <Command>
+            <CommandList>
+              {isLoading && (
+                <CommandEmpty>Searching movies...</CommandEmpty>
+              )}
+              {!isLoading && movies.length === 0 && searchQuery.length > 2 && (
+                <CommandEmpty>No movies found.</CommandEmpty>
+              )}
+              {movies.length > 0 && (
+                <CommandGroup>
+                  {movies.slice(0, 10).map((movie) => (
+                    <CommandItem
+                      key={movie.id}
+                      value={movie.title}
+                      onSelect={() => handleSelect(movie)}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3">
+                        {movie.poster_path ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+                            alt={movie.title}
+                            className="w-8 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-8 h-12 bg-gray-200 flex items-center justify-center rounded">
+                            <span className="text-xs font-medium text-gray-600">
+                              {movie.title.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{movie.title}</div>
+                          <div className="text-sm text-gray-500">
+                            {formatYear(movie.release_date)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </div>
+      )}
+    </div>
   );
 }
