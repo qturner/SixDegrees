@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Game Theme Samples</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .theme-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; margin-bottom: 40px; }
+        .theme-card { border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        .theme-header { padding: 20px; text-align: center; color: white; font-weight: bold; font-size: 18px; }
+        .theme-content { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .sample-button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .sample-card { padding: 16px; border-radius: 8px; border: 1px solid; }
+        .color-palette { display: flex; gap: 10px; margin-top: 10px; }
+        .color-swatch { width: 40px; height: 40px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.3); }
+        h1 { text-align: center; margin-bottom: 40px; color: #333; font-size: 32px; }
+        .theme-name { font-size: 14px; opacity: 0.9; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Movie Game Theme Samples</h1>
+        
+        <div class="theme-grid">
+            <!-- Classic Hollywood Glamour -->
+            <div class="theme-card">
+                <div class="theme-header" style="background: linear-gradient(135deg, #B8860B, #DAA520);">
+                    Classic Hollywood Glamour
+                    <div class="theme-name">Rich golds and deep blacks</div>
+                </div>
+                <div class="theme-content" style="background: #0D0D0D; color: #F8F8FF;">
+                    <button class="sample-button" style="background: #B8860B; color: white;">Get Daily Hint</button>
+                    <div class="sample-card" style="background: #F7E7CE; color: #0D0D0D; border-color: #B8860B;">
+                        ✓ Valid connection! Ryan Reynolds and Blake Lively both appear in Green Lantern
+                    </div>
+                    <button class="sample-button" style="background: #36454F; color: #F8F8FF;">Validate Connection</button>
+                    <div class="color-palette">
+                        <div class="color-swatch" style="background: #B8860B;"></div>
+                        <div class="color-swatch" style="background: #F7E7CE;"></div>
+                        <div class="color-swatch" style="background: #0D0D0D;"></div>
+                        <div class="color-swatch" style="background: #C0C0C0;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Film Noir Mystery -->
+            <div class="theme-card">
+                <div class="theme-header" style="background: linear-gradient(135deg, #722F37, #8B0000);">
+                    Film Noir Mystery
+                    <div class="theme-name">Dramatic shadows and vintage cinema</div>
+                </div>
+                <div class="theme-content" style="background: #1C1C1C; color: #FFFDD0;">
+                    <button class="sample-button" style="background: #722F37; color: white;">Get Daily Hint</button>
+                    <div class="sample-card" style="background: #FFFDD0; color: #1C1C1C; border-color: #8B0000;">
+                        ✓ Valid connection! Humphrey Bogart and Lauren Bacall both appear in The Big Sleep
+                    </div>
+                    <button class="sample-button" style="background: #2F4F4F; color: #FFFDD0;">Validate Connection</button>
+                    <div class="color-palette">
+                        <div class="color-swatch" style="background: #722F37;"></div>
+                        <div class="color-swatch" style="background: #8B0000;"></div>
+                        <div class="color-swatch" style="background: #1C1C1C;"></div>
+                        <div class="color-swatch" style="background: #FFFDD0;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hollywood Sign Sunset -->
+            <div class="theme-card">
+                <div class="theme-header" style="background: linear-gradient(135deg, #FF6347, #FF7F50);">
+                    Hollywood Sign Sunset
+                    <div class="theme-name">Warm California sunset colors</div>
+                </div>
+                <div class="theme-content" style="background: #483D8B; color: #FFD700;">
+                    <button class="sample-button" style="background: #FF6347; color: white;">Get Daily Hint</button>
+                    <div class="sample-card" style="background: #FFB6C1; color: #483D8B; border-color: #FF7F50;">
+                        ✓ Valid connection! Leonardo DiCaprio and Margot Robbie both appear in The Wolf of Wall Street
+                    </div>
+                    <button class="sample-button" style="background: #2F4F4F; color: #FFD700;">Validate Connection</button>
+                    <div class="color-palette">
+                        <div class="color-swatch" style="background: #FF6347;"></div>
+                        <div class="color-swatch" style="background: #FF7F50;"></div>
+                        <div class="color-swatch" style="background: #483D8B;"></div>
+                        <div class="color-swatch" style="background: #FFD700;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movie Theater Classic -->
+            <div class="theme-card">
+                <div class="theme-header" style="background: linear-gradient(135deg, #DC143C, #B22222);">
+                    Movie Theater Classic
+                    <div class="theme-name">Red velvet and gold elegance</div>
+                </div>
+                <div class="theme-content" style="background: #191970; color: #F5F5DC;">
+                    <button class="sample-button" style="background: #DC143C; color: white;">Get Daily Hint</button>
+                    <div class="sample-card" style="background: #F5F5DC; color: #191970; border-color: #DAA520;">
+                        ✓ Valid connection! Tom Hanks and Meg Ryan both appear in You've Got Mail
+                    </div>
+                    <button class="sample-button" style="background: #DAA520; color: #191970;">Validate Connection</button>
+                    <div class="color-palette">
+                        <div class="color-swatch" style="background: #DC143C;"></div>
+                        <div class="color-swatch" style="background: #DAA520;"></div>
+                        <div class="color-swatch" style="background: #191970;"></div>
+                        <div class="color-swatch" style="background: #F5F5DC;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Silver Screen Elegance -->
+            <div class="theme-card">
+                <div class="theme-header" style="background: linear-gradient(135deg, #C0C0C0, #E5E4E2);">
+                    Silver Screen Elegance
+                    <div class="theme-name">Monochromatic with metallic accents</div>
+                </div>
+                <div class="theme-content" style="background: #36454F; color: #FFFFFF;">
+                    <button class="sample-button" style="background: #C0C0C0; color: #000;">Get Daily Hint</button>
+                    <div class="sample-card" style="background: #FFFFFF; color: #36454F; border-color: #C0C0C0;">
+                        ✓ Valid connection! Grace Kelly and Cary Grant both appear in To Catch a Thief
+                    </div>
+                    <button class="sample-button" style="background: #708090; color: #FFFFFF;">Validate Connection</button>
+                    <div class="color-palette">
+                        <div class="color-swatch" style="background: #C0C0C0;"></div>
+                        <div class="color-swatch" style="background: #E5E4E2;"></div>
+                        <div class="color-swatch" style="background: #36454F;"></div>
+                        <div class="color-swatch" style="background: #708090;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modern Hollywood -->
+            <div class="theme-card">
+                <div class="theme-header" style="background: linear-gradient(135deg, #0080FF, #00BFFF);">
+                    Modern Hollywood
+                    <div class="theme-name">Contemporary cinema with neon accents</div>
+                </div>
+                <div class="theme-content" style="background: #2F4F4F; color: #FFFFFF;">
+                    <button class="sample-button" style="background: #0080FF; color: white;">Get Daily Hint</button>
+                    <div class="sample-card" style="background: #39FF14; color: #2F4F4F; border-color: #FF1493;">
+                        ✓ Valid connection! Chris Evans and Scarlett Johansson both appear in The Avengers
+                    </div>
+                    <button class="sample-button" style="background: #FF1493; color: white;">Validate Connection</button>
+                    <div class="color-palette">
+                        <div class="color-swatch" style="background: #0080FF;"></div>
+                        <div class="color-swatch" style="background: #00BFFF;"></div>
+                        <div class="color-swatch" style="background: #FF1493;"></div>
+                        <div class="color-swatch" style="background: #39FF14;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oscar Night -->
+            <div class="theme-card">
+                <div class="theme-header" style="background: linear-gradient(135deg, #FFD700, #D4A942);">
+                    Oscar Night
+                    <div class="theme-name">Awards ceremony elegance</div>
+                </div>
+                <div class="theme-content" style="background: #191970; color: #F8F8FF;">
+                    <button class="sample-button" style="background: #FFD700; color: #191970;">Get Daily Hint</button>
+                    <div class="sample-card" style="background: #F8F8FF; color: #191970; border-color: #E8B4B8;">
+                        ✓ Valid connection! Meryl Streep and Anne Hathaway both appear in The Devil Wears Prada
+                    </div>
+                    <button class="sample-button" style="background: #000080; color: #F8F8FF;">Validate Connection</button>
+                    <div class="color-palette">
+                        <div class="color-swatch" style="background: #FFD700;"></div>
+                        <div class="color-swatch" style="background: #D4A942;"></div>
+                        <div class="color-swatch" style="background: #191970;"></div>
+                        <div class="color-swatch" style="background: #E8B4B8;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vintage Cinema -->
+            <div class="theme-card">
+                <div class="theme-header" style="background: linear-gradient(135deg, #704214, #D2691E);">
+                    Vintage Cinema
+                    <div class="theme-name">Warm sepia and earth tones</div>
+                </div>
+                <div class="theme-content" style="background: #355E3B; color: #FFFDD0;">
+                    <button class="sample-button" style="background: #704214; color: #FFFDD0;">Get Daily Hint</button>
+                    <div class="sample-card" style="background: #FFFDD0; color: #355E3B; border-color: #D2691E;">
+                        ✓ Valid connection! Clark Gable and Vivien Leigh both appear in Gone with the Wind
+                    </div>
+                    <button class="sample-button" style="background: #6B8E23; color: #FFFDD0;">Validate Connection</button>
+                    <div class="color-palette">
+                        <div class="color-swatch" style="background: #704214;"></div>
+                        <div class="color-swatch" style="background: #D2691E;"></div>
+                        <div class="color-swatch" style="background: #355E3B;"></div>
+                        <div class="color-swatch" style="background: #FFFDD0;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; color: #666; font-size: 14px;">
+            <p>Each theme shows sample buttons, validation feedback, and color palette</p>
+            <p>Colors can be adjusted based on your preferences</p>
+        </div>
+    </div>
+</body>
+</html>
