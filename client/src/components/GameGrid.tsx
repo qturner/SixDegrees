@@ -233,7 +233,7 @@ export default function GameGrid({
               )}
 
               {/* Connection Status */}
-              {validationResult && connection.movieTitle && (
+              {validationResult && connection.movieTitle && connection.actorName && (
                 <div className={`text-sm p-3 rounded-md ${
                   validationResult.valid 
                     ? 'bg-green-50 text-green-700 border border-green-200' 

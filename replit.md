@@ -29,6 +29,8 @@ Email Notification System: Implemented Gmail SMTP integration for contact form s
 Admin Set Custom Challenge Fix: Fixed actor search functionality in admin panel's Set Custom Challenge feature - corrected API endpoint from '/api/search-actors' to '/api/search/actors' and changed query parameter from 'query' to 'q' to match TMDB service expectations, enabling proper actor selection for custom daily challenges (August 2025).
 Search Input Double-Click Fix: Resolved critical UX issue where users had to click twice on movie/actor input fields before typing - removed PopoverTrigger wrappers and implemented direct absolute positioning for dropdowns, enabling immediate single-click text input (August 2025).
 Auto-Hide Dropdown Enhancement: Added smart dropdown behavior where search results automatically disappear when input field is completely cleared, improving user experience by preventing stale results from persisting after field cleanup (August 2025).
+Validation Timing Fix: Corrected premature error display in GameGrid - validation feedback now only appears when both movie AND actor are selected, eliminating confusing red error messages that appeared on partial input (August 2025).
+Hint Loading State Fix: Resolved issue where both hint buttons showed "Getting Hint..." simultaneously - now only the clicked hint button displays loading state while the other remains interactive (August 2025).
 
 # System Architecture
 
