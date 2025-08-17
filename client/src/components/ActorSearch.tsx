@@ -77,7 +77,7 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
+          className="flex-1 p-4 border-2 border-border rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
         />
         <Button
           onClick={handleSearch}
@@ -88,7 +88,7 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
         </Button>
       </div>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-0">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg z-50 p-0">
           <Command>
             <CommandList>
               {isLoading && (
@@ -114,8 +114,8 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
                             className="w-8 h-8 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-600">
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                            <span className="text-xs font-medium text-muted-foreground">
                               {actor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                             </span>
                           </div>

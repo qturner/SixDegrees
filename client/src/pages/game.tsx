@@ -154,10 +154,10 @@ export default function Game() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-game-blue mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading today's challenge...</p>
+          <p className="text-muted-foreground">Loading today's challenge...</p>
         </div>
       </div>
     );
@@ -165,9 +165,9 @@ export default function Game() {
 
   if (!challenge) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-red-600 text-lg">Failed to load today's challenge. Please try again later.</p>
+          <p className="text-destructive text-lg">Failed to load today's challenge. Please try again later.</p>
         </div>
       </div>
     );
@@ -176,11 +176,11 @@ export default function Game() {
   const effectiveChallenge = getEffectiveChallenge();
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-background font-sans">
       {/* Admin Access Button - Bottom right */}
       <div className="fixed bottom-4 right-4 z-50">
         <Link href="/admin-login">
-          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-card/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200">
             <Shield className="h-4 w-4" />
             Admin
           </Button>

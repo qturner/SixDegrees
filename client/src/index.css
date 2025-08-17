@@ -4,59 +4,60 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(210 25% 7.8431%);
-  --card: hsl(180 6.6667% 97.0588%);
-  --card-foreground: hsl(210 25% 7.8431%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(210 25% 7.8431%);
-  --primary: hsl(217.2 91.2% 59.8%);
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(210 25% 7.8431%);
-  --secondary-foreground: hsl(0 0% 100%);
-  --muted: hsl(240 1.9608% 90%);
-  --muted-foreground: hsl(210 25% 7.8431%);
-  --accent: hsl(211.5789 51.3514% 92.7451%);
-  --accent-foreground: hsl(217.2 91.2% 59.8%);
-  --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(201.4286 30.4348% 90.9804%);
-  --input: hsl(200 23.0769% 97.4510%);
-  --ring: hsl(217.2 91.2% 59.8%);
-  --chart-1: hsl(217.2 91.2% 59.8%);
-  --chart-2: hsl(159.7826 100% 36.0784%);
-  --chart-3: hsl(42.0290 92.8251% 56.2745%);
-  --chart-4: hsl(147.1429 78.5047% 41.9608%);
-  --chart-5: hsl(341.4894 75.2000% 50.9804%);
-  --sidebar: hsl(180 6.6667% 97.0588%);
-  --sidebar-foreground: hsl(210 25% 7.8431%);
-  --sidebar-primary: hsl(217.2 91.2% 59.8%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(211.5789 51.3514% 92.7451%);
-  --sidebar-accent-foreground: hsl(217.2 91.2% 59.8%);
-  --sidebar-border: hsl(205.0000 25.0000% 90.5882%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  /* Classic Hollywood Glamour Theme */
+  --background: hsl(15 8% 92%);
+  --foreground: hsl(355 50% 8%);
+  --card: hsl(48 20% 88%);
+  --card-foreground: hsl(355 50% 8%);
+  --popover: hsl(48 20% 88%);
+  --popover-foreground: hsl(355 50% 8%);
+  --primary: hsl(355 70% 45%);
+  --primary-foreground: hsl(48 20% 88%);
+  --secondary: hsl(43 45% 65%);
+  --secondary-foreground: hsl(355 50% 8%);
+  --muted: hsl(15 8% 85%);
+  --muted-foreground: hsl(355 30% 25%);
+  --accent: hsl(48 25% 82%);
+  --accent-foreground: hsl(355 50% 8%);
+  --destructive: hsl(355 70% 55%);
+  --destructive-foreground: hsl(48 20% 88%);
+  --border: hsl(15 12% 80%);
+  --input: hsl(48 15% 85%);
+  --ring: hsl(355 70% 45%);
+  --chart-1: hsl(355 70% 45%);
+  --chart-2: hsl(43 45% 65%);
+  --chart-3: hsl(28 35% 55%);
+  --chart-4: hsl(15 25% 45%);
+  --chart-5: hsl(355 45% 35%);
+  --sidebar: hsl(48 20% 88%);
+  --sidebar-foreground: hsl(355 50% 8%);
+  --sidebar-primary: hsl(355 70% 45%);
+  --sidebar-primary-foreground: hsl(48 20% 88%);
+  --sidebar-accent: hsl(48 25% 82%);
+  --sidebar-accent-foreground: hsl(355 50% 8%);
+  --sidebar-border: hsl(15 12% 80%);
+  --sidebar-ring: hsl(355 70% 45%);
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: 1.3rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 1px 2px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 1px 2px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 2px 4px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 4px 6px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 8px 10px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
+  --shadow-2xs: 0px 2px 0px 0px hsl(355 50% 8% / 0.05);
+  --shadow-xs: 0px 2px 0px 0px hsl(355 50% 8% / 0.05);
+  --shadow-sm: 0px 2px 0px 0px hsl(355 50% 8% / 0.05), 0px 1px 2px -1px hsl(355 50% 8% / 0.05);
+  --shadow: 0px 2px 0px 0px hsl(355 50% 8% / 0.05), 0px 1px 2px -1px hsl(355 50% 8% / 0.05);
+  --shadow-md: 0px 2px 0px 0px hsl(355 50% 8% / 0.05), 0px 2px 4px -1px hsl(355 50% 8% / 0.05);
+  --shadow-lg: 0px 2px 0px 0px hsl(355 50% 8% / 0.05), 0px 4px 6px -1px hsl(355 50% 8% / 0.05);
+  --shadow-xl: 0px 2px 0px 0px hsl(355 50% 8% / 0.05), 0px 8px 10px -1px hsl(355 50% 8% / 0.05);
+  --shadow-2xl: 0px 2px 0px 0px hsl(355 50% 8% / 0.05);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Game specific colors */
-  --game-primary: hsl(210 25% 14%);
-  --game-blue: hsl(217.2 91.2% 59.8%);
-  --game-success: hsl(142.1 76.2% 36.3%);
-  --game-error: hsl(0 84.2% 60.2%);
-  --game-warning: hsl(47.9 95.8% 53.1%);
+  /* Game specific colors - Classic Hollywood Glamour */
+  --game-primary: hsl(355 50% 8%);
+  --game-blue: hsl(355 70% 45%);
+  --game-success: hsl(142 60% 40%);
+  --game-error: hsl(355 70% 55%);
+  --game-warning: hsl(43 85% 50%);
 }
 
 .dark {
