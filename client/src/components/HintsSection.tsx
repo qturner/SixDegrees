@@ -62,6 +62,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   const [activeHintType, setActiveHintType] = useState<'start' | 'end' | null>(null);
   const [userHintsUsed, setUserHintsUsed] = useState<number>(0);
   const [lastChallengeActors, setLastChallengeActors] = useState<string>('');
+  const [loadingHintType, setLoadingHintType] = useState<'start' | 'end' | null>(null);
   const { toast } = useToast();
   
   const hintsRemaining = 2 - userHintsUsed;
@@ -161,6 +162,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
 
   const hintMutation = useMutation({
     mutationFn: async (actorType: 'start' | 'end'): Promise<HintResponse> => {
+      setLoadingHintType(actorType);
       const response = await apiRequest("POST", "/api/daily-challenge/hint", { actorType });
       return await response.json();
     },
@@ -168,6 +170,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       const challengeDate = new Date().toISOString().split('T')[0];
       const newHintsUsed = userHintsUsed + 1;
       setUserHintsUsed(newHintsUsed);
+      setLoadingHintType(null);
       
       if (actorType === 'start') {
         setStartActorHint(data);
@@ -185,6 +188,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       });
     },
     onError: (error: any) => {
+      setLoadingHintType(null);
       toast({
         title: "Error",
         description: error.message || "Failed to get hint",
@@ -230,14 +234,14 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <Button 
               onClick={() => handleHintClick('start')}
-              disabled={(hintsRemaining <= 0 && !startActorHint) || hintMutation.isPending}
+              disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
               variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
               className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 ${
                 startActorHint ? 'text-white' : ''
               }`}
               size="sm"
             >
-              {hintMutation.isPending ? "Getting hint..." : (
+              {loadingHintType === 'start' ? "Getting hint..." : (
                 <span className={`truncate ${startActorHint ? 'text-white' : ''}`}>
                   {startActorHint ? `Show ${dailyChallenge.startActorName} hint` : `Hint for ${dailyChallenge.startActorName}`}
                 </span>
@@ -245,14 +249,14 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
             </Button>
             <Button 
               onClick={() => handleHintClick('end')}
-              disabled={(hintsRemaining <= 0 && !endActorHint) || hintMutation.isPending}
+              disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
               variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
               className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 ${
                 endActorHint ? 'text-white' : ''
               }`}
               size="sm"
             >
-              {hintMutation.isPending ? "Getting hint..." : (
+              {loadingHintType === 'end' ? "Getting hint..." : (
                 <span className={`truncate ${endActorHint ? 'text-white' : ''}`}>
                   {endActorHint ? `Show ${dailyChallenge.endActorName} hint` : `Hint for ${dailyChallenge.endActorName}`}
                 </span>
