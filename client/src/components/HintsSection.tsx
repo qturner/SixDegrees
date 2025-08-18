@@ -236,12 +236,14 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
               variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
-              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-game-background ${
-                startActorHint ? 'bg-game-primary text-game-background' : 'text-game-primary'
+              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-white ${
+                startActorHint ? 'bg-game-primary text-white' : 'text-game-primary'
               }`}
               size="sm"
             >
-              {loadingHintType === 'start' ? "Getting hint..." : (
+              {loadingHintType === 'start' ? (
+                <span className="text-white">Getting hint...</span>
+              ) : (
                 <span className={`truncate ${startActorHint ? 'text-white' : ''}`}>
                   {startActorHint ? `Show ${dailyChallenge.startActorName} hint` : `Hint for ${dailyChallenge.startActorName}`}
                 </span>
@@ -251,12 +253,14 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
               variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
-              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-game-background ${
-                endActorHint ? 'bg-game-primary text-game-background' : 'text-game-primary'
+              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-white ${
+                endActorHint ? 'bg-game-primary text-white' : 'text-game-primary'
               }`}
               size="sm"
             >
-              {loadingHintType === 'end' ? "Getting hint..." : (
+              {loadingHintType === 'end' ? (
+                <span className="text-white">Getting hint...</span>
+              ) : (
                 <span className={`truncate ${endActorHint ? 'text-white' : ''}`}>
                   {endActorHint ? `Show ${dailyChallenge.endActorName} hint` : `Hint for ${dailyChallenge.endActorName}`}
                 </span>
