@@ -77,7 +77,7 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px]"
+          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px] text-black"
         />
         <Button
           onClick={handleSearch}
