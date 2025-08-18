@@ -54,42 +54,42 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
             <div className="flex items-center justify-center mb-2">
               <svg width="50" height="50" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" className="mr-3">
                 <defs>
-                  {/* 3D Gradients */}
+                  {/* Hollywood Glamour Gold Gradients */}
                   <radialGradient id="nodeGradient" cx="30%" cy="30%" r="70%">
-                    <stop offset="0%" stopColor="#3b82f6"/>
-                    <stop offset="50%" stopColor="#1e40af"/>
-                    <stop offset="100%" stopColor="#1e3a8a"/>
+                    <stop offset="0%" stopColor="#B8860B"/>
+                    <stop offset="50%" stopColor="#DAA520"/>
+                    <stop offset="100%" stopColor="#8B6F00"/>
                   </radialGradient>
                   <radialGradient id="centerGradient" cx="30%" cy="30%" r="70%">
-                    <stop offset="0%" stopColor="#60a5fa"/>
-                    <stop offset="50%" stopColor="#3b82f6"/>
-                    <stop offset="100%" stopColor="#1e40af"/>
+                    <stop offset="0%" stopColor="#FFD700"/>
+                    <stop offset="50%" stopColor="#B8860B"/>
+                    <stop offset="100%" stopColor="#8B6F00"/>
                   </radialGradient>
                   <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3b82f6"/>
-                    <stop offset="100%" stopColor="#1e40af"/>
+                    <stop offset="0%" stopColor="#B8860B"/>
+                    <stop offset="100%" stopColor="#8B6F00"/>
                   </linearGradient>
                   {/* Drop shadow filter */}
                   <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feDropShadow dx="2" dy="3" stdDeviation="2" floodColor="#1e3a8a" floodOpacity="0.3"/>
+                    <feDropShadow dx="2" dy="3" stdDeviation="2" floodColor="#0D0D0D" floodOpacity="0.4"/>
                   </filter>
                 </defs>
                 
                 {/* Shadow layer for depth */}
-                <g opacity="0.2" transform="translate(2,3)">
-                  <line x1="30" y1="8" x2="45" y2="18" stroke="#1e3a8a" strokeWidth="4" strokeLinecap="round"/>
-                  <line x1="45" y1="18" x2="45" y2="32" stroke="#1e3a8a" strokeWidth="4" strokeLinecap="round"/>
-                  <line x1="45" y1="32" x2="30" y2="42" stroke="#1e3a8a" strokeWidth="4" strokeLinecap="round"/>
-                  <line x1="30" y1="42" x2="15" y2="32" stroke="#1e3a8a" strokeWidth="4" strokeLinecap="round"/>
-                  <line x1="15" y1="32" x2="15" y2="18" stroke="#1e3a8a" strokeWidth="4" strokeLinecap="round"/>
-                  <line x1="15" y1="18" x2="30" y2="8" stroke="#1e3a8a" strokeWidth="4" strokeLinecap="round"/>
-                  <circle cx="30" cy="8" r="6" fill="#1e3a8a"/>
-                  <circle cx="45" cy="18" r="6" fill="#1e3a8a"/>
-                  <circle cx="45" cy="32" r="6" fill="#1e3a8a"/>
-                  <circle cx="30" cy="42" r="6" fill="#1e3a8a"/>
-                  <circle cx="15" cy="32" r="6" fill="#1e3a8a"/>
-                  <circle cx="15" cy="18" r="6" fill="#1e3a8a"/>
-                  <circle cx="30" cy="25" r="4" fill="#1e3a8a"/>
+                <g opacity="0.3" transform="translate(2,3)">
+                  <line x1="30" y1="8" x2="45" y2="18" stroke="#0D0D0D" strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="45" y1="18" x2="45" y2="32" stroke="#0D0D0D" strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="45" y1="32" x2="30" y2="42" stroke="#0D0D0D" strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="30" y1="42" x2="15" y2="32" stroke="#0D0D0D" strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="15" y1="32" x2="15" y2="18" stroke="#0D0D0D" strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="15" y1="18" x2="30" y2="8" stroke="#0D0D0D" strokeWidth="4" strokeLinecap="round"/>
+                  <circle cx="30" cy="8" r="6" fill="#0D0D0D"/>
+                  <circle cx="45" cy="18" r="6" fill="#0D0D0D"/>
+                  <circle cx="45" cy="32" r="6" fill="#0D0D0D"/>
+                  <circle cx="30" cy="42" r="6" fill="#0D0D0D"/>
+                  <circle cx="15" cy="32" r="6" fill="#0D0D0D"/>
+                  <circle cx="15" cy="18" r="6" fill="#0D0D0D"/>
+                  <circle cx="30" cy="25" r="4" fill="#0D0D0D"/>
                 </g>
 
                 {/* Main hexagonal network */}
@@ -110,22 +110,22 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                   <line x1="15" y1="18" x2="30" y2="25" stroke="url(#lineGradient)" strokeWidth="4" strokeLinecap="round"/>
                   
                   {/* Hexagonal nodes with 3D effect */}
-                  <circle cx="30" cy="8" r="6" fill="white" stroke="url(#nodeGradient)" strokeWidth="4"/>
-                  <circle cx="45" cy="18" r="6" fill="white" stroke="url(#nodeGradient)" strokeWidth="4"/>
-                  <circle cx="45" cy="32" r="6" fill="white" stroke="url(#nodeGradient)" strokeWidth="4"/>
-                  <circle cx="30" cy="42" r="6" fill="white" stroke="url(#nodeGradient)" strokeWidth="4"/>
-                  <circle cx="15" cy="32" r="6" fill="white" stroke="url(#nodeGradient)" strokeWidth="4"/>
-                  <circle cx="15" cy="18" r="6" fill="white" stroke="url(#nodeGradient)" strokeWidth="4"/>
+                  <circle cx="30" cy="8" r="6" fill="#F8F8FF" stroke="url(#nodeGradient)" strokeWidth="4"/>
+                  <circle cx="45" cy="18" r="6" fill="#F8F8FF" stroke="url(#nodeGradient)" strokeWidth="4"/>
+                  <circle cx="45" cy="32" r="6" fill="#F8F8FF" stroke="url(#nodeGradient)" strokeWidth="4"/>
+                  <circle cx="30" cy="42" r="6" fill="#F8F8FF" stroke="url(#nodeGradient)" strokeWidth="4"/>
+                  <circle cx="15" cy="32" r="6" fill="#F8F8FF" stroke="url(#nodeGradient)" strokeWidth="4"/>
+                  <circle cx="15" cy="18" r="6" fill="#F8F8FF" stroke="url(#nodeGradient)" strokeWidth="4"/>
                   
                   {/* Center node with enhanced 3D effect */}
                   <circle cx="30" cy="25" r="5" fill="url(#centerGradient)"/>
-                  <circle cx="28" cy="23" r="1.5" fill="#93c5fd" opacity="0.8"/>
+                  <circle cx="28" cy="23" r="1.5" fill="#FFD700" opacity="0.9"/>
                 </g>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
           </div>
-          <p className="text-muted text-body-lg">Connect two actors through movies in 6 moves or less</p>
+          <p className="text-game-accent text-body-lg">Connect two actors through movies in 6 moves or less</p>
         </div>
       </div>
 
