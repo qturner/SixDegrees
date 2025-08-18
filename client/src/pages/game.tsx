@@ -245,26 +245,18 @@ export default function Game() {
           <div className="flex justify-center space-x-6">
             <button 
               onClick={() => setIsAboutModalOpen(true)}
-              className="hover:text-game-blue transition-all duration-200 cursor-pointer"
+              className="hover:text-game-primary transition-all duration-200 cursor-pointer"
               data-testid="button-about"
             >
               About
             </button>
             <button 
               onClick={() => setIsContactModalOpen(true)}
-              className="hover:text-game-blue transition-all duration-200 cursor-pointer"
+              className="hover:text-game-primary transition-all duration-200 cursor-pointer"
               data-testid="button-contact"
             >
               Contact
             </button>
-            <a 
-              href="/theme-samples"
-              target="_blank"
-              className="hover:text-game-blue transition-all duration-200 cursor-pointer"
-              data-testid="link-theme-samples"
-            >
-              Theme Samples
-            </a>
           </div>
         </footer>
       </main>

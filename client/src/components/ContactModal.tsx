@@ -69,12 +69,12 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-auto my-auto bg-white dark:bg-gray-800 border-2 border-game-border rounded-lg fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+      <DialogContent className="max-w-md bg-game-surface border-2 border-game-accent rounded-lg">
         <DialogHeader>
           <DialogTitle className="text-game-primary text-xl font-bold text-center">
             Contact Us
           </DialogTitle>
-          <DialogDescription className="text-center text-gray-600 dark:text-gray-400">
+          <DialogDescription className="text-center text-game-accent">
             Have questions or feedback? We'd love to hear from you!
           </DialogDescription>
         </DialogHeader>
