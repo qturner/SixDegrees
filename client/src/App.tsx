@@ -7,6 +7,7 @@ import Game from "@/pages/game";
 import AdminLogin from "@/pages/admin-login";
 import AdminPanel from "@/pages/admin";
 import NotFound from "@/pages/not-found";
+import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 
 function Router() {
   return (
@@ -20,6 +21,9 @@ function Router() {
 }
 
 function App() {
+  // Track visitor analytics
+  useVisitorTracking();
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

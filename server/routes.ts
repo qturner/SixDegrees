@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { tmdbService } from "./services/tmdb";
 import { gameLogicService } from "./services/gameLogic";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema } from "@shared/schema";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema } from "@shared/schema";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
 import { emailService } from "./services/email";
 import { registerTestEmailRoutes } from "./routes/testEmail";
@@ -962,6 +962,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Status updated successfully" });
     } catch (error) {
       console.error("Error updating contact submission status:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Track visitor endpoint
+  app.post("/api/analytics/track-visit", async (req, res) => {
+    try {
+      const visitorData = req.body;
+      
+      // Create visitor session
+      const session = await storage.createVisitorSession({
+        ...visitorData,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        visitedAt: new Date(),
+        converted: false,
+        bounced: true, // Will be updated to false if user engages
+        sessionDuration: 0,
+      });
+      
+      res.json({ sessionId: session.id, message: "Visit tracked" });
+    } catch (error) {
+      console.error("Error tracking visit:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Referral Analytics API Routes
+  app.get("/api/analytics/referrals", async (req, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const analytics = await storage.getReferralAnalytics(days);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching referral analytics:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/analytics/track-conversion", async (req, res) => {
+    try {
+      const { sessionId } = req.body;
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID required" });
+      }
+      
+      await storage.updateVisitorSession(sessionId, { 
+        converted: true, 
+        bounced: false 
+      });
+      
+      res.json({ message: "Conversion tracked" });
+    } catch (error) {
+      console.error("Error tracking conversion:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

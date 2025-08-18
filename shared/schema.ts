@@ -133,3 +133,37 @@ export const insertContactSubmissionSchema = createInsertSchema(contactSubmissio
   updatedAt: true, 
   status: true 
 });
+
+// Visitor analytics table for tracking referrals and traffic sources
+export const visitorAnalytics = pgTable("visitor_analytics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull(), // Browser fingerprint/session
+  referrer: text("referrer"), // Full referrer URL
+  referrerDomain: varchar("referrer_domain", { length: 255 }), // e.g., 'google.com'
+  referrerType: varchar("referrer_type", { length: 50 }), // 'search', 'social', 'direct', 'referral'
+  utmSource: varchar("utm_source", { length: 100 }), // UTM parameters
+  utmMedium: varchar("utm_medium", { length: 100 }),
+  utmCampaign: varchar("utm_campaign", { length: 100 }),
+  utmContent: varchar("utm_content", { length: 100 }),
+  utmTerm: varchar("utm_term", { length: 100 }),
+  searchQuery: text("search_query"), // If available from search engines
+  userAgent: text("user_agent"), // Browser/device info
+  ipAddress: varchar("ip_address", { length: 45 }), // IPv4/IPv6 (hashed for privacy)
+  country: varchar("country", { length: 2 }), // Country code
+  entryPage: varchar("entry_page", { length: 500 }), // First page visited
+  exitPage: varchar("exit_page", { length: 500 }), // Last page visited
+  pageviews: integer("pageviews").default(1), // Total pages viewed
+  sessionDuration: integer("session_duration"), // Time spent in seconds
+  bounced: boolean("bounced").default(false), // Single page visit
+  converted: boolean("converted").default(false), // Played the game
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type VisitorAnalytics = typeof visitorAnalytics.$inferSelect;
+export const insertVisitorAnalyticsSchema = createInsertSchema(visitorAnalytics).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+export type InsertVisitorAnalytics = z.infer<typeof insertVisitorAnalyticsSchema>;

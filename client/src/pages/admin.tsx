@@ -29,6 +29,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Shield, RefreshCw, LogOut, Users, Calendar, Search, UserPlus, BarChart3 } from "lucide-react";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import ContactSubmissions from "@/components/ContactSubmissions";
+import ReferralAnalyticsDashboard from "@/components/ReferralAnalyticsDashboard";
 
 interface DailyChallenge {
   date: string;
@@ -753,6 +754,22 @@ export default function AdminPanel() {
             challengeName={`${challenge.startActorName} → ${challenge.endActorName}`}
           />
         )}
+
+        {/* Referral Analytics Dashboard */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Traffic Sources & Google Referral Analysis
+            </CardTitle>
+            <CardDescription>
+              Understanding your 692 Google referrals and comprehensive traffic analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReferralAnalyticsDashboard />
+          </CardContent>
+        </Card>
 
         {/* Contact Submissions */}
         <Card>

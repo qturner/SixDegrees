@@ -1,4 +1,4 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions } from "@shared/schema";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gt } from "drizzle-orm";
@@ -39,6 +39,20 @@ export interface IStorage {
   createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission>;
   getContactSubmissions(): Promise<ContactSubmission[]>;
   updateContactSubmissionStatus(id: string, status: string): Promise<void>;
+  
+  // Visitor Analytics methods
+  trackVisitor(analytics: InsertVisitorAnalytics): Promise<VisitorAnalytics>;
+  updateVisitorSession(sessionId: string, updates: Partial<InsertVisitorAnalytics>): Promise<void>;
+  getReferralAnalytics(days?: number): Promise<{
+    totalVisitors: number;
+    referralBreakdown: { domain: string; type: string; count: number; percentage: number }[];
+    topReferrers: { domain: string; count: number; percentage: number }[];
+    searchQueries: { query: string; count: number }[];
+    utmSources: { source: string; medium: string; campaign: string; count: number }[];
+    conversionRates: { total: number; converted: number; rate: number };
+    geographicData: { country: string; count: number }[];
+    deviceData: { userAgent: string; count: number }[];
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -232,6 +246,134 @@ export class DatabaseStorage implements IStorage {
       .set({ status, updatedAt: new Date() })
       .where(eq(contactSubmissions.id, id));
   }
+  
+  // Visitor Analytics methods
+  async trackVisitor(insertAnalytics: InsertVisitorAnalytics): Promise<VisitorAnalytics> {
+    const [analytics] = await db.insert(visitorAnalytics).values(insertAnalytics).returning();
+    return analytics;
+  }
+
+  async createVisitorSession(insertAnalytics: InsertVisitorAnalytics): Promise<VisitorAnalytics> {
+    const [analytics] = await db.insert(visitorAnalytics).values(insertAnalytics).returning();
+    return analytics;
+  }
+  
+  async updateVisitorSession(sessionId: string, updates: Partial<InsertVisitorAnalytics>): Promise<void> {
+    await db.update(visitorAnalytics)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(visitorAnalytics.sessionId, sessionId));
+  }
+  
+  async getReferralAnalytics(days: number = 30): Promise<{
+    totalVisitors: number;
+    referralBreakdown: { domain: string; type: string; count: number; percentage: number }[];
+    topReferrers: { domain: string; count: number; percentage: number }[];
+    searchQueries: { query: string; count: number }[];
+    utmSources: { source: string; medium: string; campaign: string; count: number }[];
+    conversionRates: { total: number; converted: number; rate: number };
+    geographicData: { country: string; count: number }[];
+    deviceData: { userAgent: string; count: number }[];
+  }> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    
+    const visitors = await db.select().from(visitorAnalytics)
+      .where(gt(visitorAnalytics.createdAt, cutoffDate));
+    
+    const totalVisitors = visitors.length;
+    
+    // Calculate referral breakdown
+    const referralCounts = new Map<string, { type: string; count: number }>();
+    const searchQueries = new Map<string, number>();
+    const utmData = new Map<string, number>();
+    const geoCounts = new Map<string, number>();
+    const deviceCounts = new Map<string, number>();
+    let convertedCount = 0;
+    
+    visitors.forEach(visitor => {
+      const domain = visitor.referrerDomain || 'direct';
+      const type = visitor.referrerType || 'direct';
+      
+      if (referralCounts.has(domain)) {
+        referralCounts.get(domain)!.count++;
+      } else {
+        referralCounts.set(domain, { type, count: 1 });
+      }
+      
+      if (visitor.searchQuery) {
+        searchQueries.set(visitor.searchQuery, (searchQueries.get(visitor.searchQuery) || 0) + 1);
+      }
+      
+      if (visitor.utmSource) {
+        const utmKey = `${visitor.utmSource}|${visitor.utmMedium || ''}|${visitor.utmCampaign || ''}`;
+        utmData.set(utmKey, (utmData.get(utmKey) || 0) + 1);
+      }
+      
+      if (visitor.country) {
+        geoCounts.set(visitor.country, (geoCounts.get(visitor.country) || 0) + 1);
+      }
+      
+      if (visitor.userAgent) {
+        // Extract browser/device from user agent
+        const deviceInfo = visitor.userAgent.split(' ')[0] || 'Unknown';
+        deviceCounts.set(deviceInfo, (deviceCounts.get(deviceInfo) || 0) + 1);
+      }
+      
+      if (visitor.converted) {
+        convertedCount++;
+      }
+    });
+    
+    // Format data
+    const referralBreakdown = Array.from(referralCounts.entries())
+      .map(([domain, data]) => ({
+        domain,
+        type: data.type,
+        count: data.count,
+        percentage: Math.round((data.count / totalVisitors) * 100)
+      }))
+      .sort((a, b) => b.count - a.count);
+    
+    const topReferrers = referralBreakdown.slice(0, 10);
+    
+    const searchQueriesArray = Array.from(searchQueries.entries())
+      .map(([query, count]) => ({ query, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+    
+    const utmSourcesArray = Array.from(utmData.entries())
+      .map(([key, count]) => {
+        const [source, medium, campaign] = key.split('|');
+        return { source, medium, campaign, count };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    const geographicData = Array.from(geoCounts.entries())
+      .map(([country, count]) => ({ country, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+    
+    const deviceData = Array.from(deviceCounts.entries())
+      .map(([userAgent, count]) => ({ userAgent, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    return {
+      totalVisitors,
+      referralBreakdown,
+      topReferrers,
+      searchQueries: searchQueriesArray,
+      utmSources: utmSourcesArray,
+      conversionRates: {
+        total: totalVisitors,
+        converted: convertedCount,
+        rate: totalVisitors > 0 ? Math.round((convertedCount / totalVisitors) * 100) : 0
+      },
+      geographicData,
+      deviceData,
+    };
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -413,6 +555,38 @@ export class MemStorage implements IStorage {
 
   async updateContactSubmissionStatus(id: string, status: string): Promise<void> {
     throw new Error("Contact functionality requires database storage");
+  }
+  
+  // Visitor Analytics methods (not implemented for memory storage)
+  async trackVisitor(analytics: InsertVisitorAnalytics): Promise<VisitorAnalytics> {
+    throw new Error("Visitor analytics not supported in memory storage");
+  }
+  
+  async updateVisitorSession(sessionId: string, updates: Partial<InsertVisitorAnalytics>): Promise<void> {
+    throw new Error("Visitor analytics not supported in memory storage");
+  }
+  
+  async getReferralAnalytics(days: number = 30): Promise<{
+    totalVisitors: number;
+    referralBreakdown: { domain: string; type: string; count: number; percentage: number }[];
+    topReferrers: { domain: string; count: number; percentage: number }[];
+    searchQueries: { query: string; count: number }[];
+    utmSources: { source: string; medium: string; campaign: string; count: number }[];
+    conversionRates: { total: number; converted: number; rate: number };
+    geographicData: { country: string; count: number }[];
+    deviceData: { userAgent: string; count: number }[];
+  }> {
+    // Return empty analytics for memory storage
+    return {
+      totalVisitors: 0,
+      referralBreakdown: [],
+      topReferrers: [],
+      searchQueries: [],
+      utmSources: [],
+      conversionRates: { total: 0, converted: 0, rate: 0 },
+      geographicData: [],
+      deviceData: [],
+    };
   }
 }
 
