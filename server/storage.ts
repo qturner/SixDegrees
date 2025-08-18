@@ -7,8 +7,11 @@ import bcrypt from "bcryptjs";
 export interface IStorage {
   // Daily Challenge methods
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
+  getChallengeByStatus(status: string): Promise<DailyChallenge | undefined>;
+  getAllChallengesByStatus(status: string): Promise<DailyChallenge[]>;
   createDailyChallenge(challenge: InsertDailyChallenge): Promise<DailyChallenge>;
   updateDailyChallengeHints(challengeId: string, hintsUsed: number, startActorHint?: string, endActorHint?: string): Promise<DailyChallenge>;
+  updateChallengeStatus(challengeId: string, status: string): Promise<DailyChallenge>;
   deleteDailyChallenge(date: string): Promise<void>;
   
   // Game Attempt methods
@@ -45,8 +48,25 @@ export class DatabaseStorage implements IStorage {
     return challenge || undefined;
   }
 
+  async getChallengeByStatus(status: string): Promise<DailyChallenge | undefined> {
+    const [challenge] = await db.select().from(dailyChallenges).where(eq(dailyChallenges.status, status));
+    return challenge || undefined;
+  }
+
+  async getAllChallengesByStatus(status: string): Promise<DailyChallenge[]> {
+    return await db.select().from(dailyChallenges).where(eq(dailyChallenges.status, status));
+  }
+
   async createDailyChallenge(insertChallenge: InsertDailyChallenge): Promise<DailyChallenge> {
     const [challenge] = await db.insert(dailyChallenges).values(insertChallenge).returning();
+    return challenge;
+  }
+
+  async updateChallengeStatus(challengeId: string, status: string): Promise<DailyChallenge> {
+    const [challenge] = await db.update(dailyChallenges)
+      .set({ status })
+      .where(eq(dailyChallenges.id, challengeId))
+      .returning();
     return challenge;
   }
 
@@ -229,11 +249,24 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getChallengeByStatus(status: string): Promise<DailyChallenge | undefined> {
+    return Array.from(this.dailyChallenges.values()).find(
+      (challenge) => challenge.status === status
+    );
+  }
+
+  async getAllChallengesByStatus(status: string): Promise<DailyChallenge[]> {
+    return Array.from(this.dailyChallenges.values()).filter(
+      (challenge) => challenge.status === status
+    );
+  }
+
   async createDailyChallenge(insertChallenge: InsertDailyChallenge): Promise<DailyChallenge> {
     const id = randomUUID();
     const challenge: DailyChallenge = { 
       ...insertChallenge, 
       id,
+      status: insertChallenge.status || "active",
       createdAt: new Date(),
       startActorProfilePath: insertChallenge.startActorProfilePath || null,
       endActorProfilePath: insertChallenge.endActorProfilePath || null,
@@ -269,6 +302,17 @@ export class MemStorage implements IStorage {
       this.dailyChallenges.delete(existingByDate[0]);
     }
     
+    return updatedChallenge;
+  }
+
+  async updateChallengeStatus(challengeId: string, status: string): Promise<DailyChallenge> {
+    const challenge = this.dailyChallenges.get(challengeId);
+    if (!challenge) {
+      throw new Error("Challenge not found");
+    }
+    
+    const updatedChallenge = { ...challenge, status };
+    this.dailyChallenges.set(challengeId, updatedChallenge);
     return updatedChallenge;
   }
 

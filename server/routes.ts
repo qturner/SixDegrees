@@ -22,6 +22,20 @@ function getESTDateString(): string {
   return formatter.format(now); // Returns YYYY-MM-DD format
 }
 
+function getTomorrowDateString(): string {
+  // Get tomorrow's date in EST/EDT timezone
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit'
+  });
+  
+  return formatter.format(tomorrow); // Returns YYYY-MM-DD format
+}
+
 // Prevent race conditions in challenge creation
 let challengeCreationPromise: Promise<any> | null = null;
 let lastChallengeDate: string | null = null;
@@ -266,6 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const newChallenge = await storage.createDailyChallenge({
           date: today,
+          status: "active",
           startActorId: actors.actor1.id,
           startActorName: actors.actor1.name,
           startActorProfilePath: actors.actor1.profile_path,
@@ -289,6 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         challenge = await storage.createDailyChallenge({
           date: today,
+          status: "active",
           startActorId: actors.actor1.id,
           startActorName: actors.actor1.name,
           startActorProfilePath: actors.actor1.profile_path,
@@ -340,6 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               const newChallenge = await storage.createDailyChallenge({
                 date: today,
+                status: "active",
                 startActorId: actors.actor1.id,
                 startActorName: actors.actor1.name,
                 startActorProfilePath: actors.actor1.profile_path,
@@ -660,6 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = new Date().toISOString().split('T')[0];
       const challenge = await storage.createDailyChallenge({
         date: today,
+        status: "active",
         startActorId: actors.actor1.id,
         startActorName: actors.actor1.name,
         startActorProfilePath: actors.actor1.profile_path,
@@ -801,6 +819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create new challenge with selected actors
       const challenge = await storage.createDailyChallenge({
         date: today,
+        status: "active",
         startActorId,
         startActorName,
         endActorId,
@@ -811,6 +830,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Custom challenge set successfully", challenge });
     } catch (error) {
       console.error("Admin set challenge error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin route: Get tomorrow's challenge preview
+  app.get("/api/admin/tomorrow-challenge", requireAdminAuth, async (req, res) => {
+    try {
+      const tomorrow = getTomorrowDateString();
+      const challenge = await storage.getDailyChallenge(tomorrow);
+      
+      if (!challenge) {
+        return res.status(404).json({ message: "No challenge found for tomorrow" });
+      }
+      
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error getting tomorrow's challenge:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin route: Reset tomorrow's daily challenge
+  app.post("/api/admin/reset-tomorrow", requireAdminAuth, async (req, res) => {
+    try {
+      const tomorrow = getTomorrowDateString();
+      
+      // Delete existing tomorrow challenge if it exists
+      const existingChallenge = await storage.getDailyChallenge(tomorrow);
+      if (existingChallenge) {
+        console.log(`Deleting existing tomorrow challenge: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
+        await storage.deleteDailyChallenge(tomorrow);
+      }
+      
+      // Generate new tomorrow challenge
+      const actors = await gameLogicService.generateDailyActors();
+      if (!actors) {
+        return res.status(500).json({ message: "Unable to generate tomorrow's challenge" });
+      }
+
+      const newChallenge = await storage.createDailyChallenge({
+        date: tomorrow,
+        status: "upcoming",
+        startActorId: actors.actor1.id,
+        startActorName: actors.actor1.name,
+        startActorProfilePath: actors.actor1.profile_path,
+        endActorId: actors.actor2.id,
+        endActorName: actors.actor2.name,
+        endActorProfilePath: actors.actor2.profile_path,
+        hintsUsed: 0,
+      });
+      
+      console.log(`Created new tomorrow challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
+      res.json({ message: "Tomorrow's challenge reset successfully", challenge: newChallenge });
+    } catch (error) {
+      console.error("Error resetting tomorrow's challenge:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

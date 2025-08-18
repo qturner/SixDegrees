@@ -90,6 +90,7 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "analytics">("dashboard");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isSetChallengeDialogOpen, setIsSetChallengeDialogOpen] = useState(false);
+  const [isResetTomorrowDialogOpen, setIsResetTomorrowDialogOpen] = useState(false);
   const [startActorSearch, setStartActorSearch] = useState("");
   const [endActorSearch, setEndActorSearch] = useState("");
   const [selectedStartActor, setSelectedStartActor] = useState<{id: string, name: string, profile_path?: string | null} | null>(null);
@@ -120,6 +121,11 @@ export default function AdminPanel() {
 
   const { data: challenge, isLoading: challengeLoading } = useQuery<DailyChallenge>({
     queryKey: ["/api/daily-challenge"],
+    enabled: !!token,
+  });
+
+  const { data: tomorrowChallenge, isLoading: tomorrowLoading } = useQuery<DailyChallenge>({
+    queryKey: ["/api/admin/tomorrow-challenge"],
     enabled: !!token,
   });
 
@@ -236,6 +242,46 @@ export default function AdminPanel() {
       toast({
         title: "Update failed",
         description: error.message || "Failed to update challenge",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetTomorrowMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('No admin token found');
+      }
+      
+      const response = await fetch("/api/admin/reset-tomorrow", {
+        method: "POST",
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Reset tomorrow failed');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      setIsResetTomorrowDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/tomorrow-challenge"] });
+      toast({
+        title: "Tomorrow's challenge reset",
+        description: "Tomorrow's daily challenge has been reset successfully",
+      });
+    },
+    onError: (error: any) => {
+      setIsResetTomorrowDialogOpen(false);
+      toast({
+        title: "Reset failed",
+        description: error.message || "Failed to reset tomorrow's challenge",
         variant: "destructive",
       });
     },
@@ -365,6 +411,58 @@ export default function AdminPanel() {
           </CardContent>
         </Card>
 
+        {/* Tomorrow's Challenge Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Tomorrow's Daily Challenge
+            </CardTitle>
+            <CardDescription>
+              Preview of tomorrow's actor pairing (automatically becomes today's challenge at midnight)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {tomorrowLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin" />
+                <span className="ml-2">Loading tomorrow's challenge...</span>
+              </div>
+            ) : tomorrowChallenge ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <h3 className="font-semibold text-purple-900 dark:text-purple-100">Start Actor</h3>
+                    <p className="text-lg font-medium">{tomorrowChallenge.startActorName}</p>
+                  </div>
+                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                    <h3 className="font-semibold text-orange-900 dark:text-orange-100">End Actor</h3>
+                    <p className="text-lg font-medium">{tomorrowChallenge.endActorName}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                    Status: Upcoming
+                  </Badge>
+                  <Badge variant="outline">
+                    Date: {tomorrowChallenge.date}
+                  </Badge>
+                  <Badge variant="outline">
+                    Created: {new Date(tomorrowChallenge.createdAt).toLocaleTimeString()}
+                  </Badge>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                <p className="text-yellow-800 dark:text-yellow-200">
+                  No challenge scheduled for tomorrow. One will be automatically generated at midnight.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Actions Card */}
         <Card>
           <CardHeader>
@@ -409,6 +507,42 @@ export default function AdminPanel() {
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Reset Challenge
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+
+              <div className="p-4 border rounded-lg">
+                <h3 className="font-semibold mb-2">Reset Tomorrow's Challenge</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Generate a new challenge for tomorrow. The current tomorrow's challenge will be replaced.
+                </p>
+                <AlertDialog open={isResetTomorrowDialogOpen} onOpenChange={setIsResetTomorrowDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      disabled={resetTomorrowMutation.isPending}
+                      variant="secondary"
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${resetTomorrowMutation.isPending ? 'animate-spin' : ''}`} />
+                      {resetTomorrowMutation.isPending ? "Resetting..." : "Reset Tomorrow"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reset Tomorrow's Challenge</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to reset tomorrow's daily challenge? This will generate new actors for tomorrow.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => resetTomorrowMutation.mutate()}
+                        className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                      >
+                        Reset Tomorrow
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

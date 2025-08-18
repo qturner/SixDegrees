@@ -6,6 +6,7 @@ import { z } from "zod";
 export const dailyChallenges = pgTable("daily_challenges", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   date: text("date").notNull().unique(), // YYYY-MM-DD format
+  status: text("status").notNull().default("active"), // "active", "upcoming", "archived"
   startActorId: integer("start_actor_id").notNull(),
   startActorName: text("start_actor_name").notNull(),
   startActorProfilePath: text("start_actor_profile_path"),

@@ -77,49 +77,124 @@ app.use((req, res, next) => {
 })();
 
 function setupDailyChallengeReset(port: number) {
-  // Schedule for midnight EST/EDT - node-cron handles timezone automatically
+  // Schedule for midnight EST/EDT - dual-challenge system
   cron.schedule('0 0 * * *', async () => {
     try {
-      log('Daily challenge reset triggered - generating new challenge for today');
+      log('Daily challenge reset triggered - transitioning tomorrow to today and generating new tomorrow');
       
-      // Get today's date in EST/EDT timezone
+      // Get today's and tomorrow's dates in EST/EDT timezone
       const today = getESTDateString();
+      const tomorrow = getTomorrowDateString();
       
-      // Check if we already have a challenge for today
-      const existingResponse = await fetch(`http://localhost:${port}/api/daily-challenge`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (existingResponse.ok) {
-        const existingChallenge = await existingResponse.json();
-        if (existingChallenge.date === today) {
-          log(`Challenge for ${today} already exists, skipping reset`);
-          return;
+      // Step 1: Check if tomorrow's challenge exists and promote it to today
+      try {
+        const tomorrowResponse = await fetch(`http://localhost:${port}/api/admin/tomorrow-challenge`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (tomorrowResponse.ok) {
+          const tomorrowChallenge = await tomorrowResponse.json();
+          
+          // Archive old today's challenge and promote tomorrow's challenge
+          const todayResponse = await fetch(`http://localhost:${port}/api/daily-challenge`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          if (todayResponse.ok) {
+            const todayChallenge = await todayResponse.json();
+            // Archive current challenge by deleting it
+            await fetch(`http://localhost:${port}/api/daily-challenge`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ date: todayChallenge.date, forceNew: true, action: 'archive' })
+            });
+          }
+          
+          // Promote tomorrow's challenge to today with updated date and status
+          const newTodayChallenge = {
+            ...tomorrowChallenge,
+            date: today,
+            status: 'active'
+          };
+          
+          // Delete old tomorrow challenge
+          await fetch(`http://localhost:${port}/api/admin/reset-tomorrow`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          // Create today's challenge from former tomorrow
+          await fetch(`http://localhost:${port}/api/daily-challenge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...newTodayChallenge, forceNew: true })
+          });
+          
+          log(`Promoted tomorrow's challenge to today: ${newTodayChallenge.startActorName} to ${newTodayChallenge.endActorName}`);
+        } else {
+          // No tomorrow challenge exists, generate today's normally
+          const response = await fetch(`http://localhost:${port}/api/daily-challenge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: today, forceNew: true })
+          });
+          
+          if (response.ok) {
+            const newChallenge = await response.json();
+            log(`Generated new challenge for ${today}: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
+          }
         }
+      } catch (transitionError) {
+        log(`Error transitioning challenges: ${transitionError}`);
+        // Fallback to normal generation
+        const response = await fetch(`http://localhost:${port}/api/daily-challenge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: today, forceNew: true })
+        });
       }
       
-      // Generate new daily challenge - use the routes API to ensure consistency
-      const response = await fetch(`http://localhost:${port}/api/daily-challenge`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: today, forceNew: true })
-      });
-      
-      if (response.ok) {
-        const newChallenge = await response.json();
-        log(`New daily challenge generated for ${today}: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
-      } else {
-        log(`Failed to generate challenge for ${today}: ${response.status}`);
+      // Step 2: Generate new tomorrow's challenge
+      try {
+        const newTomorrowResponse = await fetch(`http://localhost:${port}/api/admin/reset-tomorrow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (newTomorrowResponse.ok) {
+          const newTomorrowChallenge = await newTomorrowResponse.json();
+          log(`Generated new challenge for ${tomorrow}: ${newTomorrowChallenge.challenge.startActorName} to ${newTomorrowChallenge.challenge.endActorName}`);
+        } else {
+          log(`Failed to generate tomorrow's challenge: ${newTomorrowResponse.status}`);
+        }
+      } catch (tomorrowError) {
+        log(`Error generating tomorrow's challenge: ${tomorrowError}`);
       }
+      
     } catch (error) {
-      console.error('Error during daily challenge reset:', error);
+      console.error('Error during dual challenge reset:', error);
     }
   }, {
     timezone: "America/New_York" // Automatically handles EST/EDT
   });
 
-  log('Daily challenge reset scheduler initialized - resets at midnight EST/EDT');
+  log('Dual challenge reset scheduler initialized - resets at midnight EST/EDT');
+}
+
+function getTomorrowDateString(): string {
+  // Get tomorrow's date in EST/EDT timezone
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit'
+  });
+  
+  return formatter.format(tomorrow); // Returns YYYY-MM-DD format
 }
 
 function getESTDateString(): string {
