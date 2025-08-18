@@ -145,23 +145,58 @@ export class DatabaseStorage implements IStorage {
       if (attempt.connections) {
         try {
           const connections = JSON.parse(attempt.connections);
+          
+          // Track unique actors and movies in THIS solution chain
+          const uniqueMoviesInChain = new Set<string>();
+          const uniqueActorsInChain = new Set<string>();
+          
           for (const connection of connections) {
-            // Count movies
+            // Track movies used in this chain (unique per chain)
             if (connection.movieId && connection.movieTitle) {
-              const existing = movieUsage.get(connection.movieId);
-              movieUsage.set(connection.movieId, {
-                title: connection.movieTitle,
-                count: (existing?.count || 0) + 1
-              });
+              uniqueMoviesInChain.add(connection.movieId);
             }
-            // Count actors (excluding start/end actors which are the same for everyone)
+            // Track actors used in this chain (unique per chain, excluding start/end actors)
             const actorIdStr = connection.actorId.toString();
             if (connection.actorId && connection.actorName && !excludedActorIds.includes(actorIdStr)) {
+              uniqueActorsInChain.add(actorIdStr);
+            }
+          }
+          
+          // Now count each unique movie/actor only once per successful solution
+          for (const connection of connections) {
+            // Count movies (once per successful chain)
+            if (connection.movieId && connection.movieTitle && uniqueMoviesInChain.has(connection.movieId)) {
+              const existing = movieUsage.get(connection.movieId);
+              if (!existing) {
+                movieUsage.set(connection.movieId, {
+                  title: connection.movieTitle,
+                  count: 1
+                });
+              } else {
+                movieUsage.set(connection.movieId, {
+                  title: connection.movieTitle,
+                  count: existing.count + 1
+                });
+              }
+              uniqueMoviesInChain.delete(connection.movieId); // Prevent double counting in same chain
+            }
+            
+            // Count actors (once per successful chain, excluding start/end actors)
+            const actorIdStr = connection.actorId.toString();
+            if (connection.actorId && connection.actorName && !excludedActorIds.includes(actorIdStr) && uniqueActorsInChain.has(actorIdStr)) {
               const existing = actorUsage.get(actorIdStr);
-              actorUsage.set(actorIdStr, {
-                name: connection.actorName,
-                count: (existing?.count || 0) + 1
-              });
+              if (!existing) {
+                actorUsage.set(actorIdStr, {
+                  name: connection.actorName,
+                  count: 1
+                });
+              } else {
+                actorUsage.set(actorIdStr, {
+                  name: connection.actorName,
+                  count: existing.count + 1
+                });
+              }
+              uniqueActorsInChain.delete(actorIdStr); // Prevent double counting in same chain
             }
           }
         } catch (error) {
