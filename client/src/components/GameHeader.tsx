@@ -47,7 +47,7 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
   };
 
   return (
-    <header className="bg-game-surface shadow-sm border-b border-game-accent text-game-text">
+    <header className="bg-game-surface shadow-sm border-b border-game-accent text-game-text" role="banner">
       <div className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-3">

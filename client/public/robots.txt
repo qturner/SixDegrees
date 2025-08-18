@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /game
+Disallow: /admin
+Disallow: /admin-login
+
+Sitemap: https://sixdegrees.app/sitemap.xml
+
+# Additional SEO directives
+Crawl-delay: 1

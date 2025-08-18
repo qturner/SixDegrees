@@ -70,6 +70,22 @@ function useAdminAuth() {
 }
 
 export default function AdminPanel() {
+  // SEO optimization for admin page
+  useEffect(() => {
+    document.title = "Admin Dashboard - Six Degrees of Separation";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 
+        'Admin dashboard for Six Degrees of Separation game. Manage daily challenges, view analytics, and monitor contact submissions.'
+      );
+    }
+    // Prevent admin page from being indexed
+    const robotsMeta = document.querySelector('meta[name="robots"]');
+    if (robotsMeta) {
+      robotsMeta.setAttribute('content', 'noindex, nofollow');
+    }
+  }, []);
+
   const [_, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<"dashboard" | "analytics">("dashboard");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);

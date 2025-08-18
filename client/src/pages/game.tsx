@@ -47,6 +47,17 @@ const loadGameState = (currentChallengeDate?: string) => {
 };
 
 export default function Game() {
+  // SEO optimization - update meta tags for game page
+  useEffect(() => {
+    document.title = "Play Today's Challenge - Six Degrees of Separation";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 
+        'Play today\'s Six Degrees of Separation challenge! Connect two Hollywood actors through movies in 6 moves or less. New daily challenges with hints and analytics.'
+      );
+    }
+  }, []);
+
   // Initialize state - will be reset when challenge loads if needed
   const [connections, setConnections] = useState<Connection[]>([]);
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
