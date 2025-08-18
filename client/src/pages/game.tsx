@@ -192,7 +192,7 @@ export default function Game() {
       {/* Admin Access Button - Bottom right */}
       <div className="fixed bottom-4 right-4 z-50">
         <Link href="/admin-login">
-          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200 text-gray-600 hover:text-gray-800">
             <Shield className="h-4 w-4" />
             Admin
           </Button>
