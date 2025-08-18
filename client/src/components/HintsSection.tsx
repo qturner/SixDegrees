@@ -217,15 +217,15 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   };
 
   return (
-    <Card className="w-full card-radius shadow-card hover:shadow-card-hover transition-all duration-300">
+    <Card className="w-full card-radius shadow-card hover:shadow-card-hover transition-all duration-300 bg-game-surface border-game-accent">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-heading-md text-game-primary">
-          <Lightbulb className="h-5 w-5 text-yellow-500" />
+          <Lightbulb className="h-5 w-5 text-game-primary" />
           Daily Hints
         </CardTitle>
-        <CardDescription className="text-body">
+        <CardDescription className="text-body text-game-text">
           Get movie titles for either actor to help find connections. You have{" "}
-          <Badge variant="secondary" className="button-radius">{hintsRemaining} hints remaining</Badge> today.
+          <Badge variant="secondary" className="button-radius bg-game-primary text-game-background">{hintsRemaining} hints remaining</Badge> today.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -236,8 +236,8 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
               variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
-              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 ${
-                startActorHint ? 'text-white' : ''
+              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-game-background ${
+                startActorHint ? 'bg-game-primary text-game-background' : 'text-game-primary'
               }`}
               size="sm"
             >
@@ -251,8 +251,8 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
               variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
-              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 ${
-                endActorHint ? 'text-white' : ''
+              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-game-background ${
+                endActorHint ? 'bg-game-primary text-game-background' : 'text-game-primary'
               }`}
               size="sm"
             >
@@ -266,7 +266,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
 
           {/* Active Hint Display */}
           {activeHint && (
-            <Card className="card-radius shadow-card transition-all duration-300">
+            <Card className="card-radius shadow-card transition-all duration-300 bg-game-background border-game-accent">
               <CardHeader className="pb-3">
                 <CardTitle className="text-heading-sm flex items-center gap-2 text-game-primary">
                   <Film className="h-4 w-4" />
@@ -278,11 +278,11 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
                   {activeHint.movies.map((movie) => (
                     <div 
                       key={movie.id}
-                      className="spacing-sm input-radius border bg-muted/50 transition-all duration-200 hover:bg-muted/70 hover:shadow-card"
+                      className="spacing-sm input-radius border border-game-accent bg-game-surface transition-all duration-200 hover:bg-game-primary hover:text-game-background hover:shadow-card"
                     >
-                      <div className="font-medium text-body-sm">{movie.title}</div>
+                      <div className="font-medium text-body-sm text-game-text">{movie.title}</div>
                       {movie.release_date && (
-                        <div className="text-body-sm text-muted-light">
+                        <div className="text-body-sm text-game-accent">
                           ({new Date(movie.release_date).getFullYear()})
                         </div>
                       )}
@@ -294,7 +294,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
           )}
 
           {hintsRemaining === 0 && !activeHint && (
-            <div className="text-center text-muted py-4 text-body">
+            <div className="text-center text-game-accent py-4 text-body">
               You've used all your daily hints. Come back tomorrow for more!
             </div>
           )}

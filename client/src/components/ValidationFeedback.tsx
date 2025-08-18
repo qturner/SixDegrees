@@ -70,9 +70,9 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
         <Alert
           className={`card-radius shadow-card transition-all duration-300 ${
             gameResult.valid && gameResult.completed
-              ? "bg-game-success bg-opacity-10 border-game-success text-game-success"
+              ? "bg-game-success bg-opacity-20 border-game-success text-game-background"
               : gameResult.valid
-              ? "bg-blue-50 border-game-blue text-game-blue"
+              ? "bg-game-surface border-game-blue text-game-blue"
               : "bg-game-error bg-opacity-10 border-game-error text-game-error"
           }`}
         >

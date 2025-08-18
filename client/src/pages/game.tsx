@@ -176,7 +176,7 @@ export default function Game() {
   const effectiveChallenge = getEffectiveChallenge();
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-game-background text-game-text font-sans">
       {/* Admin Access Button - Bottom right */}
       <div className="fixed bottom-4 right-4 z-50">
         <Link href="/admin-login">

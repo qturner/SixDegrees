@@ -51,12 +51,16 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Game specific colors */
-  --game-primary: hsl(210 25% 14%);
-  --game-blue: hsl(217.2 91.2% 59.8%);
-  --game-success: hsl(142.1 76.2% 36.3%);
-  --game-error: hsl(0 84.2% 60.2%);
-  --game-warning: hsl(47.9 95.8% 53.1%);
+  /* Game specific colors - Classic Hollywood Glamour Theme */
+  --game-primary: hsl(43 100% 35%);     /* Rich Gold #B8860B */
+  --game-blue: hsl(43 100% 35%);        /* Rich Gold #B8860B */
+  --game-success: hsl(43 59% 90%);      /* Cream #F7E7CE */
+  --game-error: hsl(0 84.2% 60.2%);     /* Keep red for errors */
+  --game-warning: hsl(43 100% 35%);     /* Rich Gold #B8860B */
+  --game-background: hsl(0 0% 5%);      /* Deep Black #0D0D0D */
+  --game-surface: hsl(207 15% 23%);     /* Charcoal #36454F */
+  --game-text: hsl(240 100% 99%);       /* Ghost White #F8F8FF */
+  --game-accent: hsl(0 0% 75%);         /* Silver #C0C0C0 */
 }
 
 .dark {
@@ -105,12 +109,16 @@
   --shadow-xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 8px 10px -1px hsl(217.2 91.2% 59.8% / 0.00);
   --shadow-2xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
   
-  /* Game specific colors for dark mode */
-  --game-primary: hsl(210 25% 85%);
-  --game-blue: hsl(217.2 91.2% 59.8%);
-  --game-success: hsl(142.1 76.2% 36.3%);
-  --game-error: hsl(0 84.2% 60.2%);
-  --game-warning: hsl(47.9 95.8% 53.1%);
+  /* Game specific colors for dark mode - Classic Hollywood Glamour Theme */
+  --game-primary: hsl(43 100% 45%);     /* Brighter Gold for dark mode */
+  --game-blue: hsl(43 100% 45%);        /* Brighter Gold for dark mode */
+  --game-success: hsl(43 59% 85%);      /* Lighter Cream for dark mode */
+  --game-error: hsl(0 84.2% 60.2%);     /* Keep red for errors */
+  --game-warning: hsl(43 100% 45%);     /* Brighter Gold for dark mode */
+  --game-background: hsl(0 0% 8%);      /* Slightly lighter black for dark mode */
+  --game-surface: hsl(207 15% 28%);     /* Lighter Charcoal for dark mode */
+  --game-text: hsl(240 100% 99%);       /* Ghost White #F8F8FF */
+  --game-accent: hsl(0 0% 80%);         /* Brighter Silver for dark mode */
 }
 
 @layer base {
@@ -119,7 +127,9 @@
   }
 
   body {
-    @apply font-sans antialiased bg-gray-50 text-foreground;
+    @apply font-sans antialiased text-foreground;
+    background-color: var(--game-background);
+    color: var(--game-text);
     line-height: 1.6;
   }
   
@@ -254,6 +264,27 @@
 
 .bg-game-warning {
   background-color: var(--game-warning);
+}
+
+/* Hollywood Glamour Theme Classes */
+.bg-game-background {
+  background-color: var(--game-background);
+}
+
+.bg-game-surface {
+  background-color: var(--game-surface);
+}
+
+.text-game-text {
+  color: var(--game-text);
+}
+
+.text-game-accent {
+  color: var(--game-accent);
+}
+
+.border-game-accent {
+  border-color: var(--game-accent);
 }
 
 /* Enhanced button hover states */
