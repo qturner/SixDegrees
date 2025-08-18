@@ -129,75 +129,7 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         </div>
       </div>
 
-      <div className="bg-white card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-lg mb-6 sm:mb-8 max-w-4xl mx-auto -mt-4 px-2 sm:px-4">
-        <div className="text-center mb-4 sm:mb-6">
-          <h2 className="text-heading-md text-game-primary mb-4">Today's Challenge</h2>
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 mb-4">
-            <div className="relative bg-game-blue text-white spacing-sm sm:px-6 sm:py-3 button-radius font-medium text-body w-full sm:w-auto transition-all duration-200 hover:shadow-card-hover flex items-center justify-center">
-              <div className="absolute left-3 sm:left-6 flex items-center">
-                {displayChallenge.startActorProfilePath ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
-                    alt={displayChallenge.startActorName}
-                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200"
-                  />
-                ) : (
-                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0">
-                    <span className="text-lg font-medium text-white">
-                      {displayChallenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <span className="truncate text-center px-20 sm:px-24">{displayChallenge.startActorName}</span>
-            </div>
-            <div className="text-xl sm:text-2xl text-muted-light rotate-90 sm:rotate-0 transition-transform duration-300">
-              <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
-            <div className="relative bg-game-blue text-white spacing-sm sm:px-6 sm:py-3 button-radius font-medium text-body w-full sm:w-auto transition-all duration-200 hover:shadow-card-hover flex items-center justify-center">
-              <div className="absolute left-3 sm:left-6 flex items-center">
-                {displayChallenge.endActorProfilePath ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
-                    alt={displayChallenge.endActorName}
-                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200"
-                  />
-                ) : (
-                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0">
-                    <span className="text-lg font-medium text-white">
-                      {displayChallenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <span className="truncate text-center px-20 sm:px-24">{displayChallenge.endActorName}</span>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 text-body-sm">
-            <div className="flex items-center space-x-4">
-              <span className={`font-medium ${getStatusColor()}`}>
-                Status: {getGameStatus()}
-              </span>
-              <span className="text-muted">
-                Moves: {currentMoves}/6
-              </span>
-            </div>
-            
-            {onFlip && (
-              <Button
-                onClick={onFlip}
-                disabled={!canFlip}
-                variant="outline"
-                size="sm"
-                className="border-game-blue text-game-blue hover:bg-game-blue hover:text-white text-xs btn-hover button-radius transition-all duration-200"
-              >
-                <ArrowLeftRight className="w-3 h-3 mr-1" />
-                Switch Starting Actor
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+
     </header>
   );
 }

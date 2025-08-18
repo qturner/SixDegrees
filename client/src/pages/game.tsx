@@ -10,6 +10,7 @@ import GameInstructions from "@/components/GameInstructions";
 import ValidationFeedback from "@/components/ValidationFeedback";
 import { HintsSection } from "@/components/HintsSection";
 import GameAnalytics from "@/components/GameAnalytics";
+import TodaysChallenge from "@/components/TodaysChallenge";
 import { AboutModal } from "@/components/AboutModal";
 import { ContactModal } from "@/components/ContactModal";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
@@ -197,6 +198,17 @@ export default function Game() {
       />
       
       <main className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        
+        <div className="mb-6 sm:mb-8">
+          <TodaysChallenge 
+            challenge={challenge}
+            currentMoves={connections.filter(c => c.actorId && c.movieId).length}
+            isFlipped={isFlipped}
+            onFlip={handleFlipActors}
+            canFlip={!connections.some(c => c.actorId || c.movieId)}
+            gameResult={gameResult}
+          />
+        </div>
         
         <div className="mb-6 sm:mb-8">
           <HintsSection dailyChallenge={challenge} />
