@@ -132,7 +132,7 @@ export default function TodaysChallenge({
               disabled={!canFlip}
               variant="outline"
               size="sm"
-              className="border-game-primary text-game-primary hover:bg-game-primary hover:text-game-background text-xs btn-hover button-radius transition-all duration-200"
+              className="border-game-primary text-game-primary hover:bg-game-primary hover:text-white text-xs btn-hover button-radius transition-all duration-200"
             >
               <ArrowLeftRight className="w-3 h-3 mr-1" />
               Switch Starting Actor
