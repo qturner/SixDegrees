@@ -372,7 +372,7 @@ export default function AdminPanel() {
               <p className="text-gray-600 dark:text-gray-400">Six Degrees Game Management</p>
             </div>
           </div>
-          <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2">
+          <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
             <LogOut className="h-4 w-4" />
             Logout
           </Button>
