@@ -146,59 +146,45 @@ export class DatabaseStorage implements IStorage {
         try {
           const connections = JSON.parse(attempt.connections);
           
-          // Track unique actors and movies in THIS solution chain
+          // Get unique actors and movies in THIS solution chain (excluding start/end actors)
           const uniqueMoviesInChain = new Set<string>();
           const uniqueActorsInChain = new Set<string>();
           
           for (const connection of connections) {
-            // Track movies used in this chain (unique per chain)
+            // Track unique movies in this chain
             if (connection.movieId && connection.movieTitle) {
               uniqueMoviesInChain.add(connection.movieId);
             }
-            // Track actors used in this chain (unique per chain, excluding start/end actors)
+            // Track unique actors in this chain (excluding start/end actors)
             const actorIdStr = connection.actorId.toString();
             if (connection.actorId && connection.actorName && !excludedActorIds.includes(actorIdStr)) {
               uniqueActorsInChain.add(actorIdStr);
             }
           }
           
-          // Now count each unique movie/actor only once per successful solution
-          for (const connection of connections) {
-            // Count movies (once per successful chain)
-            if (connection.movieId && connection.movieTitle && uniqueMoviesInChain.has(connection.movieId)) {
-              const existing = movieUsage.get(connection.movieId);
-              if (!existing) {
-                movieUsage.set(connection.movieId, {
-                  title: connection.movieTitle,
-                  count: 1
-                });
-              } else {
-                movieUsage.set(connection.movieId, {
-                  title: connection.movieTitle,
-                  count: existing.count + 1
-                });
-              }
-              uniqueMoviesInChain.delete(connection.movieId); // Prevent double counting in same chain
+          // Count each unique movie once per solution
+          uniqueMoviesInChain.forEach(movieId => {
+            const connection = connections.find((c: any) => c.movieId === movieId);
+            if (connection) {
+              const existing = movieUsage.get(movieId);
+              movieUsage.set(movieId, {
+                title: connection.movieTitle,
+                count: (existing?.count || 0) + 1
+              });
             }
-            
-            // Count actors (once per successful chain, excluding start/end actors)
-            const actorIdStr = connection.actorId.toString();
-            if (connection.actorId && connection.actorName && !excludedActorIds.includes(actorIdStr) && uniqueActorsInChain.has(actorIdStr)) {
-              const existing = actorUsage.get(actorIdStr);
-              if (!existing) {
-                actorUsage.set(actorIdStr, {
-                  name: connection.actorName,
-                  count: 1
-                });
-              } else {
-                actorUsage.set(actorIdStr, {
-                  name: connection.actorName,
-                  count: existing.count + 1
-                });
-              }
-              uniqueActorsInChain.delete(actorIdStr); // Prevent double counting in same chain
+          });
+          
+          // Count each unique actor once per solution
+          uniqueActorsInChain.forEach(actorId => {
+            const connection = connections.find((c: any) => c.actorId.toString() === actorId);
+            if (connection) {
+              const existing = actorUsage.get(actorId);
+              actorUsage.set(actorId, {
+                name: connection.actorName,
+                count: (existing?.count || 0) + 1
+              });
             }
-          }
+          });
         } catch (error) {
           console.error('Error parsing connection chain:', error);
         }
