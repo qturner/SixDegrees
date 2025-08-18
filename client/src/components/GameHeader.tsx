@@ -129,7 +129,7 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         </div>
       </div>
 
-      <div className="bg-white card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-lg mb-6 sm:mb-8 max-w-4xl mx-auto -mt-4 mx-4 sm:mx-auto">
+      <div className="bg-white card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-lg mb-6 sm:mb-8 max-w-4xl mx-auto -mt-4 px-2 sm:px-4">
         <div className="text-center mb-4 sm:mb-6">
           <h2 className="text-heading-md text-game-primary mb-4">Today's Challenge</h2>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 mb-4">
