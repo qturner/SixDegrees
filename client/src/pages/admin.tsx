@@ -127,6 +127,21 @@ export default function AdminPanel() {
   const { data: tomorrowChallenge, isLoading: tomorrowLoading } = useQuery<DailyChallenge>({
     queryKey: ["/api/admin/tomorrow-challenge"],
     enabled: !!token,
+    queryFn: async () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) throw new Error('No admin token');
+      
+      const response = await fetch("/api/admin/tomorrow-challenge", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) return null; // No tomorrow challenge exists
+        throw new Error('Failed to fetch tomorrow challenge');
+      }
+      
+      return response.json();
+    },
   });
 
   const logoutMutation = useMutation({
@@ -353,7 +368,7 @@ export default function AdminPanel() {
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-blue-600" />
             <div>
-              <h1 className="text-3xl font-bold">Admin Panel</h1>
+              <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Admin Panel</h1>
               <p className="text-gray-600 dark:text-gray-400">Six Degrees Game Management</p>
             </div>
           </div>
