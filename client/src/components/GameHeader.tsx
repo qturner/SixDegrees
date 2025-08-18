@@ -47,12 +47,17 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
   };
 
   return (
-    <header className="bg-game-surface shadow-sm border-b border-game-accent text-game-text">
-      <div className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
+    <header className="bg-game-surface shadow-lg border-b-2 border-game-primary text-game-text relative overflow-hidden">
+      {/* Background pattern for elegance */}
+      <div className="absolute inset-0 bg-gradient-to-r from-game-surface via-game-surface to-game-surface opacity-90"></div>
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-game-primary to-transparent"></div>
+      
+      <div className="relative max-w-5xl mx-auto px-6 py-8">
         <div className="text-center">
-          <div className="flex flex-col items-center justify-center mb-3">
-            <div className="flex items-center justify-center mb-2">
-              <svg width="50" height="50" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" className="mr-3">
+          <div className="flex flex-col items-center justify-center mb-6">
+            <div className="flex items-center justify-center mb-4 group">
+              <div className="relative">
+                <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" className="mr-4 transform group-hover:scale-105 transition-transform duration-300">
                 <defs>
                   {/* Hollywood Glamour Gold Gradients */}
                   <radialGradient id="nodeGradient" cx="30%" cy="30%" r="70%">
@@ -121,11 +126,34 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                   <circle cx="30" cy="25" r="5" fill="url(#centerGradient)"/>
                   <circle cx="28" cy="23" r="1.5" fill="#FFD700" opacity="0.9"/>
                 </g>
-              </svg>
-              <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
+                </svg>
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 bg-game-primary opacity-20 rounded-full blur-xl scale-75 group-hover:opacity-30 transition-opacity duration-300"></div>
+              </div>
+              <div className="text-left">
+                <h1 className="text-4xl sm:text-5xl font-bold text-game-primary whitespace-nowrap tracking-wide mb-2 relative">
+                  Six Degrees of Separation
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-game-primary via-transparent to-game-primary opacity-60"></div>
+                </h1>
+              </div>
+            </div>
+            
+            {/* Enhanced tagline */}
+            <div className="relative">
+              <p className="text-xl text-game-accent font-light tracking-wide leading-relaxed">
+                Connect two actors through movies in 
+                <span className="text-game-primary font-medium mx-2">6 moves or less</span>
+              </p>
+              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-game-accent to-transparent"></div>
             </div>
           </div>
-          <p className="text-game-accent text-body-lg">Connect two actors through movies in 6 moves or less</p>
+          
+          {/* Decorative elements */}
+          <div className="flex justify-center space-x-8 mt-4 opacity-60">
+            <div className="w-2 h-2 bg-game-primary rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-game-accent rounded-full animate-pulse delay-300"></div>
+            <div className="w-2 h-2 bg-game-primary rounded-full animate-pulse delay-700"></div>
+          </div>
         </div>
       </div>
 
