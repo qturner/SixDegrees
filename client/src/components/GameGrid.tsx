@@ -143,14 +143,14 @@ export default function GameGrid({
   );
 
   return (
-    <div className="bg-white card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-md sm:spacing-lg mb-8">
+    <div className="bg-game-surface border border-game-accent card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-md sm:spacing-lg mb-8">
       {/* Starting Actor */}
       <div className="mb-6">
         <h3 className="text-heading-md text-game-primary mb-3 text-center">
           <User className="inline-block w-5 h-5 mr-2" />
           Starting Actor
         </h3>
-        <div className="spacing-md bg-game-blue text-white button-radius text-center font-medium transition-all duration-200 hover:shadow-card-hover">
+        <div className="spacing-md bg-game-primary text-game-background button-radius text-center font-medium transition-all duration-200 hover:shadow-card-hover">
           {challenge.startActorName}
         </div>
       </div>
@@ -172,14 +172,14 @@ export default function GameGrid({
           }
           
           return (
-            <div key={`connection-${index}`} className="border border-gray-200 input-radius spacing-md space-y-4 transition-all duration-200 hover:border-gray-300 hover:shadow-card">
-              <h4 className="text-body-sm font-medium text-muted text-center">
+            <div key={`connection-${index}`} className="border border-game-accent input-radius spacing-md space-y-4 transition-all duration-200 hover:border-game-primary hover:shadow-card bg-game-background">
+              <h4 className="text-body-sm font-medium text-game-accent text-center">
                 Connection {index + 1} of {connectionSlots.length}
               </h4>
               
               {/* Movie Input (Primary) */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
+                <label className="text-sm font-medium text-game-text flex items-center">
                   <Film className="w-4 h-4 mr-1" />
                   Movie featuring {previousActorName || 'previous actor'}
                   {isLastConnection && ` and ${challenge.endActorName}`}
@@ -195,7 +195,7 @@ export default function GameGrid({
                   {/* Loading Spinner */}
                   {validatingIndex === index && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-game-blue"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-game-primary"></div>
                     </div>
                   )}
                 </div>
@@ -203,8 +203,8 @@ export default function GameGrid({
 
               {/* Actor Input (Subfield) - Not shown for last connection */}
               {!isLastConnection && (
-                <div className="space-y-2 ml-4 border-l-2 border-gray-200 pl-4">
-                  <label className="text-sm font-medium text-gray-700 flex items-center">
+                <div className="space-y-2 ml-4 border-l-2 border-game-accent pl-4">
+                  <label className="text-sm font-medium text-game-text flex items-center">
                     <User className="w-4 h-4 mr-1" />
                     Co-star in {connection.movieTitle || 'this movie'}
                   </label>
@@ -221,12 +221,12 @@ export default function GameGrid({
 
               {/* Special note for last connection */}
               {isLastConnection && connection.movieTitle && (
-                <div className="space-y-2 ml-4 border-l-2 border-blue-200 pl-4 bg-blue-50 p-3 rounded-md">
-                  <div className="text-sm font-medium text-blue-700 flex items-center">
+                <div className="space-y-2 ml-4 border-l-2 border-game-primary pl-4 bg-game-surface p-3 rounded-md">
+                  <div className="text-sm font-medium text-game-primary flex items-center">
                     <User className="w-4 h-4 mr-1" />
                     Final connection to {challenge.endActorName}
                   </div>
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs text-game-text">
                     This movie should feature both {previousActorName} and {challenge.endActorName}
                   </p>
                 </div>
@@ -266,7 +266,7 @@ export default function GameGrid({
           <User className="inline-block w-5 h-5 mr-2" />
           Target Actor
         </h3>
-        <div className="spacing-md bg-game-blue text-white button-radius text-center font-medium transition-all duration-200 hover:shadow-card-hover">
+        <div className="spacing-md bg-game-primary text-game-background button-radius text-center font-medium transition-all duration-200 hover:shadow-card-hover">
           {challenge.endActorName}
         </div>
       </div>
@@ -276,7 +276,7 @@ export default function GameGrid({
         <Button 
           onClick={handleValidateGame}
           disabled={validateGameMutation.isPending || connections.length === 0}
-          className="px-6 py-3 bg-game-blue text-white hover:bg-blue-600 btn-hover button-radius transition-all duration-200"
+          className="px-6 py-3 bg-game-primary text-game-background hover:bg-game-accent btn-hover button-radius transition-all duration-200"
         >
           <CheckCircle className="w-4 h-4 mr-2" />
           {validateGameMutation.isPending ? "Validating..." : "Validate Connection"}
@@ -285,7 +285,7 @@ export default function GameGrid({
         <Button 
           onClick={handleReset}
           variant="secondary"
-          className="px-6 py-3 bg-gray-500 text-white hover:bg-gray-600 btn-hover button-radius transition-all duration-200"
+          className="px-6 py-3 bg-game-accent text-game-background hover:bg-game-surface btn-hover button-radius transition-all duration-200"
         >
           <RotateCcw className="w-4 h-4 mr-2" />
           Reset Game
