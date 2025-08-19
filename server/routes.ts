@@ -838,12 +838,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/tomorrow-challenge", requireAdminAuth, async (req, res) => {
     try {
       const tomorrow = getTomorrowDateString();
+      console.log(`Looking for tomorrow's challenge for date: ${tomorrow}`);
+      
+      // Get challenge with status 'upcoming' for tomorrow
       const challenge = await storage.getDailyChallenge(tomorrow);
       
-      if (!challenge) {
-        return res.status(404).json({ message: "No challenge found for tomorrow" });
+      if (!challenge || challenge.status !== 'upcoming') {
+        console.log(`No upcoming challenge found for ${tomorrow}, current status: ${challenge?.status || 'not found'}`);
+        return res.status(404).json({ message: "No challenge scheduled for tomorrow" });
       }
       
+      console.log(`Found tomorrow's challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
       res.json(challenge);
     } catch (error) {
       console.error("Error getting tomorrow's challenge:", error);
