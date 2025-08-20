@@ -61,6 +61,7 @@ interface TMDbPersonMovies {
     popularity: number;
     vote_average: number;
     vote_count: number;
+    original_language: string;
   }>;
 }
 
@@ -512,7 +513,7 @@ class TMDbService {
       }
     }
 
-    console.log(`Filtered from ${actors.length} to ${validActors.length} actors with post-1980 career activity`);
+    console.log(`Filtered from ${actors.length} to ${validActors.length} actors with post-1980 career activity and living status`);
     return validActors;
   }
 
@@ -549,19 +550,36 @@ class TMDbService {
           // Check if actor has significant mainstream live-action work
           const liveActionMovies = await this.getNonDocumentaryNonAnimatedMovies(actor.id);
           
-          // Actor must have at least 3 live-action movies for better mainstream focus
-          // Also check if they have high-profile live-action work
-          if (liveActionMovies.length >= 3) {
+          // NEW REQUIREMENT: Actor must have at least 5 English-language movies
+          // Get raw TMDB data with original_language field for filtering
+          const rawMovieCredits = await this.makeRequest<TMDbPersonMovies>(`/person/${actor.id}/movie_credits`);
+          const englishMovies = rawMovieCredits.cast.filter(movie => 
+            movie.original_language === 'en' &&
+            movie.release_date && 
+            new Date(movie.release_date).getFullYear() >= 1970 &&
+            // Exclude documentaries, animated movies, TV movies, and music films
+            (!movie.genre_ids || !movie.genre_ids.some(id => 
+              id === this.EXCLUDED_GENRES.ANIMATION ||
+              id === this.EXCLUDED_GENRES.DOCUMENTARY ||
+              id === this.EXCLUDED_GENRES.TV_MOVIE ||
+              id === this.EXCLUDED_GENRES.MUSIC
+            ))
+          );
+          
+          console.log(`${actor.name}: ${liveActionMovies.length} live-action movies, ${englishMovies.length} in English`);
+          
+          // Actor must have at least 5 English movies for better game relevance
+          if (englishMovies.length >= 5) {
             // Additional check: ensure they have movies with decent popularity/budget
-            const popularMovies = liveActionMovies.filter(movie => {
+            const popularMovies = englishMovies.filter(movie => {
               // Focus on movies from 1990+ for more mainstream appeal
               if (!movie.release_date) return false;
               const releaseYear = new Date(movie.release_date).getFullYear();
               return releaseYear >= 1990;
             });
             
-            // Must have at least 2 movies from 1990+ to ensure mainstream relevance
-            if (popularMovies.length >= 2) {
+            // Must have at least 3 English movies from 1990+ to ensure mainstream relevance
+            if (popularMovies.length >= 3) {
               return actor;
             }
           }
@@ -703,7 +721,7 @@ class TMDbService {
       // First filter by career activity (post-1980) and living status
       const careerFilteredActors = await this.filterActorsByCareerActivity(actors);
       
-      console.log("Applying genre filtering to career-filtered actors...");
+      console.log("Applying genre filtering and English movie requirement (5+ credits) to career-filtered actors...");
       
       // Then apply genre filtering to exclude documentary/animation-only actors  
       const finalFilteredActors = await this.filterActorsByGenre(careerFilteredActors);
