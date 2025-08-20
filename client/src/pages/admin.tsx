@@ -313,19 +313,30 @@ export default function AdminPanel() {
     }
 
     try {
+      console.log(`Searching for ${type} actors with query: "${query}"`);
       const response = await fetch(`/api/search/actors?q=${encodeURIComponent(query)}`);
       if (response.ok) {
         const results = await response.json();
-        if (type === 'start') setStartActorResults(results.slice(0, 5));
-        else setEndActorResults(results.slice(0, 5));
+        console.log(`${type} search results for "${query}":`, results);
+        if (type === 'start') {
+          setStartActorResults(results.slice(0, 5));
+        } else {
+          setEndActorResults(results.slice(0, 5));
+        }
+      } else {
+        console.error(`Search failed for ${type} with status:`, response.status);
       }
     } catch (error) {
       console.error('Error searching actors:', error);
     }
   };
 
-  // Debounced search effect
+  // Clear results when search is empty
   useEffect(() => {
+    if (!startActorSearch.trim()) {
+      setStartActorResults([]);
+      return;
+    }
     const timer = setTimeout(() => {
       searchActors(startActorSearch, 'start');
     }, 500);
@@ -333,6 +344,10 @@ export default function AdminPanel() {
   }, [startActorSearch]);
 
   useEffect(() => {
+    if (!endActorSearch.trim()) {
+      setEndActorResults([]);
+      return;
+    }
     const timer = setTimeout(() => {
       searchActors(endActorSearch, 'end');
     }, 500);
