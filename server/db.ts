@@ -17,10 +17,14 @@ if (!process.env.DATABASE_URL) {
 // Configure connection pool with enhanced retry and timeout settings
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  connectionTimeoutMillis: 15000, // Increased timeout
-  idleTimeoutMillis: 60000, // Increased idle timeout
-  max: 10, // Reduced max connections for stability
-  allowExitOnIdle: true
+  connectionTimeoutMillis: 30000, // Further increased timeout for slow networks
+  idleTimeoutMillis: 300000, // 5 minutes idle timeout
+  max: 5, // Further reduced max connections for stability
+  allowExitOnIdle: true,
+  // Add additional configuration for stability
+  application_name: 'movie-connection-game',
+  statement_timeout: 30000, // 30 second statement timeout
+  query_timeout: 30000, // 30 second query timeout
 });
 
 // Add connection event handlers
@@ -35,7 +39,7 @@ pool.on('connect', () => {
 export const db = drizzle({ client: pool, schema });
 
 // Enhanced connection retry wrapper with exponential backoff
-export async function withRetry<T>(operation: () => Promise<T>, maxRetries: number = 5): Promise<T> {
+export async function withRetry<T>(operation: () => Promise<T>, maxRetries: number = 3): Promise<T> {
   let lastError: any;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -54,18 +58,20 @@ export async function withRetry<T>(operation: () => Promise<T>, maxRetries: numb
         error?.message?.includes('connection') ||
         error?.message?.includes('timeout') ||
         error?.message?.includes('WebSocket') ||
-        error?.name === 'ErrorEvent';
+        error?.message?.includes('Cannot set property message') ||
+        error?.name === 'ErrorEvent' ||
+        error?.name === 'TypeError';
       
       if (isRetryableError) {
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Exponential backoff, max 10s
-        console.log(`Database connection attempt ${attempt}/${maxRetries} failed: ${error.message}`);
+        const delay = Math.min(2000 * Math.pow(1.5, attempt - 1), 15000); // Longer delays for better stability
+        console.log(`Database connection attempt ${attempt}/${maxRetries} failed: ${error.message || error.toString()}`);
         
         if (attempt < maxRetries) {
           console.log(`Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         } else {
-          console.error(`All ${maxRetries} connection attempts failed. Last error:`, error.message);
+          console.error(`All ${maxRetries} connection attempts failed. Last error:`, error.message || error.toString());
         }
       }
       

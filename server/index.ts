@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { gameLogicService } from "./services/gameLogic.ts";
 import { storage } from "./storage.ts";
+import { checkDatabaseHealth } from "./db";
 
 const app = express();
 app.use(express.json());
@@ -40,6 +41,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Check database health but don't block startup
+  let dbHealthy = false;
+  try {
+    log('Checking database connection...');
+    dbHealthy = await checkDatabaseHealth();
+    if (dbHealthy) {
+      log('✅ Database connection verified successfully');
+    } else {
+      log('⚠️ Database connection failed, but starting server anyway');
+    }
+  } catch (error: any) {
+    log(`⚠️ Database health check error: ${error?.message || 'Unknown error'}, but starting server anyway`);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -72,7 +87,12 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
     
     // Setup daily challenge reset at midnight EST after server is running
-    setupDailyChallengeReset(port);
+    // Only if database is healthy
+    if (dbHealthy) {
+      setupDailyChallengeReset(port);
+    } else {
+      log('⚠️ Skipping daily challenge reset setup due to database issues');
+    }
   });
 })();
 
