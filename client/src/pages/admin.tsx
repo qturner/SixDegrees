@@ -385,6 +385,21 @@ export default function AdminPanel() {
           </Button>
         </div>
 
+        {/* Quick Navigation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Navigation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button onClick={() => setLocation("/")} variant="outline">
+                <Users className="h-4 w-4 mr-2" />
+                Game View
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Current Challenge Card */}
         <Card>
           <CardHeader>
@@ -743,21 +758,6 @@ export default function AdminPanel() {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Links */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Navigation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Button onClick={() => setLocation("/")} variant="outline">
-                <Users className="h-4 w-4 mr-2" />
-                Game View
-              </Button>
             </div>
           </CardContent>
         </Card>
