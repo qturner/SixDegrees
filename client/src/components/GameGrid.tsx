@@ -6,6 +6,7 @@ import ActorSearch from "./ActorSearch";
 import MovieSearch from "./MovieSearch";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { trackGameEvent } from "@/lib/analytics";
 
 interface GameGridProps {
   challenge: DailyChallenge;
@@ -34,6 +35,9 @@ export default function GameGrid({
       return response.json();
     },
     onSuccess: (result: ValidationResult) => {
+      if (result.valid) {
+        trackGameEvent.completeGame(result.moves || 0);
+      }
       onGameResult(result);
     },
   });
@@ -44,6 +48,7 @@ export default function GameGrid({
       return response.json();
     },
     onSuccess: (result: ValidationResult, variables: any) => {
+      trackGameEvent.validateMove(result.valid);
       onValidationResult(variables.index, result);
       setValidatingIndex(null);
     },

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Lightbulb, Film } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { trackGameEvent } from "@/lib/analytics";
 
 interface Movie {
   id: number;
@@ -171,6 +172,9 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       const newHintsUsed = userHintsUsed + 1;
       setUserHintsUsed(newHintsUsed);
       setLoadingHintType(null);
+      
+      // Track the hint usage
+      trackGameEvent.useHint(actorType === 'start' ? 'actor' : 'actor');
       
       if (actorType === 'start') {
         setStartActorHint(data);

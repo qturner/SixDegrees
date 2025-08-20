@@ -30,6 +30,7 @@ import { Shield, RefreshCw, LogOut, Users, Calendar, Search, UserPlus, BarChart3
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import ContactSubmissions from "@/components/ContactSubmissions";
 import ReferralAnalyticsDashboard from "@/components/ReferralAnalyticsDashboard";
+import { trackPageView, trackEvent } from "@/lib/analytics";
 
 interface DailyChallenge {
   date: string;
@@ -71,7 +72,7 @@ function useAdminAuth() {
 }
 
 export default function AdminPanel() {
-  // SEO optimization for admin page
+  // SEO optimization for admin page and track admin access
   useEffect(() => {
     document.title = "Admin Dashboard - Six Degrees of Separation";
     const metaDescription = document.querySelector('meta[name="description"]');
@@ -85,6 +86,8 @@ export default function AdminPanel() {
     if (robotsMeta) {
       robotsMeta.setAttribute('content', 'noindex, nofollow');
     }
+    trackPageView('/admin');
+    trackEvent('admin_access', 'admin', 'dashboard');
   }, []);
 
   const [_, setLocation] = useLocation();

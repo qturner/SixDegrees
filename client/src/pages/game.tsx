@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import GameHeader from "@/components/GameHeader";
 import GameGrid from "@/components/GameGrid";
-
 import GameInstructions from "@/components/GameInstructions";
 import ValidationFeedback from "@/components/ValidationFeedback";
 import { HintsSection } from "@/components/HintsSection";
@@ -14,6 +13,7 @@ import TodaysChallenge from "@/components/TodaysChallenge";
 import { AboutModal } from "@/components/AboutModal";
 import { ContactModal } from "@/components/ContactModal";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
+import { trackGameEvent, trackPageView } from "@/lib/analytics";
 
 // Helper functions for localStorage persistence
 const saveGameState = (connections: Connection[], validationResults: ValidationResult[], gameResult: ValidationResult | null, isFlipped: boolean, challengeDate?: string) => {
@@ -47,7 +47,7 @@ const loadGameState = (currentChallengeDate?: string) => {
 };
 
 export default function Game() {
-  // SEO optimization - update meta tags for game page
+  // SEO optimization - update meta tags for game page and track page view
   useEffect(() => {
     document.title = "Play Today's Challenge - Six Degrees of Separation";
     const metaDescription = document.querySelector('meta[name="description"]');
@@ -56,6 +56,7 @@ export default function Game() {
         'Play today\'s Six Degrees of Separation challenge! Connect two Hollywood actors through movies in 6 moves or less. New daily challenges with hints and analytics.'
       );
     }
+    trackPageView('/');
   }, []);
 
   // Initialize state - will be reset when challenge loads if needed
@@ -129,6 +130,7 @@ export default function Game() {
       setIsFlipped(false);
     }
     localStorage.removeItem('gameState');
+    trackGameEvent.resetGame();
   };
 
   const clearAllUserData = () => {

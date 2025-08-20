@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,19 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Lock, Mail } from "lucide-react";
+import { trackPageView, trackEvent } from "@/lib/analytics";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Track admin login page visit
+  useEffect(() => {
+    trackPageView('/admin-login');
+    trackEvent('page_view', 'admin', 'login_page');
+  }, []);
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
@@ -23,6 +30,7 @@ export default function AdminLogin() {
     onSuccess: (data) => {
       localStorage.setItem('adminToken', data.token);
       localStorage.setItem('adminTokenExpiry', data.expiresAt);
+      trackEvent('admin_login', 'admin', 'successful');
       toast({
         title: "Login successful",
         description: "Welcome to the admin panel",
