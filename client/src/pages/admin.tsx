@@ -242,7 +242,7 @@ export default function AdminPanel() {
       return await response.json();
     },
     onSuccess: () => {
-      // Don't auto-close dialog - let user close it manually after seeing confirmation
+      // Clear form data but keep dialog open for user confirmation
       setSelectedStartActor(null);
       setSelectedEndActor(null);
       setStartActorSearch("");
@@ -253,10 +253,7 @@ export default function AdminPanel() {
         title: "Next Challenge Set",
         description: "Next daily challenge has been set - will become active tomorrow",
       });
-      // Close dialog after a brief delay to allow user to see the success
-      setTimeout(() => {
-        setIsSetChallengeDialogOpen(false);
-      }, 1500);
+      // Dialog will stay open showing success message until user closes it
     },
     onError: (error: any) => {
       // Keep dialog open for error cases too so user can try again
@@ -373,6 +370,8 @@ export default function AdminPanel() {
 
   const handleSetChallenge = () => {
     if (selectedStartActor && selectedEndActor) {
+      // Reset mutation state before new attempt
+      setChallengeActorsMutation.reset();
       setChallengeActorsMutation.mutate({
         startActorId: selectedStartActor.id,
         startActorName: selectedStartActor.name,
@@ -743,7 +742,11 @@ export default function AdminPanel() {
                       <AlertDialogDescription>
                         {setChallengeActorsMutation.isSuccess ? (
                           <div className="text-green-600 dark:text-green-400 font-medium">
-                            ✓ Next challenge set successfully! {selectedStartActor?.name} → {selectedEndActor?.name} will become active at midnight.
+                            ✓ Next challenge set successfully! The challenge will become active at midnight.
+                          </div>
+                        ) : setChallengeActorsMutation.isError ? (
+                          <div className="text-red-600 dark:text-red-400 font-medium">
+                            ✗ Failed to set challenge. Please try again.
                           </div>
                         ) : (
                           `Set tomorrow's challenge to ${selectedStartActor?.name} → ${selectedEndActor?.name}? This will become active at midnight.`
@@ -751,11 +754,21 @@ export default function AdminPanel() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      {setChallengeActorsMutation.isSuccess ? (
-                        <AlertDialogCancel onClick={() => setIsSetChallengeDialogOpen(false)}>Close</AlertDialogCancel>
+                      {setChallengeActorsMutation.isSuccess || setChallengeActorsMutation.isError ? (
+                        <AlertDialogCancel onClick={() => {
+                          setIsSetChallengeDialogOpen(false);
+                          setChallengeActorsMutation.reset();
+                        }}>
+                          Close
+                        </AlertDialogCancel>
                       ) : (
                         <>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel onClick={() => {
+                            setIsSetChallengeDialogOpen(false);
+                            setChallengeActorsMutation.reset();
+                          }}>
+                            Cancel
+                          </AlertDialogCancel>
                           <AlertDialogAction onClick={handleSetChallenge} disabled={setChallengeActorsMutation.isPending}>
                             {setChallengeActorsMutation.isPending ? "Setting..." : "Set Next Challenge"}
                           </AlertDialogAction>
