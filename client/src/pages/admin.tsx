@@ -242,7 +242,7 @@ export default function AdminPanel() {
       return await response.json();
     },
     onSuccess: () => {
-      setIsSetChallengeDialogOpen(false);
+      // Don't auto-close dialog - let user close it manually after seeing confirmation
       setSelectedStartActor(null);
       setSelectedEndActor(null);
       setStartActorSearch("");
@@ -253,9 +253,13 @@ export default function AdminPanel() {
         title: "Next Challenge Set",
         description: "Next daily challenge has been set - will become active tomorrow",
       });
+      // Close dialog after a brief delay to allow user to see the success
+      setTimeout(() => {
+        setIsSetChallengeDialogOpen(false);
+      }, 1500);
     },
     onError: (error: any) => {
-      setIsSetChallengeDialogOpen(false);
+      // Keep dialog open for error cases too so user can try again
       toast({
         title: "Update failed",
         description: error.message || "Failed to update challenge",
@@ -737,14 +741,26 @@ export default function AdminPanel() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Set Custom Next Challenge</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Set tomorrow's challenge to {selectedStartActor?.name} → {selectedEndActor?.name}? This will become active at midnight.
+                        {setChallengeActorsMutation.isSuccess ? (
+                          <div className="text-green-600 dark:text-green-400 font-medium">
+                            ✓ Next challenge set successfully! {selectedStartActor?.name} → {selectedEndActor?.name} will become active at midnight.
+                          </div>
+                        ) : (
+                          `Set tomorrow's challenge to ${selectedStartActor?.name} → ${selectedEndActor?.name}? This will become active at midnight.`
+                        )}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleSetChallenge}>
-                        Set Next Challenge
-                      </AlertDialogAction>
+                      {setChallengeActorsMutation.isSuccess ? (
+                        <AlertDialogCancel onClick={() => setIsSetChallengeDialogOpen(false)}>Close</AlertDialogCancel>
+                      ) : (
+                        <>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleSetChallenge} disabled={setChallengeActorsMutation.isPending}>
+                            {setChallengeActorsMutation.isPending ? "Setting..." : "Set Next Challenge"}
+                          </AlertDialogAction>
+                        </>
+                      )}
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
