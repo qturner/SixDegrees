@@ -242,7 +242,7 @@ export default function AdminPanel() {
       return await response.json();
     },
     onSuccess: () => {
-      setIsSetChallengeDialogOpen(false);
+      // Keep modal open for user confirmation - don't auto-close
       setSelectedStartActor(null);
       setSelectedEndActor(null);
       setStartActorSearch("");
@@ -255,7 +255,7 @@ export default function AdminPanel() {
       });
     },
     onError: (error: any) => {
-      setIsSetChallengeDialogOpen(false);
+      // Keep modal open on error so user can retry or cancel manually
       toast({
         title: "Update failed",
         description: error.message || "Failed to update challenge",
