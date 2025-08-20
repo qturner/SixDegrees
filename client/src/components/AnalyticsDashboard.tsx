@@ -66,10 +66,9 @@ export default function AnalyticsDashboard({ challengeId, challengeName }: Analy
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Game Analytics</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-[#000000] pt-[-7px] pb-[-7px]">Game Analytics</h2>
         <p className="text-sm text-gray-500">{challengeName}</p>
       </div>
-
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -124,7 +123,6 @@ export default function AnalyticsDashboard({ challengeId, challengeName }: Analy
           </CardContent>
         </Card>
       </div>
-
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Move Distribution Bar Chart */}
@@ -187,7 +185,6 @@ export default function AnalyticsDashboard({ challengeId, challengeName }: Analy
           </CardContent>
         </Card>
       </div>
-
       {/* Additional Insights */}
       {analytics.totalAttempts > 0 && (
         <Card>
