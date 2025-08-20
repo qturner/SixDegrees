@@ -427,52 +427,52 @@ export default function AdminPanel() {
           </CardContent>
         </Card>
 
-        {/* Tomorrow's Challenge Card */}
+        {/* Next Challenge Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Tomorrow's Daily Challenge
+              Next Daily Challenge
             </CardTitle>
             <CardDescription>
-              Preview of tomorrow's actor pairing (automatically becomes today's challenge at midnight)
+              Preview of next actor pairing (24 hours in advance - becomes current at midnight)
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {tomorrowLoading ? (
+            {nextChallengeLoading ? (
               <div className="flex items-center justify-center py-8">
                 <RefreshCw className="h-6 w-6 animate-spin" />
-                <span className="ml-2">Loading tomorrow's challenge...</span>
+                <span className="ml-2">Loading next challenge...</span>
               </div>
-            ) : tomorrowChallenge ? (
+            ) : nextChallenge ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                     <h3 className="font-semibold text-purple-900 dark:text-purple-100">Start Actor</h3>
-                    <p className="text-lg font-medium">{tomorrowChallenge.startActorName}</p>
+                    <p className="text-lg font-medium">{nextChallenge.startActorName}</p>
                   </div>
                   <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                     <h3 className="font-semibold text-orange-900 dark:text-orange-100">End Actor</h3>
-                    <p className="text-lg font-medium">{tomorrowChallenge.endActorName}</p>
+                    <p className="text-lg font-medium">{nextChallenge.endActorName}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-4">
                   <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                    Status: Upcoming
+                    Status: Next
                   </Badge>
                   <Badge variant="outline">
-                    Date: {tomorrowChallenge.date}
+                    Date: {nextChallenge.date}
                   </Badge>
                   <Badge variant="outline">
-                    Created: {new Date(tomorrowChallenge.createdAt).toLocaleTimeString()}
+                    Created: {new Date(nextChallenge.createdAt).toLocaleTimeString()}
                   </Badge>
                 </div>
               </div>
             ) : (
               <div className="p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
                 <p className="text-yellow-800 dark:text-yellow-200">
-                  No challenge scheduled for tomorrow. One will be automatically generated at midnight.
+                  No next challenge scheduled. One will be automatically generated.
                 </p>
               </div>
             )}
