@@ -242,11 +242,7 @@ export default function AdminPanel() {
       return await response.json();
     },
     onSuccess: () => {
-      // Keep modal open for user confirmation - don't auto-close
-      setSelectedStartActor(null);
-      setSelectedEndActor(null);
-      setStartActorSearch("");
-      setEndActorSearch("");
+      // Keep modal open and don't clear selections until user closes dialog manually
       queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/next-challenge"] });
       toast({
@@ -723,7 +719,16 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
-                <AlertDialog open={isSetChallengeDialogOpen} onOpenChange={setIsSetChallengeDialogOpen}>
+                <AlertDialog open={isSetChallengeDialogOpen} onOpenChange={(open) => {
+                  setIsSetChallengeDialogOpen(open);
+                  // Clear selections when dialog is manually closed
+                  if (!open) {
+                    setSelectedStartActor(null);
+                    setSelectedEndActor(null);
+                    setStartActorSearch("");
+                    setEndActorSearch("");
+                  }
+                }}>
                   <AlertDialogTrigger asChild>
                     <Button 
                       disabled={setChallengeActorsMutation.isPending || !selectedStartActor || !selectedEndActor}
