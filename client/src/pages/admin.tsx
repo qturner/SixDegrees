@@ -248,9 +248,10 @@ export default function AdminPanel() {
       setStartActorSearch("");
       setEndActorSearch("");
       queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/next-challenge"] });
       toast({
-        title: "Challenge updated",
-        description: "Daily challenge actors have been updated successfully",
+        title: "Next Challenge Set",
+        description: "Next daily challenge has been set - will become active tomorrow",
       });
     },
     onError: (error: any) => {
@@ -566,10 +567,10 @@ export default function AdminPanel() {
               </div>
 
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Set Custom Challenge</h3>
+                <h3 className="font-semibold mb-2">Set Custom Next Challenge</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  Manually select two specific actors for today's challenge.
-                  All hints will be reset to 0.
+                  Manually select two specific actors for tomorrow's challenge.
+                  This will override the automatic generation and become active at midnight.
                 </p>
                 
                 <div className="space-y-4 mb-4">
@@ -709,20 +710,20 @@ export default function AdminPanel() {
                       className="flex items-center gap-2"
                     >
                       <UserPlus className={`h-4 w-4 ${setChallengeActorsMutation.isPending ? 'animate-spin' : ''}`} />
-                      {setChallengeActorsMutation.isPending ? "Setting..." : "Set Custom Challenge"}
+                      {setChallengeActorsMutation.isPending ? "Setting..." : "Set Next Challenge"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Set Custom Challenge</AlertDialogTitle>
+                      <AlertDialogTitle>Set Custom Next Challenge</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Set today's challenge to {selectedStartActor?.name} → {selectedEndActor?.name}?
+                        Set tomorrow's challenge to {selectedStartActor?.name} → {selectedEndActor?.name}? This will become active at midnight.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction onClick={handleSetChallenge}>
-                        Set Challenge
+                        Set Next Challenge
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

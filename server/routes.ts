@@ -811,23 +811,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "All actor fields are required" });
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const tomorrow = getTomorrowDateString();
       
-      // Delete existing challenge for today
-      await storage.deleteDailyChallenge(today);
+      // Delete existing next challenge
+      const existingNext = await storage.getChallengeByStatus('next');
+      if (existingNext) {
+        console.log(`Deleting existing next challenge: ${existingNext.startActorName} to ${existingNext.endActorName}`);
+        await storage.deleteDailyChallenge(existingNext.date);
+      }
       
-      // Create new challenge with selected actors
+      // Create new NEXT challenge with selected actors (will become tomorrow's challenge)
       const challenge = await storage.createDailyChallenge({
-        date: today,
-        status: "active",
+        date: tomorrow,
+        status: "next",
         startActorId,
         startActorName,
         endActorId,
         endActorName,
       });
       
-      console.log(`Admin set custom challenge for ${today}: ${startActorName} to ${endActorName}`);
-      res.json({ message: "Custom challenge set successfully", challenge });
+      console.log(`Admin set custom NEXT challenge for ${tomorrow}: ${startActorName} to ${endActorName}`);
+      res.json({ message: "Custom next challenge set successfully - will become active tomorrow", challenge });
     } catch (error) {
       console.error("Admin set challenge error:", error);
       res.status(500).json({ message: "Internal server error" });
