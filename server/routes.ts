@@ -834,49 +834,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin route: Get tomorrow's challenge preview
-  app.get("/api/admin/tomorrow-challenge", requireAdminAuth, async (req, res) => {
+  // Admin route: Get next daily challenge preview (24 hours in advance)
+  app.get("/api/admin/next-challenge", requireAdminAuth, async (req, res) => {
     try {
       const tomorrow = getTomorrowDateString();
-      console.log(`Looking for tomorrow's challenge for date: ${tomorrow}`);
+      console.log(`Looking for next daily challenge for date: ${tomorrow}`);
       
-      // Get challenge with status 'upcoming' for tomorrow
+      // Get challenge with status 'next' for tomorrow
       const challenge = await storage.getDailyChallenge(tomorrow);
       
-      if (!challenge || challenge.status !== 'upcoming') {
-        console.log(`No upcoming challenge found for ${tomorrow}, current status: ${challenge?.status || 'not found'}`);
+      if (!challenge || challenge.status !== 'next') {
+        console.log(`No next challenge found for ${tomorrow}, current status: ${challenge?.status || 'not found'}`);
         return res.status(404).json({ message: "No challenge scheduled for tomorrow" });
       }
       
-      console.log(`Found tomorrow's challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
+      console.log(`Found next challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
       res.json(challenge);
     } catch (error) {
-      console.error("Error getting tomorrow's challenge:", error);
+      console.error("Error getting next challenge:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
 
-  // Admin route: Reset tomorrow's daily challenge
-  app.post("/api/admin/reset-tomorrow", requireAdminAuth, async (req, res) => {
+  // Admin route: Reset next daily challenge (24 hours in advance)
+  app.post("/api/admin/reset-next-challenge", requireAdminAuth, async (req, res) => {
     try {
       const tomorrow = getTomorrowDateString();
       
-      // Delete existing tomorrow challenge if it exists
+      // Delete existing next challenge if it exists
       const existingChallenge = await storage.getDailyChallenge(tomorrow);
       if (existingChallenge) {
-        console.log(`Deleting existing tomorrow challenge: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
+        console.log(`Deleting existing next challenge: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
         await storage.deleteDailyChallenge(tomorrow);
       }
       
-      // Generate new tomorrow challenge
+      // Generate new next challenge (24 hours in advance)
       const actors = await gameLogicService.generateDailyActors();
       if (!actors) {
-        return res.status(500).json({ message: "Unable to generate tomorrow's challenge" });
+        return res.status(500).json({ message: "Unable to generate next challenge" });
       }
 
       const newChallenge = await storage.createDailyChallenge({
         date: tomorrow,
-        status: "upcoming",
+        status: "next",
         startActorId: actors.actor1.id,
         startActorName: actors.actor1.name,
         startActorProfilePath: actors.actor1.profile_path,
@@ -886,8 +886,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hintsUsed: 0,
       });
       
-      console.log(`Created new tomorrow challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
-      res.json({ message: "Tomorrow's challenge reset successfully", challenge: newChallenge });
+      console.log(`Created new next challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
+      res.json({ message: "Next challenge reset successfully", challenge: newChallenge });
     } catch (error) {
       console.error("Error resetting tomorrow's challenge:", error);
       res.status(500).json({ message: "Internal server error" });

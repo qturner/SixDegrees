@@ -125,20 +125,20 @@ export default function AdminPanel() {
     enabled: !!token,
   });
 
-  const { data: tomorrowChallenge, isLoading: tomorrowLoading } = useQuery<DailyChallenge>({
-    queryKey: ["/api/admin/tomorrow-challenge"],
+  const { data: nextChallenge, isLoading: nextChallengeLoading } = useQuery<DailyChallenge>({
+    queryKey: ["/api/admin/next-challenge"],
     enabled: !!token,
     queryFn: async () => {
       const token = localStorage.getItem('adminToken');
       if (!token) throw new Error('No admin token');
       
-      const response = await fetch("/api/admin/tomorrow-challenge", {
+      const response = await fetch("/api/admin/next-challenge", {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (!response.ok) {
-        if (response.status === 404) return null; // No tomorrow challenge exists
-        throw new Error('Failed to fetch tomorrow challenge');
+        if (response.status === 404) return null; // No next challenge exists
+        throw new Error('Failed to fetch next challenge');
       }
       
       return response.json();
@@ -263,14 +263,14 @@ export default function AdminPanel() {
     },
   });
 
-  const resetTomorrowMutation = useMutation({
+  const resetNextChallengeMutation = useMutation({
     mutationFn: async () => {
       const token = localStorage.getItem('adminToken');
       if (!token) {
         throw new Error('No admin token found');
       }
       
-      const response = await fetch("/api/admin/reset-tomorrow", {
+      const response = await fetch("/api/admin/reset-next-challenge", {
         method: "POST",
         headers: { 
           'Content-Type': 'application/json',
@@ -287,10 +287,10 @@ export default function AdminPanel() {
     },
     onSuccess: () => {
       setIsResetTomorrowDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/tomorrow-challenge"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/next-challenge"] });
       toast({
-        title: "Tomorrow's challenge reset",
-        description: "Tomorrow's daily challenge has been reset successfully",
+        title: "Next challenge reset",
+        description: "Next daily challenge has been reset successfully",
       });
     },
     onError: (error: any) => {
@@ -530,35 +530,35 @@ export default function AdminPanel() {
               </div>
 
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Reset Tomorrow's Challenge</h3>
+                <h3 className="font-semibold mb-2">Reset Next Challenge</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  Generate a new challenge for tomorrow. The current tomorrow's challenge will be replaced.
+                  Generate a new challenge for the next daily challenge (24 hours in advance). The current next challenge will be replaced.
                 </p>
                 <AlertDialog open={isResetTomorrowDialogOpen} onOpenChange={setIsResetTomorrowDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button 
-                      disabled={resetTomorrowMutation.isPending}
+                      disabled={resetNextChallengeMutation.isPending}
                       variant="secondary"
                       className="flex items-center gap-2"
                     >
-                      <RefreshCw className={`h-4 w-4 ${resetTomorrowMutation.isPending ? 'animate-spin' : ''}`} />
-                      {resetTomorrowMutation.isPending ? "Resetting..." : "Reset Tomorrow"}
+                      <RefreshCw className={`h-4 w-4 ${resetNextChallengeMutation.isPending ? 'animate-spin' : ''}`} />
+                      {resetNextChallengeMutation.isPending ? "Resetting..." : "Reset Next"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Reset Tomorrow's Challenge</AlertDialogTitle>
+                      <AlertDialogTitle>Reset Next Challenge</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to reset tomorrow's daily challenge? This will generate new actors for tomorrow.
+                        Are you sure you want to reset the next daily challenge? This will generate new actors for the next challenge.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction 
-                        onClick={() => resetTomorrowMutation.mutate()}
+                        onClick={() => resetNextChallengeMutation.mutate()}
                         className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
                       >
-                        Reset Tomorrow
+                        Reset Next
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

@@ -86,53 +86,35 @@ function setupDailyChallengeReset(port: number) {
       const today = getESTDateString();
       const tomorrow = getTomorrowDateString();
       
-      // Step 1: Check if tomorrow's challenge exists and promote it to today
+      // Step 1: Check if next challenge exists and promote it to current
       try {
-        const tomorrowResponse = await fetch(`http://localhost:${port}/api/admin/tomorrow-challenge`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
+        const tomorrow = getTomorrowDateString();
+        const storage = (await import('./storage')).storage;
+        const nextChallenge = await storage.getDailyChallenge(tomorrow);
         
-        if (tomorrowResponse.ok) {
-          const tomorrowChallenge = await tomorrowResponse.json();
+        if (nextChallenge && nextChallenge.status === 'next') {
+          log(`Found next challenge to promote: ${nextChallenge.startActorName} to ${nextChallenge.endActorName}`);
           
-          // Archive old today's challenge and promote tomorrow's challenge
-          const todayResponse = await fetch(`http://localhost:${port}/api/daily-challenge`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          
-          if (todayResponse.ok) {
-            const todayChallenge = await todayResponse.json();
-            // Archive current challenge by deleting it
-            await fetch(`http://localhost:${port}/api/daily-challenge`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ date: todayChallenge.date, forceNew: true, action: 'archive' })
-            });
+          // Archive old current challenge
+          const currentChallenge = await storage.getDailyChallenge(today);
+          if (currentChallenge) {
+            await storage.deleteDailyChallenge(today);
+            log(`Archived old current challenge: ${currentChallenge.startActorName} to ${currentChallenge.endActorName}`);
           }
           
-          // Promote tomorrow's challenge to today with updated date and status
-          const newTodayChallenge = {
-            ...tomorrowChallenge,
+          // Promote next challenge to current with updated date and status
+          await storage.deleteDailyChallenge(tomorrow); // Remove the "next" status challenge
+          
+          const newCurrentChallenge = await storage.createDailyChallenge({
             date: today,
-            status: 'active'
-          };
-          
-          // Delete old tomorrow challenge
-          await fetch(`http://localhost:${port}/api/admin/reset-tomorrow`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            status: 'active',
+            startActorId: nextChallenge.startActorId,
+            startActorName: nextChallenge.startActorName,
+            endActorId: nextChallenge.endActorId,
+            endActorName: nextChallenge.endActorName,
           });
           
-          // Create today's challenge from former tomorrow
-          await fetch(`http://localhost:${port}/api/daily-challenge`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...newTodayChallenge, forceNew: true })
-          });
-          
-          log(`Promoted tomorrow's challenge to today: ${newTodayChallenge.startActorName} to ${newTodayChallenge.endActorName}`);
+          log(`Promoted next challenge to current: ${newCurrentChallenge.startActorName} to ${newCurrentChallenge.endActorName}`);
         } else {
           // No tomorrow challenge exists, generate today's normally
           const response = await fetch(`http://localhost:${port}/api/daily-challenge`, {
@@ -156,21 +138,27 @@ function setupDailyChallengeReset(port: number) {
         });
       }
       
-      // Step 2: Generate new tomorrow's challenge
+      // Step 2: Generate new Next Daily Challenge (24 hours in advance)
       try {
-        const newTomorrowResponse = await fetch(`http://localhost:${port}/api/admin/reset-tomorrow`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
+        const gameLogicService = (await import('./services/gameLogic')).gameLogicService;
+        const actors = await gameLogicService.generateDailyActors();
         
-        if (newTomorrowResponse.ok) {
-          const newTomorrowChallenge = await newTomorrowResponse.json();
-          log(`Generated new challenge for ${tomorrow}: ${newTomorrowChallenge.challenge.startActorName} to ${newTomorrowChallenge.challenge.endActorName}`);
+        if (actors) {
+          const newNextChallenge = await storage.createDailyChallenge({
+            date: tomorrow,
+            status: "next",
+            startActorId: actors.actor1.id,
+            startActorName: actors.actor1.name,
+            endActorId: actors.actor2.id,
+            endActorName: actors.actor2.name,
+          });
+          
+          log(`Generated new Next Daily Challenge for ${tomorrow}: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
         } else {
-          log(`Failed to generate tomorrow's challenge: ${newTomorrowResponse.status}`);
+          log(`Failed to generate actors for Next Daily Challenge`);
         }
-      } catch (tomorrowError) {
-        log(`Error generating tomorrow's challenge: ${tomorrowError}`);
+      } catch (nextError) {
+        log(`Error generating Next Daily Challenge: ${nextError}`);
       }
       
     } catch (error) {
