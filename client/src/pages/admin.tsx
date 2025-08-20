@@ -726,7 +726,13 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
-                <AlertDialog open={isSetChallengeDialogOpen} onOpenChange={setIsSetChallengeDialogOpen}>
+                <AlertDialog open={isSetChallengeDialogOpen} onOpenChange={(open) => {
+                  // Only allow manual closing, not automatic closing from button clicks
+                  if (!open && !setChallengeActorsMutation.isPending) {
+                    setIsSetChallengeDialogOpen(false);
+                    setChallengeActorsMutation.reset();
+                  }
+                }}>
                   <AlertDialogTrigger asChild>
                     <Button 
                       disabled={setChallengeActorsMutation.isPending || !selectedStartActor || !selectedEndActor}
@@ -769,7 +775,13 @@ export default function AdminPanel() {
                           }}>
                             Cancel
                           </AlertDialogCancel>
-                          <AlertDialogAction onClick={handleSetChallenge} disabled={setChallengeActorsMutation.isPending}>
+                          <AlertDialogAction 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleSetChallenge();
+                            }} 
+                            disabled={setChallengeActorsMutation.isPending}
+                          >
                             {setChallengeActorsMutation.isPending ? "Setting..." : "Set Next Challenge"}
                           </AlertDialogAction>
                         </>
