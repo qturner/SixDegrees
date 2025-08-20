@@ -66,7 +66,7 @@ export default function AnalyticsDashboard({ challengeId, challengeName }: Analy
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-[#000000] pt-[-7px] pb-[-7px] ml-[0px] mr-[0px] pl-[5px] pr-[5px]">Game Analytics</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-[#000000] pt-[-7px] pb-[-7px]">Game Analytics</h2>
         <p className="text-sm text-gray-500">{challengeName}</p>
       </div>
       {/* Key Metrics */}

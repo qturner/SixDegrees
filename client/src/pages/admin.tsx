@@ -242,7 +242,7 @@ export default function AdminPanel() {
       return await response.json();
     },
     onSuccess: () => {
-      // Clear form data but keep dialog open for user confirmation
+      setIsSetChallengeDialogOpen(false);
       setSelectedStartActor(null);
       setSelectedEndActor(null);
       setStartActorSearch("");
@@ -253,10 +253,9 @@ export default function AdminPanel() {
         title: "Next Challenge Set",
         description: "Next daily challenge has been set - will become active tomorrow",
       });
-      // Dialog will stay open showing success message until user closes it
     },
     onError: (error: any) => {
-      // Keep dialog open for error cases too so user can try again
+      setIsSetChallengeDialogOpen(false);
       toast({
         title: "Update failed",
         description: error.message || "Failed to update challenge",
@@ -370,8 +369,6 @@ export default function AdminPanel() {
 
   const handleSetChallenge = () => {
     if (selectedStartActor && selectedEndActor) {
-      // Reset mutation state before new attempt
-      setChallengeActorsMutation.reset();
       setChallengeActorsMutation.mutate({
         startActorId: selectedStartActor.id,
         startActorName: selectedStartActor.name,
@@ -726,13 +723,7 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
-                <AlertDialog open={isSetChallengeDialogOpen} onOpenChange={(open) => {
-                  // Only allow manual closing, not automatic closing from button clicks
-                  if (!open && !setChallengeActorsMutation.isPending) {
-                    setIsSetChallengeDialogOpen(false);
-                    setChallengeActorsMutation.reset();
-                  }
-                }}>
+                <AlertDialog open={isSetChallengeDialogOpen} onOpenChange={setIsSetChallengeDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button 
                       disabled={setChallengeActorsMutation.isPending || !selectedStartActor || !selectedEndActor}
@@ -746,46 +737,14 @@ export default function AdminPanel() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Set Custom Next Challenge</AlertDialogTitle>
                       <AlertDialogDescription>
-                        {setChallengeActorsMutation.isSuccess ? (
-                          <div className="text-green-600 dark:text-green-400 font-medium">
-                            ✓ Next challenge set successfully! The challenge will become active at midnight.
-                          </div>
-                        ) : setChallengeActorsMutation.isError ? (
-                          <div className="text-red-600 dark:text-red-400 font-medium">
-                            ✗ Failed to set challenge. Please try again.
-                          </div>
-                        ) : (
-                          `Set tomorrow's challenge to ${selectedStartActor?.name} → ${selectedEndActor?.name}? This will become active at midnight.`
-                        )}
+                        Set tomorrow's challenge to {selectedStartActor?.name} → {selectedEndActor?.name}? This will become active at midnight.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      {setChallengeActorsMutation.isSuccess || setChallengeActorsMutation.isError ? (
-                        <AlertDialogCancel onClick={() => {
-                          setIsSetChallengeDialogOpen(false);
-                          setChallengeActorsMutation.reset();
-                        }}>
-                          Close
-                        </AlertDialogCancel>
-                      ) : (
-                        <>
-                          <AlertDialogCancel onClick={() => {
-                            setIsSetChallengeDialogOpen(false);
-                            setChallengeActorsMutation.reset();
-                          }}>
-                            Cancel
-                          </AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleSetChallenge();
-                            }} 
-                            disabled={setChallengeActorsMutation.isPending}
-                          >
-                            {setChallengeActorsMutation.isPending ? "Setting..." : "Set Next Challenge"}
-                          </AlertDialogAction>
-                        </>
-                      )}
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleSetChallenge}>
+                        Set Next Challenge
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
