@@ -982,10 +982,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const visitorData = req.body;
       
       // Create visitor session
-      const session = await storage.createVisitorSession({
+      const session = await storage.trackVisitor({
         ...visitorData,
         ipAddress: req.ip || req.connection.remoteAddress,
-        visitedAt: new Date(),
         converted: false,
         bounced: true, // Will be updated to false if user engages
         sessionDuration: 0,
