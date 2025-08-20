@@ -223,7 +223,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   return (
     <Card className="w-full card-radius shadow-card hover:shadow-card-hover transition-all duration-300 bg-game-surface border-game-accent">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-heading-md text-game-primary">
+        <CardTitle className="flex items-center justify-center gap-2 text-heading-md text-game-primary">
           <Lightbulb className="h-5 w-5 text-game-primary" />
           Daily Hints
         </CardTitle>
