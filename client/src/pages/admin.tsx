@@ -304,7 +304,7 @@ export default function AdminPanel() {
     },
   });
 
-  // Actor search functionality
+  // Actor search functionality - identical for both start and end actors
   const searchActors = async (query: string, type: 'start' | 'end') => {
     if (!query || query.length < 2) {
       if (type === 'start') setStartActorResults([]);
@@ -318,16 +318,21 @@ export default function AdminPanel() {
       if (response.ok) {
         const results = await response.json();
         console.log(`${type} search results for "${query}":`, results);
+        const actorResults = results.slice(0, 5);
         if (type === 'start') {
-          setStartActorResults(results.slice(0, 5));
+          setStartActorResults(actorResults);
         } else {
-          setEndActorResults(results.slice(0, 5));
+          setEndActorResults(actorResults);
         }
       } else {
         console.error(`Search failed for ${type} with status:`, response.status);
+        if (type === 'start') setStartActorResults([]);
+        else setEndActorResults([]);
       }
     } catch (error) {
-      console.error('Error searching actors:', error);
+      console.error(`Error searching ${type} actors:`, error);
+      if (type === 'start') setStartActorResults([]);
+      else setEndActorResults([]);
     }
   };
 
@@ -621,7 +626,7 @@ export default function AdminPanel() {
                           <span className="text-sm font-medium">{selectedStartActor.name}</span>
                         </div>
                       )}
-                      {startActorResults.length > 0 && !selectedStartActor && (
+                      {startActorResults.length > 0 && !selectedStartActor && startActorSearch.length >= 2 && (
                         <div className="max-h-32 overflow-y-auto border rounded bg-white dark:bg-gray-800 shadow-lg">
                           {startActorResults.map((actor) => (
                             <button
@@ -684,7 +689,7 @@ export default function AdminPanel() {
                           <span className="text-sm font-medium">{selectedEndActor.name}</span>
                         </div>
                       )}
-                      {endActorResults.length > 0 && !selectedEndActor && (
+                      {endActorResults.length > 0 && !selectedEndActor && endActorSearch.length >= 2 && (
                         <div className="max-h-32 overflow-y-auto border rounded bg-white dark:bg-gray-800 shadow-lg">
                           {endActorResults.map((actor) => (
                             <button
