@@ -202,11 +202,15 @@ export class DatabaseStorage implements IStorage {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    // Calculate fewest moves from completed attempts
+    const fewestMoves = completedMoves.length > 0 ? Math.min(...completedMoves) : 0;
+
     return {
       totalAttempts,
       completedAttempts,
       completionRate: Math.round(completionRate * 100) / 100,
       avgMoves: Math.round(avgMoves * 100) / 100,
+      fewestMoves,
       moveDistribution,
       mostUsedMovies,
       mostUsedActors,
@@ -529,11 +533,15 @@ export class MemStorage implements IStorage {
     const mostUsedMovies: { id: string; title: string; count: number }[] = [];
     const mostUsedActors: { id: string; name: string; count: number }[] = [];
 
+    // Calculate fewest moves from completed attempts
+    const fewestMoves = completedMoves.length > 0 ? Math.min(...completedMoves) : 0;
+
     return {
       totalAttempts,
       completedAttempts,
       completionRate: Math.round(completionRate * 100) / 100,
       avgMoves: Math.round(avgMoves * 100) / 100,
+      fewestMoves,
       moveDistribution,
       mostUsedMovies,
       mostUsedActors,
