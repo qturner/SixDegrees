@@ -277,24 +277,29 @@ export default function GameGrid({
       </div>
 
       {/* Game Actions */}
-      <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-        <Button 
-          onClick={handleValidateGame}
-          disabled={validateGameMutation.isPending || connections.length === 0}
-          className="px-6 py-3 bg-game-primary text-game-background hover:bg-game-accent btn-hover button-radius transition-all duration-200"
-        >
-          <CheckCircle className="w-4 h-4 mr-2" />
-          {validateGameMutation.isPending ? "Validating..." : "Validate Connection"}
-        </Button>
-        
-        <Button 
-          onClick={handleReset}
-          variant="secondary"
-          className="px-6 py-3 bg-game-accent text-game-background hover:bg-game-surface btn-hover button-radius transition-all duration-200"
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Reset Game
-        </Button>
+      <div className="mt-8 flex flex-col gap-4 justify-center">
+        <p className="text-center text-sm text-game-text font-medium">
+          Finished? Verify your connections here!
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button 
+            onClick={handleValidateGame}
+            disabled={validateGameMutation.isPending || connections.length === 0}
+            className="px-6 py-3 bg-game-primary text-game-background hover:bg-game-accent btn-hover button-radius transition-all duration-200"
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            {validateGameMutation.isPending ? "Validating..." : "Validate Connection"}
+          </Button>
+          
+          <Button 
+            onClick={handleReset}
+            variant="secondary"
+            className="px-6 py-3 bg-game-accent text-game-background hover:bg-game-surface btn-hover button-radius transition-all duration-200"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset Game
+          </Button>
+        </div>
       </div>
     </div>
   );
