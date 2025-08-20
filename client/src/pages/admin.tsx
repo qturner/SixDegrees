@@ -104,19 +104,8 @@ export default function AdminPanel() {
   
   const [startActorResults, setStartActorResults] = useState<ActorResult[]>([]);
   const [endActorResults, setEndActorResults] = useState<ActorResult[]>([]);
-  
-  // Auto-dismiss only the set challenge dialog after 1 second
-  // Reset dialog remains open until user action
-  
-  useEffect(() => {
-    if (isSetChallengeDialogOpen) {
-      const timer = setTimeout(() => {
-        setIsSetChallengeDialogOpen(false);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isSetChallengeDialogOpen]);
+
+
   const { toast } = useToast();
   const token = useAdminAuth();
 
