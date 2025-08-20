@@ -735,7 +735,7 @@ export default function AdminPanel() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel className="text-black dark:text-black">Cancel</AlertDialogCancel>
                       <AlertDialogAction onClick={handleSetChallenge}>
                         Set Next Challenge
                       </AlertDialogAction>
