@@ -327,7 +327,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/daily-challenge", async (req, res) => {
     try {
       const today = getESTDateString(); // Use EST date, not UTC
-      let challenge = await withRetry(() => storage.getDailyChallenge(today));
+      
+      // Try to get challenge with longer timeout for better resilience
+      let challenge;
+      try {
+        challenge = await withRetry(() => storage.getDailyChallenge(today), 5); // Increased retries for this critical endpoint
+      } catch (dbError) {
+        console.error("Database error when fetching challenge:", dbError);
+        // Return a fallback error that doesn't block the UI completely
+        return res.status(503).json({ 
+          message: "Database temporarily unavailable. Please refresh in a moment.",
+          retry: true 
+        });
+      }
 
       if (!challenge) {
         console.log(`No challenge found for ${today}, generating new challenge...`);
@@ -343,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           challengeCreationPromise = (async () => {
             try {
               // Double-check if challenge was created while we were waiting
-              const existingChallenge = await withRetry(() => storage.getDailyChallenge(today));
+              const existingChallenge = await withRetry(() => storage.getDailyChallenge(today), 5);
               if (existingChallenge) {
                 console.log(`Challenge was created by another request: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
                 return existingChallenge;
@@ -365,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 endActorName: actors.actor2.name,
                 endActorProfilePath: actors.actor2.profile_path,
                 hintsUsed: 0,
-              }));
+              }), 5);
               console.log(`Created new challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
               return newChallenge;
             } finally {
@@ -375,7 +387,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })();
         }
         
-        challenge = await challengeCreationPromise;
+        try {
+          challenge = await challengeCreationPromise;
+        } catch (creationError) {
+          console.error("Error creating new challenge:", creationError);
+          return res.status(503).json({ 
+            message: "Unable to generate daily challenge due to database issues. Please refresh in a moment.",
+            retry: true 
+          });
+        }
+        
         if (!challenge) {
           return res.status(500).json({ message: "Unable to generate daily challenge" });
         }
@@ -981,16 +1002,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const visitorData = req.body;
       
-      // Create visitor session
-      const session = await storage.trackVisitor({
-        ...visitorData,
-        ipAddress: req.ip || req.connection.remoteAddress,
-        converted: false,
-        bounced: true, // Will be updated to false if user engages
-        sessionDuration: 0,
-      });
+      // Ensure sessionId is provided in the request body
+      if (!visitorData.sessionId) {
+        return res.status(400).json({ message: "Session ID is required" });
+      }
       
-      res.json({ sessionId: session.id, message: "Visit tracked" });
+      // Create visitor session with proper error handling
+      try {
+        const session = await withRetry(() => storage.trackVisitor({
+          ...visitorData,
+          ipAddress: req.ip || req.connection.remoteAddress,
+          converted: false,
+          bounced: true, // Will be updated to false if user engages
+          sessionDuration: 0,
+        }), 3);
+        
+        res.json({ sessionId: session.id, message: "Visit tracked" });
+      } catch (dbError) {
+        console.error("Database error tracking visitor:", dbError);
+        // Return success anyway to not block the frontend
+        res.json({ sessionId: visitorData.sessionId, message: "Visit tracking temporarily unavailable" });
+      }
     } catch (error) {
       console.error("Error tracking visit:", error);
       res.status(500).json({ message: "Internal server error" });

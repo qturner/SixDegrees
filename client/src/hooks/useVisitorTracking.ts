@@ -34,12 +34,18 @@ export function useVisitorTracking() {
           // This is a new session, track the visitor
           const trackingData = getTrackingData();
           
+          // Generate a unique session ID for the tracking request
+          const sessionId = crypto.randomUUID();
+          
           const response = await fetch('/api/analytics/track-visit', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(trackingData)
+            body: JSON.stringify({
+              ...trackingData,
+              sessionId
+            })
           });
           
           if (response.ok) {

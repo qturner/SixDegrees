@@ -68,8 +68,16 @@ export default function Game() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [gameStateInitialized, setGameStateInitialized] = useState(false);
 
-  const { data: challenge, isLoading } = useQuery<DailyChallenge>({
+  const { data: challenge, isLoading, error, refetch } = useQuery<DailyChallenge>({
     queryKey: ["/api/daily-challenge"],
+    retry: (failureCount, error: any) => {
+      // Retry up to 3 times for 503 errors (database temporarily unavailable)
+      if (error?.status === 503 && failureCount < 3) {
+        return true;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   // Initialize or reset game state when challenge loads
@@ -178,10 +186,49 @@ export default function Game() {
   }
 
   if (!challenge) {
+    const isDatabaseError = error && (error as any)?.status === 503;
+    
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <p className="text-red-600 text-lg">Failed to load today's challenge. Please try again later.</p>
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          {isDatabaseError ? (
+            <div>
+              <p className="text-gray-800 text-lg font-medium mb-3">
+                Database temporarily unavailable
+              </p>
+              <p className="text-gray-600 mb-6">
+                We're experiencing connectivity issues. This usually resolves itself quickly.
+              </p>
+              <button 
+                onClick={() => refetch()} 
+                className="bg-game-blue text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                data-testid="button-retry"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p className="text-gray-800 text-lg font-medium mb-3">
+                Failed to load today's challenge
+              </p>
+              <p className="text-gray-600 mb-6">
+                Something went wrong. Please try refreshing the page.
+              </p>
+              <button 
+                onClick={() => refetch()} 
+                className="bg-game-blue text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                data-testid="button-retry"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -254,6 +301,7 @@ export default function Game() {
           <div className="mb-4">
             <div className="text-game-primary font-medium mb-2 text-heading-sm">Six Degrees of Separation</div>
             <div>A new daily challenge connecting Hollywood's finest</div>
+            <div className="text-xs mt-1 opacity-75">A Prologue LLC Project</div>
           </div>
           <div className="flex justify-center space-x-6">
             <button 
