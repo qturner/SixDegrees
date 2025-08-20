@@ -12,20 +12,16 @@ export default function GameInstructions() {
           <h4 className="text-heading-sm text-game-primary mb-3">Game Rules</h4>
           <ul className="space-y-2 text-game-text">
             <li className="flex items-start">
-              <Circle className="w-2 h-2 mt-2 mr-3 text-game-blue fill-current" />
-              Connect two actors using a chain of movies and co-stars
+              <span className="w-5 h-5 rounded-full bg-game-blue text-white text-sm flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">1</span>
+              Connect two actors through movies in six moves or less
             </li>
             <li className="flex items-start">
-              <Circle className="w-2 h-2 mt-2 mr-3 text-game-blue fill-current" />
-              You have a maximum of 6 connections to link them
+              <span className="w-5 h-5 rounded-full bg-game-blue text-white text-sm flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">2</span>
+              Use your daily hints if you're stuck
             </li>
             <li className="flex items-start">
-              <Circle className="w-2 h-2 mt-2 mr-3 text-game-blue fill-current" />
-              Each actor must appear in the movie you specify
-            </li>
-            <li className="flex items-start">
-              <Circle className="w-2 h-2 mt-2 mr-3 text-game-blue fill-current" />
-              Adjacent actors must have appeared together in the same film
+              <span className="w-5 h-5 rounded-full bg-game-blue text-white text-sm flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">3</span>
+              Press "Validate" once completed to verify your results!
             </li>
           </ul>
         </div>
