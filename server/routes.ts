@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { tmdbService } from "./services/tmdb";
 import { gameLogicService } from "./services/gameLogic";
+import { withRetry } from "./db";
 import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema } from "@shared/schema";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
 import { emailService } from "./services/email";
@@ -326,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/daily-challenge", async (req, res) => {
     try {
       const today = getESTDateString(); // Use EST date, not UTC
-      let challenge = await storage.getDailyChallenge(today);
+      let challenge = await withRetry(() => storage.getDailyChallenge(today));
 
       if (!challenge) {
         console.log(`No challenge found for ${today}, generating new challenge...`);
@@ -342,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           challengeCreationPromise = (async () => {
             try {
               // Double-check if challenge was created while we were waiting
-              const existingChallenge = await storage.getDailyChallenge(today);
+              const existingChallenge = await withRetry(() => storage.getDailyChallenge(today));
               if (existingChallenge) {
                 console.log(`Challenge was created by another request: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
                 return existingChallenge;
@@ -354,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 throw new Error("Unable to generate daily challenge");
               }
 
-              const newChallenge = await storage.createDailyChallenge({
+              const newChallenge = await withRetry(() => storage.createDailyChallenge({
                 date: today,
                 status: "active",
                 startActorId: actors.actor1.id,
@@ -364,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 endActorName: actors.actor2.name,
                 endActorProfilePath: actors.actor2.profile_path,
                 hintsUsed: 0,
-              });
+              }));
               console.log(`Created new challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
               return newChallenge;
             } finally {
