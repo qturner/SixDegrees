@@ -86,12 +86,12 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Setup daily challenge reset at midnight EST after server is running
-    // Only if database is healthy
-    if (dbHealthy) {
-      setupDailyChallengeReset(port);
-    } else {
-      log('⚠️ Skipping daily challenge reset setup due to database issues');
+    // Always setup daily challenge reset at midnight EST after server is running
+    // The cron job will handle database connectivity issues internally
+    setupDailyChallengeReset(port);
+    
+    if (!dbHealthy) {
+      log('⚠️ Database initially unhealthy, but cron job will retry connections as needed');
     }
   });
 })();
@@ -100,43 +100,71 @@ function setupDailyChallengeReset(port: number) {
   // Schedule for midnight EST/EDT - dual-challenge system
   cron.schedule('0 0 * * *', async () => {
     try {
-      log('Daily challenge reset triggered - transitioning tomorrow to today and generating new tomorrow');
+      log('Daily challenge reset triggered - transitioning next to active and generating new next');
       
       // Get today's and tomorrow's dates in EST/EDT timezone
       const today = getESTDateString();
       const tomorrow = getTomorrowDateString();
       
-      // Step 1: Check if next challenge exists and promote it to current
-      try {
-        const tomorrow = getTomorrowDateString();
-        const storage = (await import('./storage')).storage;
-        const nextChallenge = await storage.getDailyChallenge(tomorrow);
-        
-        if (nextChallenge && nextChallenge.status === 'next') {
-          log(`Found next challenge to promote: ${nextChallenge.startActorName} to ${nextChallenge.endActorName}`);
+      // Step 1: Try to promote next challenge to current with retry logic
+      let storage;
+      let retryCount = 0;
+      const maxRetries = 5;
+      let promotionSuccessful = false;
+      
+      while (retryCount < maxRetries && !promotionSuccessful) {
+        try {
+          storage = (await import('./storage')).storage;
           
-          // Archive old current challenge
-          const currentChallenge = await storage.getDailyChallenge(today);
-          if (currentChallenge) {
-            await storage.deleteDailyChallenge(today);
-            log(`Archived old current challenge: ${currentChallenge.startActorName} to ${currentChallenge.endActorName}`);
+          // Look for "next" status challenge for today
+          const nextChallenge = await storage.getChallengeByStatus('next');
+          
+          if (nextChallenge) {
+            log(`Found next challenge to promote: ${nextChallenge.startActorName} to ${nextChallenge.endActorName}`);
+            
+            // Archive old current challenge if it exists
+            const currentChallenge = await storage.getChallengeByStatus('active');
+            if (currentChallenge) {
+              await storage.deleteDailyChallenge(currentChallenge.date);
+              log(`Archived old current challenge: ${currentChallenge.startActorName} to ${currentChallenge.endActorName}`);
+            }
+            
+            // Delete the next challenge and recreate as active
+            await storage.deleteDailyChallenge(nextChallenge.date);
+            
+            const newCurrentChallenge = await storage.createDailyChallenge({
+              date: today,
+              status: 'active',
+              startActorId: nextChallenge.startActorId,
+              startActorName: nextChallenge.startActorName,
+              endActorId: nextChallenge.endActorId,
+              endActorName: nextChallenge.endActorName,
+            });
+            
+            log(`Successfully promoted next challenge to current: ${newCurrentChallenge.startActorName} to ${newCurrentChallenge.endActorName}`);
+            promotionSuccessful = true;
+            break;
+          } else {
+            log('No next challenge found, will generate new challenge via API');
+            break;
           }
+        } catch (dbError) {
+          retryCount++;
+          log(`Database connection attempt ${retryCount}/${maxRetries} failed: ${dbError}`);
           
-          // Promote next challenge to current with updated date and status
-          await storage.deleteDailyChallenge(tomorrow); // Remove the "next" status challenge
-          
-          const newCurrentChallenge = await storage.createDailyChallenge({
-            date: today,
-            status: 'active',
-            startActorId: nextChallenge.startActorId,
-            startActorName: nextChallenge.startActorName,
-            endActorId: nextChallenge.endActorId,
-            endActorName: nextChallenge.endActorName,
-          });
-          
-          log(`Promoted next challenge to current: ${newCurrentChallenge.startActorName} to ${newCurrentChallenge.endActorName}`);
-        } else {
-          // No tomorrow challenge exists, generate today's normally
+          if (retryCount < maxRetries) {
+            const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+            log(`Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            log('All database retry attempts failed, falling back to API generation');
+          }
+        }
+      }
+      
+      // If promotion failed, generate new challenge via API
+      if (!promotionSuccessful) {
+        try {
           const response = await fetch(`http://localhost:${port}/api/daily-challenge`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -147,38 +175,34 @@ function setupDailyChallengeReset(port: number) {
             const newChallenge = await response.json();
             log(`Generated new challenge for ${today}: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
           }
+        } catch (apiError) {
+          log(`Error generating challenge via API: ${apiError}`);
         }
-      } catch (transitionError) {
-        log(`Error transitioning challenges: ${transitionError}`);
-        // Fallback to normal generation
-        const response = await fetch(`http://localhost:${port}/api/daily-challenge`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date: today, forceNew: true })
-        });
       }
       
       // Step 2: Generate new Next Daily Challenge (24 hours in advance)
-      try {
-        const gameLogicService = (await import('./services/gameLogic')).gameLogicService;
-        const actors = await gameLogicService.generateDailyActors();
-        
-        if (actors) {
-          const newNextChallenge = await storage.createDailyChallenge({
-            date: tomorrow,
-            status: "next",
-            startActorId: actors.actor1.id,
-            startActorName: actors.actor1.name,
-            endActorId: actors.actor2.id,
-            endActorName: actors.actor2.name,
-          });
+      if (storage) {
+        try {
+          const gameLogicService = (await import('./services/gameLogic')).gameLogicService;
+          const actors = await gameLogicService.generateDailyActors();
           
-          log(`Generated new Next Daily Challenge for ${tomorrow}: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
-        } else {
-          log(`Failed to generate actors for Next Daily Challenge`);
+          if (actors) {
+            const newNextChallenge = await storage.createDailyChallenge({
+              date: tomorrow,
+              status: "next",
+              startActorId: actors.actor1.id,
+              startActorName: actors.actor1.name,
+              endActorId: actors.actor2.id,
+              endActorName: actors.actor2.name,
+            });
+            
+            log(`Generated new Next Daily Challenge for ${tomorrow}: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
+          } else {
+            log(`Failed to generate actors for Next Daily Challenge`);
+          }
+        } catch (nextError) {
+          log(`Error generating Next Daily Challenge: ${nextError}`);
         }
-      } catch (nextError) {
-        log(`Error generating Next Daily Challenge: ${nextError}`);
       }
       
     } catch (error) {
