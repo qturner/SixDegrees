@@ -165,7 +165,7 @@ class GameLogicService {
     }
   }
 
-  async generateDailyActors(): Promise<{ actor1: any; actor2: any } | null> {
+  async generateDailyActors(excludeActorIds: number[] = []): Promise<{ actor1: any; actor2: any } | null> {
     try {
       const popularActors = await tmdbService.getPopularActors();
       
@@ -174,11 +174,29 @@ class GameLogicService {
         return null;
       }
 
-      // Select two random actors from the popular list
-      const shuffled = popularActors.sort(() => 0.5 - Math.random());
+      // Filter out excluded actors (from current/previous challenges)
+      const availableActors = popularActors.filter(actor => 
+        !excludeActorIds.includes(actor.id)
+      );
+
+      // Check if we have enough actors after filtering
+      if (availableActors.length < 2) {
+        console.warn(`Only ${availableActors.length} actors available after excluding ${excludeActorIds.length} actors`);
+        // Fall back to using full list if not enough available (shouldn't happen with 200 actors)
+        const fallbackActors = popularActors.length >= 2 ? popularActors : availableActors;
+        const shuffled = fallbackActors.sort(() => 0.5 - Math.random());
+        const actor1 = shuffled[0];
+        const actor2 = shuffled[1];
+        console.warn(`Using fallback selection: ${actor1.name} and ${actor2.name}`);
+        return { actor1, actor2 };
+      }
+
+      // Select two random actors from the filtered list
+      const shuffled = availableActors.sort(() => 0.5 - Math.random());
       const actor1 = shuffled[0];
       const actor2 = shuffled[1];
 
+      console.log(`Selected new actors (excluding ${excludeActorIds.length} previous): ${actor1.name} and ${actor2.name}`);
       return { actor1, actor2 };
     } catch (error) {
       console.error("Error generating daily actors:", error);

@@ -273,8 +273,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.deleteDailyChallenge(today);
         }
         
-        // Generate new challenge
-        const actors = await gameLogicService.generateDailyActors();
+        // Generate new challenge with exclusion logic
+        // Get current active challenge to exclude those actors
+        let excludeActorIds: number[] = [];
+        try {
+          const currentChallenge = await storage.getChallengeByStatus('active');
+          if (currentChallenge && currentChallenge.date !== today) {
+            excludeActorIds.push(currentChallenge.startActorId, currentChallenge.endActorId);
+            console.log(`Excluding actors from previous challenge: ${currentChallenge.startActorName} and ${currentChallenge.endActorName}`);
+          }
+        } catch (exclusionError) {
+          console.log("Could not check for actors to exclude, proceeding with normal generation");
+        }
+        
+        const actors = await gameLogicService.generateDailyActors(excludeActorIds);
         if (!actors) {
           return res.status(500).json({ message: "Unable to generate daily challenge" });
         }
@@ -298,7 +310,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Regular generation logic (same as GET)
       let challenge = await storage.getDailyChallenge(today);
       if (!challenge) {
-        const actors = await gameLogicService.generateDailyActors();
+        // Get current active challenge to exclude those actors
+        let excludeActorIds: number[] = [];
+        try {
+          const currentChallenge = await storage.getChallengeByStatus('active');
+          if (currentChallenge && currentChallenge.date !== today) {
+            excludeActorIds.push(currentChallenge.startActorId, currentChallenge.endActorId);
+            console.log(`Excluding actors from previous challenge: ${currentChallenge.startActorName} and ${currentChallenge.endActorName}`);
+          }
+        } catch (exclusionError) {
+          console.log("Could not check for actors to exclude, proceeding with normal generation");
+        }
+        
+        const actors = await gameLogicService.generateDailyActors(excludeActorIds);
         if (!actors) {
           return res.status(500).json({ message: "Unable to generate daily challenge" });
         }
@@ -361,8 +385,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return existingChallenge;
               }
 
-              // Generate new challenge for today
-              const actors = await gameLogicService.generateDailyActors();
+              // Generate new challenge for today with exclusion logic
+              // Get yesterday's challenge to exclude those actors
+              let excludeActorIds: number[] = [];
+              try {
+                const yesterdayDate = new Date();
+                yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+                const yesterday = yesterdayDate.toISOString().split('T')[0];
+                const previousChallenge = await storage.getDailyChallenge(yesterday);
+                if (previousChallenge) {
+                  excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
+                  console.log(`Excluding actors from yesterday's challenge: ${previousChallenge.startActorName} and ${previousChallenge.endActorName}`);
+                }
+              } catch (exclusionError) {
+                console.log("Could not check for actors to exclude, proceeding with normal generation");
+              }
+              
+              const actors = await gameLogicService.generateDailyActors(excludeActorIds);
               if (!actors) {
                 throw new Error("Unable to generate daily challenge");
               }
@@ -691,7 +730,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate new daily challenge (manual trigger)
   app.post("/api/generate-challenge", async (req, res) => {
     try {
-      const actors = await gameLogicService.generateDailyActors();
+      // Get current active challenge to exclude those actors from new generation
+      let excludeActorIds: number[] = [];
+      try {
+        const currentChallenge = await storage.getChallengeByStatus('active');
+        if (currentChallenge) {
+          excludeActorIds.push(currentChallenge.startActorId, currentChallenge.endActorId);
+          console.log(`Excluding actors from current challenge: ${currentChallenge.startActorName} and ${currentChallenge.endActorName}`);
+        }
+      } catch (exclusionError) {
+        console.log("Could not check for actors to exclude, proceeding with normal generation");
+      }
+      
+      const actors = await gameLogicService.generateDailyActors(excludeActorIds);
       if (!actors) {
         return res.status(500).json({ message: "Unable to generate challenge" });
       }
