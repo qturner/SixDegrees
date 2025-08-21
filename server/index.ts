@@ -185,13 +185,13 @@ function setupDailyChallengeReset(port: number) {
         try {
           const gameLogicService = (await import('./services/gameLogic')).gameLogicService;
           
-          // Get current active challenge to exclude those actors from next selection
-          const currentChallenge = await storage.getChallengeByStatus('active');
+          // Get current active challenge (which becomes yesterday after promotion) to exclude those actors
+          const previousChallenge = await storage.getChallengeByStatus('active');
           const excludeActorIds: number[] = [];
           
-          if (currentChallenge) {
-            excludeActorIds.push(currentChallenge.startActorId, currentChallenge.endActorId);
-            log(`Excluding actors from current challenge: ${currentChallenge.startActorName} (${currentChallenge.startActorId}) and ${currentChallenge.endActorName} (${currentChallenge.endActorId})`);
+          if (previousChallenge) {
+            excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
+            log(`Excluding actors from previous challenge: ${previousChallenge.startActorName} (${previousChallenge.startActorId}) and ${previousChallenge.endActorName} (${previousChallenge.endActorId})`);
           }
           
           const actors = await gameLogicService.generateDailyActors(excludeActorIds);

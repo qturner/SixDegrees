@@ -274,13 +274,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Generate new challenge with exclusion logic
-        // Get current active challenge to exclude those actors
+        // Get yesterday's challenge to exclude those actors
         let excludeActorIds: number[] = [];
         try {
-          const currentChallenge = await storage.getChallengeByStatus('active');
-          if (currentChallenge && currentChallenge.date !== today) {
-            excludeActorIds.push(currentChallenge.startActorId, currentChallenge.endActorId);
-            console.log(`Excluding actors from previous challenge: ${currentChallenge.startActorName} and ${currentChallenge.endActorName}`);
+          const yesterdayDate = new Date();
+          yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+          const yesterday = yesterdayDate.toISOString().split('T')[0];
+          const previousChallenge = await storage.getDailyChallenge(yesterday);
+          if (previousChallenge) {
+            excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
+            console.log(`Excluding actors from yesterday's challenge: ${previousChallenge.startActorName} and ${previousChallenge.endActorName}`);
           }
         } catch (exclusionError) {
           console.log("Could not check for actors to exclude, proceeding with normal generation");
@@ -310,13 +313,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Regular generation logic (same as GET)
       let challenge = await storage.getDailyChallenge(today);
       if (!challenge) {
-        // Get current active challenge to exclude those actors
+        // Get yesterday's challenge to exclude those actors
         let excludeActorIds: number[] = [];
         try {
-          const currentChallenge = await storage.getChallengeByStatus('active');
-          if (currentChallenge && currentChallenge.date !== today) {
-            excludeActorIds.push(currentChallenge.startActorId, currentChallenge.endActorId);
-            console.log(`Excluding actors from previous challenge: ${currentChallenge.startActorName} and ${currentChallenge.endActorName}`);
+          const yesterdayDate = new Date();
+          yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+          const yesterday = yesterdayDate.toISOString().split('T')[0];
+          const previousChallenge = await storage.getDailyChallenge(yesterday);
+          if (previousChallenge) {
+            excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
+            console.log(`Excluding actors from yesterday's challenge: ${previousChallenge.startActorName} and ${previousChallenge.endActorName}`);
           }
         } catch (exclusionError) {
           console.log("Could not check for actors to exclude, proceeding with normal generation");
@@ -730,13 +736,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate new daily challenge (manual trigger)
   app.post("/api/generate-challenge", async (req, res) => {
     try {
-      // Get current active challenge to exclude those actors from new generation
+      // Get yesterday's challenge to exclude those actors from new generation
       let excludeActorIds: number[] = [];
       try {
-        const currentChallenge = await storage.getChallengeByStatus('active');
-        if (currentChallenge) {
-          excludeActorIds.push(currentChallenge.startActorId, currentChallenge.endActorId);
-          console.log(`Excluding actors from current challenge: ${currentChallenge.startActorName} and ${currentChallenge.endActorName}`);
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterday = yesterdayDate.toISOString().split('T')[0];
+        const previousChallenge = await storage.getDailyChallenge(yesterday);
+        if (previousChallenge) {
+          excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
+          console.log(`Excluding actors from yesterday's challenge: ${previousChallenge.startActorName} and ${previousChallenge.endActorName}`);
         }
       } catch (exclusionError) {
         console.log("Could not check for actors to exclude, proceeding with normal generation");
