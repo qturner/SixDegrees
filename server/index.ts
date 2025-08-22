@@ -202,8 +202,10 @@ function setupDailyChallengeReset(port: number) {
               status: "next",
               startActorId: actors.actor1.id,
               startActorName: actors.actor1.name,
+              startActorProfilePath: actors.actor1.profile_path,
               endActorId: actors.actor2.id,
               endActorName: actors.actor2.name,
+              endActorProfilePath: actors.actor2.profile_path,
             });
             
             log(`Generated new Next Daily Challenge for ${tomorrow}: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
