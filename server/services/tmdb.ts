@@ -756,6 +756,83 @@ class TMDbService {
       return null;
     }
   }
+
+  /**
+   * Get profile path for a specific actor by ID
+   * Useful for verifying/updating thumbnails
+   */
+  async getActorProfilePath(actorId: number): Promise<string | null> {
+    try {
+      const response = await fetch(
+        `${this.config.baseUrl}/person/${actorId}?api_key=${this.config.apiKey}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const actor = await response.json();
+      return actor.profile_path;
+    } catch (error) {
+      console.error("Error fetching actor profile path:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Verify and repair challenge thumbnails
+   * Ensures actor names match their profile paths
+   */
+  async verifyChallengeThumbnails(challenge: { 
+    id: string; 
+    startActorId: number; 
+    startActorName: string;
+    startActorProfilePath: string | null;
+    endActorId: number; 
+    endActorName: string;
+    endActorProfilePath: string | null;
+  }): Promise<{ 
+    needsUpdate: boolean; 
+    correctStartPath?: string | null; 
+    correctEndPath?: string | null;
+    issues: string[];
+  }> {
+    const issues: string[] = [];
+    let needsUpdate = false;
+    let correctStartPath: string | null = null;
+    let correctEndPath: string | null = null;
+
+    try {
+      // Verify start actor thumbnail
+      const fetchedStartPath = await this.getActorProfilePath(challenge.startActorId);
+      if (fetchedStartPath !== challenge.startActorProfilePath) {
+        issues.push(`Start actor ${challenge.startActorName} has incorrect thumbnail`);
+        correctStartPath = fetchedStartPath;
+        needsUpdate = true;
+      }
+
+      // Verify end actor thumbnail  
+      const fetchedEndPath = await this.getActorProfilePath(challenge.endActorId);
+      if (fetchedEndPath !== challenge.endActorProfilePath) {
+        issues.push(`End actor ${challenge.endActorName} has incorrect thumbnail`);
+        correctEndPath = fetchedEndPath;
+        needsUpdate = true;
+      }
+
+      return {
+        needsUpdate,
+        correctStartPath: needsUpdate ? correctStartPath : undefined,
+        correctEndPath: needsUpdate ? correctEndPath : undefined,
+        issues
+      };
+    } catch (error) {
+      console.error("Error verifying challenge thumbnails:", error);
+      return {
+        needsUpdate: false,
+        issues: ["Failed to verify thumbnails due to API error"]
+      };
+    }
+  }
 }
 
 export const tmdbService = new TMDbService();

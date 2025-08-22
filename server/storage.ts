@@ -7,9 +7,11 @@ import bcrypt from "bcryptjs";
 export interface IStorage {
   // Daily Challenge methods
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
+  getDailyChallengeById(id: string): Promise<DailyChallenge | undefined>;
   getChallengeByStatus(status: string): Promise<DailyChallenge | undefined>;
   getAllChallengesByStatus(status: string): Promise<DailyChallenge[]>;
   createDailyChallenge(challenge: InsertDailyChallenge): Promise<DailyChallenge>;
+  updateDailyChallenge(id: string, updates: Partial<DailyChallenge>): Promise<DailyChallenge>;
   updateDailyChallengeHints(challengeId: string, hintsUsed: number, startActorHint?: string, endActorHint?: string): Promise<DailyChallenge>;
   updateChallengeStatus(challengeId: string, status: string): Promise<DailyChallenge>;
   deleteDailyChallenge(date: string): Promise<void>;
@@ -64,6 +66,13 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getDailyChallengeById(id: string): Promise<DailyChallenge | undefined> {
+    return await withRetry(async () => {
+      const [challenge] = await db.select().from(dailyChallenges).where(eq(dailyChallenges.id, id));
+      return challenge || undefined;
+    });
+  }
+
   async getChallengeByStatus(status: string): Promise<DailyChallenge | undefined> {
     return await withRetry(async () => {
       const [challenge] = await db.select().from(dailyChallenges).where(eq(dailyChallenges.status, status));
@@ -80,6 +89,16 @@ export class DatabaseStorage implements IStorage {
   async createDailyChallenge(insertChallenge: InsertDailyChallenge): Promise<DailyChallenge> {
     return await withRetry(async () => {
       const [challenge] = await db.insert(dailyChallenges).values(insertChallenge).returning();
+      return challenge;
+    });
+  }
+
+  async updateDailyChallenge(id: string, updates: Partial<DailyChallenge>): Promise<DailyChallenge> {
+    return await withRetry(async () => {
+      const [challenge] = await db.update(dailyChallenges)
+        .set(updates)
+        .where(eq(dailyChallenges.id, id))
+        .returning();
       return challenge;
     });
   }

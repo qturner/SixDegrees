@@ -447,6 +447,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         console.log(`Found existing challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0})`);
+        
+        // Automatic thumbnail verification for existing challenges
+        try {
+          const verification = await tmdbService.verifyChallengeThumbnails({
+            id: challenge.id,
+            startActorId: challenge.startActorId,
+            startActorName: challenge.startActorName,
+            startActorProfilePath: challenge.startActorProfilePath,
+            endActorId: challenge.endActorId,
+            endActorName: challenge.endActorName,
+            endActorProfilePath: challenge.endActorProfilePath
+          });
+
+          if (verification.needsUpdate) {
+            console.log(`Detected thumbnail issues for challenge ${challenge.id}: ${verification.issues.join(', ')}`);
+            
+            // Auto-repair thumbnails
+            const updates: any = {};
+            if (verification.correctStartPath !== undefined) {
+              updates.startActorProfilePath = verification.correctStartPath;
+            }
+            if (verification.correctEndPath !== undefined) {
+              updates.endActorProfilePath = verification.correctEndPath;
+            }
+
+            if (Object.keys(updates).length > 0) {
+              challenge = await storage.updateDailyChallenge(challenge.id, updates);
+              console.log(`Auto-repaired thumbnails for challenge ${challenge.id}`);
+            }
+          }
+        } catch (verificationError) {
+          console.log(`Thumbnail verification failed (non-critical): ${verificationError}`);
+          // Don't fail the request if thumbnail verification fails
+        }
       }
 
       res.json(challenge);
@@ -729,6 +763,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(movies);
     } catch (error) {
       console.error("Error getting actor movies:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Verify and repair challenge thumbnails
+  app.post("/api/verify-thumbnails", async (req, res) => {
+    try {
+      const { challengeId } = req.body;
+      let challenge;
+      
+      if (challengeId) {
+        challenge = await storage.getDailyChallengeById(challengeId);
+      } else {
+        // Verify today's challenge by default
+        const today = getESTDateString();
+        challenge = await storage.getDailyChallenge(today);
+      }
+      
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      console.log(`Verifying thumbnails for challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
+      
+      const verification = await tmdbService.verifyChallengeThumbnails({
+        id: challenge.id,
+        startActorId: challenge.startActorId,
+        startActorName: challenge.startActorName,
+        startActorProfilePath: challenge.startActorProfilePath,
+        endActorId: challenge.endActorId,
+        endActorName: challenge.endActorName,
+        endActorProfilePath: challenge.endActorProfilePath
+      });
+
+      if (verification.needsUpdate) {
+        // Update the database with correct thumbnails
+        const updates: any = {};
+        if (verification.correctStartPath !== undefined) {
+          updates.startActorProfilePath = verification.correctStartPath;
+        }
+        if (verification.correctEndPath !== undefined) {
+          updates.endActorProfilePath = verification.correctEndPath;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await storage.updateDailyChallenge(challenge.id, updates);
+          console.log(`Updated thumbnails for challenge ${challenge.id}:`, updates);
+        }
+
+        return res.json({
+          message: "Thumbnails verified and updated",
+          issues: verification.issues,
+          updates: updates,
+          success: true
+        });
+      } else {
+        return res.json({
+          message: "Thumbnails are correct",
+          success: true
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying thumbnails:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
