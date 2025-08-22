@@ -33,9 +33,9 @@ const loadGameState = (currentChallengeDate?: string) => {
     const saved = localStorage.getItem('gameState');
     if (saved) {
       const state = JSON.parse(saved);
-      // Only load if saved within last 6 hours to avoid stale state
+      // Only load if saved within last 24 hours to avoid stale state
       // AND if it's for the same daily challenge date
-      if (Date.now() - state.savedAt < 6 * 60 * 60 * 1000 && 
+      if (Date.now() - state.savedAt < 24 * 60 * 60 * 1000 && 
           state.challengeDate === currentChallengeDate) {
         return state;
       }
