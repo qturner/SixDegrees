@@ -1305,6 +1305,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint for production troubleshooting
+  app.get("/api/debug/auth-status", async (req, res) => {
+    try {
+      const user = req.user as any;
+      const hasGoogleCredentials = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+      const repolyDomain = process.env.REPLIT_DOMAINS || 'not-set';
+      
+      res.json({
+        timestamp: new Date().toISOString(),
+        isAuthenticated: !!user,
+        user: user ? { 
+          sub: user.claims?.sub, 
+          email: user.claims?.email,
+          name: `${user.claims?.given_name} ${user.claims?.family_name}`.trim()
+        } : null,
+        hasGoogleCredentials,
+        repolyDomain,
+        sessionID: req.sessionID,
+        environment: process.env.NODE_ENV || 'unknown'
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: "Debug endpoint failed",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Register test email routes
   registerTestEmailRoutes(app);
 
