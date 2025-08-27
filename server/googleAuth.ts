@@ -60,18 +60,13 @@ function updateUserSession(
 }
 
 async function upsertUser(claims: any) {
-  try {
-    await storage.upsertUser({
-      googleId: claims["sub"],
-      email: claims["email"],
-      firstName: claims["given_name"],
-      lastName: claims["family_name"],
-      profileImageUrl: claims["picture"],
-    });
-  } catch (error) {
-    console.error('Failed to save user data:', error);
-    // Continue with authentication even if user save fails
-  }
+  // Skip database save entirely for now to avoid connection issues
+  console.log('User authenticated:', {
+    googleId: claims["sub"],
+    email: claims["email"],
+    name: `${claims["given_name"]} ${claims["family_name"]}`
+  });
+  // TODO: Re-enable database save once connection issues resolved
 }
 
 export async function setupAuth(app: Express) {
