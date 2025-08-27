@@ -1,7 +1,7 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics } from "@shared/schema";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type UpsertUser, type UserChallengeCompletion, type InsertUserChallengeCompletion, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userChallengeCompletions } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, desc, sql, count } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export interface IStorage {
@@ -28,6 +28,22 @@ export interface IStorage {
     mostUsedMovies: { id: string; title: string; count: number }[];
     mostUsedActors: { id: string; name: string; count: number }[];
   }>;
+  
+  // User methods (Google OAuth)
+  getUser(id: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // User Challenge Completion methods
+  createUserChallengeCompletion(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion>;
+  getUserChallengeCompletion(userId: string, challengeId: string): Promise<UserChallengeCompletion | undefined>;
+  getUserCompletions(userId: string): Promise<UserChallengeCompletion[]>;
+  getUserMoveDistribution(userId: string): Promise<{ moves: number; count: number }[]>;
+  getRecentChallengesForUser(userId: string, limit: number): Promise<{
+    challenge: DailyChallenge;
+    completed: boolean;
+    moves?: number;
+  }[]>;
   
   // Admin methods
   createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
@@ -473,6 +489,111 @@ export class DatabaseStorage implements IStorage {
         geographicData,
         deviceData,
       };
+    });
+  }
+
+  // User methods (Google OAuth)
+  async getUser(id: string): Promise<User | undefined> {
+    return await withRetry(async () => {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    });
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    return await withRetry(async () => {
+      const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+      return user || undefined;
+    });
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    return await withRetry(async () => {
+      const [user] = await db
+        .insert(users)
+        .values(userData)
+        .onConflictDoUpdate({
+          target: users.googleId,
+          set: {
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            profileImageUrl: userData.profileImageUrl,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      return user;
+    });
+  }
+
+  // User Challenge Completion methods
+  async createUserChallengeCompletion(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion> {
+    return await withRetry(async () => {
+      const [userCompletion] = await db.insert(userChallengeCompletions).values(completion).returning();
+      return userCompletion;
+    });
+  }
+
+  async getUserChallengeCompletion(userId: string, challengeId: string): Promise<UserChallengeCompletion | undefined> {
+    return await withRetry(async () => {
+      const [completion] = await db.select().from(userChallengeCompletions)
+        .where(and(
+          eq(userChallengeCompletions.userId, userId),
+          eq(userChallengeCompletions.challengeId, challengeId)
+        ));
+      return completion || undefined;
+    });
+  }
+
+  async getUserCompletions(userId: string): Promise<UserChallengeCompletion[]> {
+    return await withRetry(async () => {
+      return await db.select().from(userChallengeCompletions)
+        .where(eq(userChallengeCompletions.userId, userId))
+        .orderBy(desc(userChallengeCompletions.completedAt));
+    });
+  }
+
+  async getUserMoveDistribution(userId: string): Promise<{ moves: number; count: number }[]> {
+    return await withRetry(async () => {
+      const results = await db
+        .select({
+          moves: userChallengeCompletions.moves,
+          count: count(),
+        })
+        .from(userChallengeCompletions)
+        .where(eq(userChallengeCompletions.userId, userId))
+        .groupBy(userChallengeCompletions.moves)
+        .orderBy(userChallengeCompletions.moves);
+      
+      return results.map(row => ({ moves: row.moves, count: Number(row.count) }));
+    });
+  }
+
+  async getRecentChallengesForUser(userId: string, limit: number): Promise<{
+    challenge: DailyChallenge;
+    completed: boolean;
+    moves?: number;
+  }[]> {
+    return await withRetry(async () => {
+      // Get recent challenges
+      const recentChallenges = await db.select().from(dailyChallenges)
+        .where(eq(dailyChallenges.status, 'active'))
+        .orderBy(desc(dailyChallenges.date))
+        .limit(limit);
+
+      // Check which ones the user has completed
+      const results = [];
+      for (const challenge of recentChallenges) {
+        const completion = await this.getUserChallengeCompletion(userId, challenge.id);
+        results.push({
+          challenge,
+          completed: !!completion,
+          moves: completion?.moves,
+        });
+      }
+
+      return results;
     });
   }
 }

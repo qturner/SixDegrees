@@ -4,8 +4,9 @@ import { storage } from "./storage";
 import { tmdbService } from "./services/tmdb";
 import { gameLogicService } from "./services/gameLogic";
 import { withRetry } from "./db";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema } from "@shared/schema";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema } from "@shared/schema";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
+import { setupAuth, isAuthenticated } from "./googleAuth";
 import { emailService } from "./services/email";
 import { registerTestEmailRoutes } from "./routes/testEmail";
 import cron from "node-cron";
@@ -42,6 +43,9 @@ let challengeCreationPromise: Promise<any> | null = null;
 let lastChallengeDate: string | null = null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup Google OAuth authentication
+  await setupAuth(app);
+
   // Test email service on startup
   setTimeout(async () => {
     const { emailService } = await import("./services/email");

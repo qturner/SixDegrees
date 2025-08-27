@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 export const dailyChallenges = pgTable("daily_challenges", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -167,3 +168,72 @@ export const insertVisitorAnalyticsSchema = createInsertSchema(visitorAnalytics)
   updatedAt: true 
 });
 export type InsertVisitorAnalytics = z.infer<typeof insertVisitorAnalyticsSchema>;
+
+// Session storage table for Google OAuth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: text("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// Users table for Google OAuth authentication
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  googleId: varchar("google_id").unique().notNull(),
+  email: varchar("email").unique().notNull(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User challenge completions table
+export const userChallengeCompletions = pgTable("user_challenge_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  challengeId: varchar("challenge_id").references(() => dailyChallenges.id).notNull(),
+  moves: integer("moves").notNull(),
+  completedAt: timestamp("completed_at").defaultNow(),
+  connections: text("connections").notNull(), // JSON string of connections used
+}, (table) => [
+  index("idx_user_completions").on(table.userId),
+  index("idx_challenge_completions").on(table.challengeId),
+]);
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  completions: many(userChallengeCompletions),
+}));
+
+export const userChallengeCompletionsRelations = relations(userChallengeCompletions, ({ one }) => ({
+  user: one(users, {
+    fields: [userChallengeCompletions.userId],
+    references: [users.id],
+  }),
+  challenge: one(dailyChallenges, {
+    fields: [userChallengeCompletions.challengeId],
+    references: [dailyChallenges.id],
+  }),
+}));
+
+export const dailyChallengesRelations = relations(dailyChallenges, ({ many }) => ({
+  completions: many(userChallengeCompletions),
+}));
+
+// Type definitions
+export type User = typeof users.$inferSelect;
+export type UpsertUser = typeof users.$inferInsert;
+export type UserChallengeCompletion = typeof userChallengeCompletions.$inferSelect;
+export type InsertUserChallengeCompletion = typeof userChallengeCompletions.$inferInsert;
+
+export const insertUserChallengeCompletionSchema = createInsertSchema(userChallengeCompletions).omit({
+  id: true,
+  completedAt: true,
+});
+
+export type InsertUserChallengeCompletionType = z.infer<typeof insertUserChallengeCompletionSchema>;
