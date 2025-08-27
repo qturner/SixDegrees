@@ -155,6 +155,13 @@ export async function setupAuth(app: Express) {
       const strategyName = `googleauth:${req.hostname}`;
       console.log(`🟢 Attempting authentication with strategy: ${strategyName}`);
       
+      // Add manual state debugging  
+      console.log(`🟢 Request session object:`, req.session ? 'exists' : 'missing');
+      console.log(`🟢 Session data keys:`, req.session ? Object.keys(req.session) : 'no session');
+      if (req.session) {
+        console.log(`🟢 Session contents:`, JSON.stringify(req.session, null, 2));
+      }
+      
       // Check if strategy exists
       const availableStrategies = Object.keys(passport._strategies || {});
       console.log(`🟢 Available strategies:`, availableStrategies);
