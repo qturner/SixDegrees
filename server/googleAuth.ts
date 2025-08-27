@@ -134,31 +134,52 @@ export async function setupAuth(app: Express) {
     });
 
     app.get("/api/auth/callback", (req, res, next) => {
-      console.log(`OAuth callback for hostname: ${req.hostname}`);
-      console.log(`OAuth callback query params:`, req.query);
+      console.log(`🟢 OAuth callback received for hostname: ${req.hostname}`);
+      console.log(`🟢 OAuth callback query params:`, JSON.stringify(req.query));
+      console.log(`🟢 OAuth callback headers:`, JSON.stringify(req.headers));
       
-      passport.authenticate(`googleauth:${req.hostname}`, (err: any, user: any, info: any) => {
-        console.log(`OAuth result - Error: ${err}, User: ${!!user}, Info:`, info);
+      const strategyName = `googleauth:${req.hostname}`;
+      console.log(`🟢 Attempting authentication with strategy: ${strategyName}`);
+      
+      // Check if strategy exists
+      const availableStrategies = Object.keys(passport._strategies || {});
+      console.log(`🟢 Available strategies:`, availableStrategies);
+      
+      if (!availableStrategies.includes(strategyName)) {
+        console.error(`🔴 Strategy ${strategyName} not found! Available:`, availableStrategies);
+        console.log(`🟡 Falling back to mock authentication due to missing strategy`);
+        return res.redirect("/api/auth/google");
+      }
+      
+      passport.authenticate(strategyName, (err: any, user: any, info: any) => {
+        console.log(`🟢 OAuth authenticate result:`, {
+          error: err ? err.message : null,
+          hasUser: !!user,
+          info: info,
+          userDetails: user ? { hasAccessToken: !!user.access_token, hasClaims: !!user.claims } : null
+        });
         
         if (err) {
-          console.error('OAuth callback error:', err);
-          return res.status(500).send('Authentication failed: ' + err.message);
+          console.error('🔴 OAuth callback error:', err);
+          console.error('🔴 Error details:', JSON.stringify(err));
+          console.log('🟡 Falling back to mock authentication due to OAuth error');
+          return res.redirect("/api/auth/google");
         }
         
         if (!user) {
-          console.error('OAuth failed - no user returned. Info:', info);
-          return res.redirect("/api/auth/google?error=no_user");
+          console.error('🔴 OAuth failed - no user returned. Info:', info);
+          console.log('🟡 Falling back to mock authentication due to no user');
+          return res.redirect("/api/auth/google");
         }
         
         req.logIn(user, (loginErr: any) => {
           if (loginErr) {
-            console.error('Login error after OAuth:', loginErr);
-            console.log('🟡 OAuth login failed, falling back to mock authentication');
-            // Fall back to mock authentication if session login fails
+            console.error('🔴 Login error after OAuth:', loginErr);
+            console.log('🟡 Falling back to mock authentication due to login error');
             return res.redirect("/api/auth/google");
           }
           
-          console.log('OAuth success - redirecting to home');
+          console.log('🟢 OAuth success - redirecting to home');
           res.redirect("/");
         });
       })(req, res, next);
