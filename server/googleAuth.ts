@@ -114,6 +114,8 @@ export async function setupAuth(app: Express) {
           config,
           scope: "openid email profile",
           callbackURL: `https://${domain}/api/auth/callback`,
+          // Try to disable state verification as a workaround for production issues
+          state: false,
         },
         verify,
       );
