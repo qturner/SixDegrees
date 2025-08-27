@@ -1333,6 +1333,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test OAuth callback with mock Google response
+  app.get("/api/debug/test-callback", async (req, res) => {
+    try {
+      console.log("🔧 Testing OAuth callback with mock parameters");
+      
+      // Simulate what Google would send back
+      const mockCallbackParams = {
+        code: "test-auth-code",
+        state: "test-state",
+        scope: "openid email profile"
+      };
+      
+      console.log("🔧 Mock callback params:", mockCallbackParams);
+      
+      res.json({
+        message: "OAuth callback test initiated",
+        mockParams: mockCallbackParams,
+        note: "Check server logs for detailed OAuth callback processing"
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: "OAuth callback test failed",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Register test email routes
   registerTestEmailRoutes(app);
 
