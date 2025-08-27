@@ -114,10 +114,22 @@ export async function setupAuth(app: Express) {
     passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
     app.get("/api/auth/google", (req, res, next) => {
-      console.log(`OAuth initiation for hostname: ${req.hostname}`);
-      passport.authenticate(`googleauth:${req.hostname}`, {
+      console.log(`🔵 OAuth initiation for hostname: ${req.hostname}`);
+      console.log(`🔵 Available strategies:`, Object.keys(passport._strategies || {}));
+      
+      const strategyName = `googleauth:${req.hostname}`;
+      console.log(`🔵 Looking for strategy: ${strategyName}`);
+      
+      passport.authenticate(strategyName, {
         scope: ["openid", "email", "profile"],
-      })(req, res, next);
+      })(req, res, (authErr) => {
+        if (authErr) {
+          console.error(`🔴 OAuth initiation error:`, authErr);
+          return res.status(500).send(`OAuth error: ${authErr.message}`);
+        }
+        console.log(`🔵 OAuth initiation successful`);
+        next();
+      });
     });
 
     app.get("/api/auth/callback", (req, res, next) => {
