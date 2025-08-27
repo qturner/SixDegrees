@@ -171,14 +171,14 @@ export async function setupAuth(app: Express) {
         if (err) {
           console.error('🔴 OAuth callback error:', err);
           console.error('🔴 Error details:', JSON.stringify(err));
-          console.log('🟡 Falling back to mock authentication due to OAuth error');
-          return res.redirect("/api/auth/google");
+          // Show the actual error instead of redirecting to prevent loop
+          return res.status(500).send(`OAuth Error: ${err.message || JSON.stringify(err)}`);
         }
         
         if (!user) {
           console.error('🔴 OAuth failed - no user returned. Info:', info);
-          console.log('🟡 Falling back to mock authentication due to no user');
-          return res.redirect("/api/auth/google");
+          // Show the actual issue instead of redirecting to prevent loop  
+          return res.status(500).send(`OAuth Failed: No user returned. Info: ${JSON.stringify(info)}`);
         }
         
         req.logIn(user, (loginErr: any) => {
