@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Shield } from "lucide-react";
+import { Shield, LogIn } from "lucide-react";
 import GameHeader from "@/components/GameHeader";
 import GameGrid from "@/components/GameGrid";
 import GameInstructions from "@/components/GameInstructions";
@@ -12,6 +12,8 @@ import GameAnalytics from "@/components/GameAnalytics";
 import TodaysChallenge from "@/components/TodaysChallenge";
 import { AboutModal } from "@/components/AboutModal";
 import { ContactModal } from "@/components/ContactModal";
+import { LoginModal } from "@/components/LoginModal";
+import { UserMenu } from "@/components/UserMenu";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 import { trackGameEvent, trackPageView } from "@/lib/analytics";
 
@@ -66,6 +68,7 @@ export default function Game() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [gameStateInitialized, setGameStateInitialized] = useState(false);
 
   const { data: challenge, isLoading, error, refetch } = useQuery<DailyChallenge>({
@@ -78,6 +81,13 @@ export default function Game() {
       return false;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+
+  // Query for current user (if logged in)
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/user/me"],
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   // Initialize or reset game state when challenge loads
@@ -238,14 +248,22 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-game-background text-game-text font-sans">
-      {/* Admin Access Button - Bottom right */}
+      {/* Login/User Menu - Bottom right */}
       <div className="fixed bottom-4 right-4 z-50">
-        <Link href="/admin-login">
-          <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200 text-gray-600 hover:text-gray-800">
-            <Shield className="h-4 w-4" />
-            Admin
+        {currentUser ? (
+          <UserMenu user={currentUser} />
+        ) : (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200 text-gray-600 hover:text-gray-800"
+            onClick={() => setIsLoginModalOpen(true)}
+            data-testid="button-login"
+          >
+            <LogIn className="h-4 w-4" />
+            Login
           </Button>
-        </Link>
+        )}
       </div>
 
       <GameHeader 
@@ -330,6 +348,11 @@ export default function Game() {
       <ContactModal 
         open={isContactModalOpen} 
         onOpenChange={setIsContactModalOpen} 
+      />
+      
+      <LoginModal 
+        open={isLoginModalOpen} 
+        onOpenChange={setIsLoginModalOpen} 
       />
     </div>
   );
