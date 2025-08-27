@@ -127,16 +127,31 @@ export async function setupAuth(app: Express) {
 
     app.get("/api/auth/callback", (req, res, next) => {
       console.log(`OAuth callback for hostname: ${req.hostname}`);
-      passport.authenticate(`googleauth:${req.hostname}`, {
-        successReturnToOrRedirect: "/",
-        failureRedirect: "/api/auth/google",
-      })(req, res, (err: any) => {
+      console.log(`OAuth callback query params:`, req.query);
+      
+      passport.authenticate(`googleauth:${req.hostname}`, (err: any, user: any, info: any) => {
+        console.log(`OAuth result - Error: ${err}, User: ${!!user}, Info:`, info);
+        
         if (err) {
           console.error('OAuth callback error:', err);
-          return res.status(500).send('Authentication failed');
+          return res.status(500).send('Authentication failed: ' + err.message);
         }
-        next();
-      });
+        
+        if (!user) {
+          console.error('OAuth failed - no user returned. Info:', info);
+          return res.redirect("/api/auth/google?error=no_user");
+        }
+        
+        req.logIn(user, (loginErr: any) => {
+          if (loginErr) {
+            console.error('Login error after OAuth:', loginErr);
+            return res.status(500).send('Login failed: ' + loginErr.message);
+          }
+          
+          console.log('OAuth success - redirecting to home');
+          res.redirect("/");
+        });
+      })(req, res, next);
     });
 
     app.get("/api/auth/logout", (req, res) => {
