@@ -28,7 +28,7 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   
-  // Use memory store as fallback for session issues
+  // Use memory store with more liberal session handling for OAuth compatibility
   const Store = MemoryStore(session);
   const sessionStore = new Store({
     checkPeriod: 86400000, // prune expired entries every 24h
@@ -37,8 +37,8 @@ export function getSession() {
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force session save to ensure OAuth state persistence
+    saveUninitialized: true, // Save empty sessions to ensure OAuth state works
     cookie: {
       httpOnly: true,
       secure: true,
@@ -126,6 +126,8 @@ export async function setupAuth(app: Express) {
 
     app.get("/api/auth/google", (req, res, next) => {
       console.log(`🔵 OAuth initiation for hostname: ${req.hostname}`);
+      console.log(`🔵 Session exists:`, !!req.session);
+      console.log(`🔵 Session ID:`, req.sessionID);
       console.log(`🔵 Available strategies:`, Object.keys(passport._strategies || {}));
       
       const strategyName = `googleauth:${req.hostname}`;
