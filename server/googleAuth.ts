@@ -116,16 +116,24 @@ export async function setupAuth(app: Express) {
     passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
     app.get("/api/auth/google", (req, res, next) => {
+      console.log(`OAuth initiation for hostname: ${req.hostname}`);
       passport.authenticate(`googleauth:${req.hostname}`, {
         scope: ["openid", "email", "profile"],
       })(req, res, next);
     });
 
     app.get("/api/auth/callback", (req, res, next) => {
+      console.log(`OAuth callback for hostname: ${req.hostname}`);
       passport.authenticate(`googleauth:${req.hostname}`, {
         successReturnToOrRedirect: "/",
         failureRedirect: "/api/auth/google",
-      })(req, res, next);
+      })(req, res, (err: any) => {
+        if (err) {
+          console.error('OAuth callback error:', err);
+          return res.status(500).send('Authentication failed');
+        }
+        next();
+      });
     });
 
     app.get("/api/auth/logout", (req, res) => {
