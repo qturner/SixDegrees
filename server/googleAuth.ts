@@ -88,6 +88,7 @@ export async function setupAuth(app: Express) {
 
   try {
     const config = await getOidcConfig();
+    console.log('✅ OIDC config loaded successfully');
 
     const verify: VerifyFunction = async (
       tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
@@ -100,9 +101,10 @@ export async function setupAuth(app: Express) {
     };
 
     for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
+      const strategyName = `googleauth:${domain}`;
       const strategy = new Strategy(
         {
-          name: `googleauth:${domain}`,
+          name: strategyName,
           config,
           scope: "openid email profile",
           callbackURL: `https://${domain}/api/auth/callback`,
@@ -110,6 +112,7 @@ export async function setupAuth(app: Express) {
         verify,
       );
       passport.use(strategy);
+      console.log(`✅ Registered OAuth strategy: ${strategyName} with callback: https://${domain}/api/auth/callback`);
     }
 
     passport.serializeUser((user: Express.User, cb) => cb(null, user));
