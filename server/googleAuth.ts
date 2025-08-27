@@ -96,7 +96,16 @@ export async function setupAuth(app: Express) {
       verified(null, user);
     };
 
-    for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
+    // Ensure we register strategies for both development and production domains
+    const domains = process.env.REPLIT_DOMAINS!.split(",").map(d => d.trim());
+    
+    // Add production domain if not already included
+    if (!domains.includes('sixdegrees.app')) {
+      domains.push('sixdegrees.app');
+      console.log('🟡 Added production domain sixdegrees.app to OAuth strategies');
+    }
+    
+    for (const domain of domains) {
       const strategyName = `googleauth:${domain}`;
       const strategy = new Strategy(
         {
