@@ -13,9 +13,12 @@ if (!process.env.REPLIT_DOMAINS) {
 
 const getOidcConfig = memoize(
   async () => {
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      throw new Error("Google Client ID not configured");
+    }
     return await client.discovery(
       new URL("https://accounts.google.com"),
-      process.env.GOOGLE_CLIENT_ID!
+      process.env.GOOGLE_CLIENT_ID
     );
   },
   { maxAge: 3600 * 1000 }
@@ -69,52 +72,63 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
-
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
-  };
-
-  for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
-    const strategy = new Strategy(
-      {
-        name: `googleauth:${domain}`,
-        config,
-        scope: "openid email profile",
-        callbackURL: `https://${domain}/api/auth/callback`,
-      },
-      verify,
-    );
-    passport.use(strategy);
+  // Skip Google OAuth setup if credentials are not provided
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.log("⚠️  Google OAuth credentials not found - skipping Google authentication setup");
+    return;
   }
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  try {
+    const config = await getOidcConfig();
 
-  app.get("/api/auth/google", (req, res, next) => {
-    passport.authenticate(`googleauth:${req.hostname}`, {
-      scope: ["openid", "email", "profile"],
-    })(req, res, next);
-  });
+    const verify: VerifyFunction = async (
+      tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+      verified: passport.AuthenticateCallback
+    ) => {
+      const user = {};
+      updateUserSession(user, tokens);
+      await upsertUser(tokens.claims());
+      verified(null, user);
+    };
 
-  app.get("/api/auth/callback", (req, res, next) => {
-    passport.authenticate(`googleauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/auth/google",
-    })(req, res, next);
-  });
+    for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
+      const strategy = new Strategy(
+        {
+          name: `googleauth:${domain}`,
+          config,
+          scope: "openid email profile",
+          callbackURL: `https://${domain}/api/auth/callback`,
+        },
+        verify,
+      );
+      passport.use(strategy);
+    }
 
-  app.get("/api/auth/logout", (req, res) => {
-    req.logout(() => {
-      res.redirect("/");
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+
+    app.get("/api/auth/google", (req, res, next) => {
+      passport.authenticate(`googleauth:${req.hostname}`, {
+        scope: ["openid", "email", "profile"],
+      })(req, res, next);
     });
-  });
+
+    app.get("/api/auth/callback", (req, res, next) => {
+      passport.authenticate(`googleauth:${req.hostname}`, {
+        successReturnToOrRedirect: "/",
+        failureRedirect: "/api/auth/google",
+      })(req, res, next);
+    });
+
+    app.get("/api/auth/logout", (req, res) => {
+      req.logout(() => {
+        res.redirect("/");
+      });
+    });
+  } catch (error) {
+    console.error("❌ Failed to setup Google OAuth:", error);
+    console.log("⚠️  Continuing without Google authentication");
+  }
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
