@@ -84,7 +84,13 @@ export default function Game() {
   });
 
   // Query for current user (if logged in)
-  const { data: currentUser } = useQuery({
+  const { data: currentUser } = useQuery<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profileImageUrl?: string;
+  }>({
     queryKey: ["/api/user/me"],
     retry: false,
     refetchOnWindowFocus: false,
