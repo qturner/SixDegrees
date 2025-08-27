@@ -44,7 +44,8 @@ export function getSession() {
       secure: true,
       maxAge: sessionTtl,
       sameSite: 'lax',
-      domain: process.env.NODE_ENV === 'production' ? '.sixdegrees.app' : undefined,
+      // Remove domain restriction to allow cross-domain OAuth
+      // domain: process.env.NODE_ENV === 'production' ? '.sixdegrees.app' : undefined,
     },
   });
 }
@@ -145,7 +146,9 @@ export async function setupAuth(app: Express) {
     app.get("/api/auth/callback", (req, res, next) => {
       console.log(`🟢 OAuth callback received for hostname: ${req.hostname}`);
       console.log(`🟢 OAuth callback query params:`, JSON.stringify(req.query));
-      console.log(`🟢 OAuth callback headers:`, JSON.stringify(req.headers));
+      console.log(`🟢 Session exists:`, !!req.session);
+      console.log(`🟢 Session ID:`, req.sessionID);
+      console.log(`🟢 Cookie header:`, req.headers.cookie);
       
       const strategyName = `googleauth:${req.hostname}`;
       console.log(`🟢 Attempting authentication with strategy: ${strategyName}`);
