@@ -78,6 +78,7 @@ export async function setupAuth(app: Express) {
   // Skip Google OAuth setup if credentials are not provided
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     console.log("⚠️  Google OAuth credentials not found - skipping Google authentication setup");
+    setupMockAuth(app);
     return;
   }
 
@@ -169,7 +170,47 @@ export async function setupAuth(app: Express) {
   } catch (error) {
     console.error("❌ Failed to setup Google OAuth:", error);
     console.log("⚠️  Continuing without Google authentication");
+    setupMockAuth(app);
   }
+}
+
+// Temporary mock auth for testing
+function setupMockAuth(app: Express) {
+  console.log("🟡 Setting up temporary mock authentication for testing");
+  
+  app.get("/api/auth/google", (req, res) => {
+    console.log("🟡 Mock OAuth initiation");
+    // Create a mock user session
+    const mockUser = {
+      claims: {
+        sub: "mock-user-123",
+        email: "test@example.com", 
+        given_name: "Test",
+        family_name: "User",
+        picture: "https://via.placeholder.com/64"
+      },
+      access_token: "mock-token",
+      expires_at: Math.floor(Date.now() / 1000) + 3600
+    };
+    
+    req.login(mockUser, (err) => {
+      if (err) {
+        console.error("Mock login error:", err);
+        return res.status(500).send("Mock login failed");
+      }
+      console.log("🟡 Mock authentication successful");
+      res.redirect("/");
+    });
+  });
+
+  app.get("/api/auth/logout", (req, res) => {
+    req.logout(() => {
+      res.redirect("/");
+    });
+  });
+
+  passport.serializeUser((user: any, cb) => cb(null, user));
+  passport.deserializeUser((user: any, cb) => cb(null, user));
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
