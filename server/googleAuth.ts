@@ -42,6 +42,8 @@ export function getSession() {
       httpOnly: true,
       secure: true,
       maxAge: sessionTtl,
+      sameSite: 'lax',
+      domain: process.env.NODE_ENV === 'production' ? '.sixdegrees.app' : undefined,
     },
   });
 }
