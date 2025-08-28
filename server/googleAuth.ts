@@ -143,6 +143,18 @@ export async function setupAuth(app: Express) {
       if (req.session) {
         (req.session as any).oauthState = state;
         console.log(`🔵 Stored OAuth state in session:`, state);
+        console.log(`🔵 Full session before save:`, JSON.stringify(req.session, null, 2));
+        
+        // Force session save to ensure it persists
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error(`🔴 Session save error:`, saveErr);
+          } else {
+            console.log(`🔵 Session saved successfully`);
+          }
+        });
+      } else {
+        console.error(`🔴 No session available to store OAuth state!`);
       }
       
       // Build Google OAuth URL manually
@@ -179,6 +191,8 @@ export async function setupAuth(app: Express) {
         // Verify state
         const sessionState = req.session ? (req.session as any).oauthState : null;
         console.log(`🟢 Comparing states - received: ${state}, stored: ${sessionState}`);
+        console.log(`🟢 Full session contents during callback:`, JSON.stringify(req.session, null, 2));
+        console.log(`🟢 Session cookie header:`, req.headers.cookie);
         
         if (!sessionState || sessionState !== state) {
           console.error(`🔴 State mismatch - received: ${state}, stored: ${sessionState}`);
