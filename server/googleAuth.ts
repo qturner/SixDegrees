@@ -1,5 +1,6 @@
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
+import crypto from "crypto";
 import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
@@ -126,86 +127,135 @@ export async function setupAuth(app: Express) {
     passport.serializeUser((user: Express.User, cb) => cb(null, user));
     passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-    app.get("/api/auth/google", (req, res, next) => {
-      console.log(`🔵 OAuth initiation for hostname: ${req.hostname}`);
+    // Manual Google OAuth implementation to bypass openid-client state issues
+    app.get("/api/auth/google", (req, res) => {
+      console.log(`🔵 Manual OAuth initiation for hostname: ${req.hostname}`);
       console.log(`🔵 Session exists:`, !!req.session);
       console.log(`🔵 Session ID:`, req.sessionID);
-      console.log(`🔵 Available strategies:`, Object.keys(passport._strategies || {}));
       
-      const strategyName = `googleauth:${req.hostname}`;
-      console.log(`🔵 Looking for strategy: ${strategyName}`);
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const redirectUri = `https://${req.hostname}/api/auth/callback`;
       
-      passport.authenticate(strategyName, {
-        scope: ["openid", "email", "profile"],
-      })(req, res, (authErr) => {
-        if (authErr) {
-          console.error(`🔴 OAuth initiation error:`, authErr);
-          return res.status(500).send(`OAuth error: ${authErr.message}`);
-        }
-        console.log(`🔵 OAuth initiation successful`);
-        next();
-      });
+      // Generate a simple state for CSRF protection
+      const state = crypto.randomBytes(32).toString('hex');
+      
+      // Store state in session
+      if (req.session) {
+        (req.session as any).oauthState = state;
+        console.log(`🔵 Stored OAuth state in session:`, state);
+      }
+      
+      // Build Google OAuth URL manually
+      const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      googleAuthUrl.searchParams.set('client_id', clientId!);
+      googleAuthUrl.searchParams.set('redirect_uri', redirectUri);
+      googleAuthUrl.searchParams.set('response_type', 'code');
+      googleAuthUrl.searchParams.set('scope', 'openid email profile');
+      googleAuthUrl.searchParams.set('state', state);
+      
+      console.log(`🔵 Redirecting to Google OAuth:`, googleAuthUrl.toString());
+      res.redirect(googleAuthUrl.toString());
     });
 
-    app.get("/api/auth/callback", (req, res, next) => {
-      console.log(`🟢 OAuth callback received for hostname: ${req.hostname}`);
+    app.get("/api/auth/callback", async (req, res) => {
+      console.log(`🟢 Manual OAuth callback received for hostname: ${req.hostname}`);
       console.log(`🟢 OAuth callback query params:`, JSON.stringify(req.query));
       console.log(`🟢 Session exists:`, !!req.session);
       console.log(`🟢 Session ID:`, req.sessionID);
-      console.log(`🟢 Cookie header:`, req.headers.cookie);
       
-      const strategyName = `googleauth:${req.hostname}`;
-      console.log(`🟢 Attempting authentication with strategy: ${strategyName}`);
-      
-      // Add manual state debugging  
-      console.log(`🟢 Request session object:`, req.session ? 'exists' : 'missing');
-      console.log(`🟢 Session data keys:`, req.session ? Object.keys(req.session) : 'no session');
-      if (req.session) {
-        console.log(`🟢 Session contents:`, JSON.stringify(req.session, null, 2));
-      }
-      
-      // Check if strategy exists
-      const availableStrategies = Object.keys(passport._strategies || {});
-      console.log(`🟢 Available strategies:`, availableStrategies);
-      
-      if (!availableStrategies.includes(strategyName)) {
-        console.error(`🔴 Strategy ${strategyName} not found! Available:`, availableStrategies);
-        console.log(`🟡 Falling back to mock authentication due to missing strategy`);
-        return res.redirect("/api/auth/google");
-      }
-      
-      passport.authenticate(strategyName, (err: any, user: any, info: any) => {
-        console.log(`🟢 OAuth authenticate result:`, {
-          error: err ? err.message : null,
-          hasUser: !!user,
-          info: info,
-          userDetails: user ? { hasAccessToken: !!user.access_token, hasClaims: !!user.claims } : null
+      try {
+        const { code, state, error } = req.query;
+        
+        if (error) {
+          console.error(`🔴 OAuth error from Google:`, error);
+          return res.status(500).send(`OAuth Error: ${error}`);
+        }
+        
+        if (!code || !state) {
+          console.error(`🔴 Missing code or state in callback`);
+          return res.status(500).send('OAuth Error: Missing authorization code or state');
+        }
+        
+        // Verify state
+        const sessionState = req.session ? (req.session as any).oauthState : null;
+        console.log(`🟢 Comparing states - received: ${state}, stored: ${sessionState}`);
+        
+        if (!sessionState || sessionState !== state) {
+          console.error(`🔴 State mismatch - received: ${state}, stored: ${sessionState}`);
+          return res.status(500).send('OAuth Error: State verification failed');
+        }
+        
+        // Exchange code for tokens
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            code: code as string,
+            client_id: process.env.GOOGLE_CLIENT_ID!,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+            redirect_uri: `https://${req.hostname}/api/auth/callback`,
+            grant_type: 'authorization_code',
+          }),
         });
         
-        if (err) {
-          console.error('🔴 OAuth callback error:', err);
-          console.error('🔴 Error details:', JSON.stringify(err));
-          // Show the actual error instead of redirecting to prevent loop
-          return res.status(500).send(`OAuth Error: ${err.message || JSON.stringify(err)}`);
+        if (!tokenResponse.ok) {
+          console.error(`🔴 Token exchange failed:`, await tokenResponse.text());
+          return res.status(500).send('OAuth Error: Token exchange failed');
         }
         
-        if (!user) {
-          console.error('🔴 OAuth failed - no user returned. Info:', info);
-          // Show the actual issue instead of redirecting to prevent loop  
-          return res.status(500).send(`OAuth Failed: No user returned. Info: ${JSON.stringify(info)}`);
+        const tokens = await tokenResponse.json();
+        console.log(`🟢 Token exchange successful`);
+        
+        // Get user info
+        const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+          headers: {
+            'Authorization': `Bearer ${tokens.access_token}`,
+          },
+        });
+        
+        if (!userResponse.ok) {
+          console.error(`🔴 User info fetch failed:`, await userResponse.text());
+          return res.status(500).send('OAuth Error: Failed to get user info');
         }
         
-        req.logIn(user, (loginErr: any) => {
+        const userInfo = await userResponse.json();
+        console.log(`🟢 User info retrieved:`, { id: userInfo.id, email: userInfo.email, name: userInfo.name });
+        
+        // Create user object for session
+        const user = {
+          claims: {
+            sub: userInfo.id,
+            email: userInfo.email,
+            given_name: userInfo.given_name,
+            family_name: userInfo.family_name,
+            name: userInfo.name,
+            picture: userInfo.picture,
+          },
+          access_token: tokens.access_token,
+        };
+        
+        // Clean up OAuth state from session
+        if (req.session) {
+          delete (req.session as any).oauthState;
+        }
+        
+        // Log the user in using passport
+        req.logIn(user, (loginErr) => {
           if (loginErr) {
             console.error('🔴 Login error after OAuth:', loginErr);
-            console.log('🟡 Falling back to mock authentication due to login error');
-            return res.redirect("/api/auth/google");
+            return res.status(500).send('OAuth Error: Login failed');
           }
           
-          console.log('🟢 OAuth success - redirecting to home');
+          console.log('🟢 Manual OAuth success - redirecting to home');
           res.redirect("/");
         });
-      })(req, res, next);
+        
+      } catch (error) {
+        console.error(`🔴 OAuth callback error:`, error);
+        res.status(500).send(`OAuth Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     });
 
     app.get("/api/auth/logout", (req, res) => {
