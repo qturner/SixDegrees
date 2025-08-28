@@ -77,6 +77,11 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Temporarily disable OAuth and use mock auth for production deployment
+  console.log("🟡 Temporarily using mock authentication for production deployment");
+  setupMockAuth(app);
+  return;
+  
   // Skip Google OAuth setup if credentials are not provided
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     console.log("⚠️  Google OAuth credentials not found - skipping Google authentication setup");
