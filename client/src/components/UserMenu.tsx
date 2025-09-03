@@ -183,7 +183,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
                   <div className="space-y-3">
                     {[1, 2, 3, 4, 5, 6].map((moves) => {
                       const count = userStats[`completionsAt${moves}Move${moves > 1 ? 's' : ''}` as keyof typeof userStats] as number || 0;
-                      const percentage = userStats.totalCompletions > 0 ? Math.round((count / userStats.totalCompletions) * 100) : 0;
+                      const percentage = (userStats.totalCompletions || 0) > 0 ? Math.round((count / (userStats.totalCompletions || 1)) * 100) : 0;
                       
                       return (
                         <div key={moves} className="flex items-center justify-between">

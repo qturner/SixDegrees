@@ -742,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user info
   app.get("/api/user/me", isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
+      const user = (req as any).user;
       if (!user || !user.claims) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -765,7 +765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user stats
   app.get("/api/user/stats", isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
+      const user = (req as any).user;
       const userId = user.claims.sub;
 
       const completions = await storage.getUserCompletions(userId);
@@ -796,7 +796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get incomplete challenges from past 5 days
   app.get("/api/user/incomplete-challenges", isAuthenticated, async (req, res) => {
     try {
-      const user = req.user as any;
+      const user = (req as any).user;
       const userId = user.claims.sub;
 
       // Get challenges from the past 5 days
@@ -1308,7 +1308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint for production troubleshooting
   app.get("/api/debug/auth-status", async (req, res) => {
     try {
-      const user = req.user as any;
+      const user = (req as any).user;
       const hasGoogleCredentials = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
       const repolyDomain = process.env.REPLIT_DOMAINS || 'not-set';
       
