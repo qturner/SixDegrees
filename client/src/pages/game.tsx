@@ -12,8 +12,9 @@ import GameAnalytics from "@/components/GameAnalytics";
 import TodaysChallenge from "@/components/TodaysChallenge";
 import { AboutModal } from "@/components/AboutModal";
 import { ContactModal } from "@/components/ContactModal";
-import { LoginModal } from "@/components/LoginModal";
+import { AuthModal } from "@/components/AuthModal";
 import { UserMenu } from "@/components/UserMenu";
+import { useAuth } from "@/hooks/useAuth";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 import { trackGameEvent, trackPageView } from "@/lib/analytics";
 
@@ -68,7 +69,8 @@ export default function Game() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { user, recordCompletion } = useAuth();
   const [gameStateInitialized, setGameStateInitialized] = useState(false);
 
   const { data: challenge, isLoading, error, refetch } = useQuery<DailyChallenge>({
@@ -142,8 +144,22 @@ export default function Game() {
     });
   };
 
-  const handleGameResult = (result: ValidationResult) => {
+  const handleGameResult = async (result: ValidationResult) => {
     setGameResult(result);
+    
+    // Record completion for logged-in users
+    if (user && result.completed && challenge && result.moves) {
+      try {
+        await recordCompletion({
+          challengeId: challenge.id,
+          moves: result.moves,
+          connections: JSON.stringify(connections)
+        });
+      } catch (error) {
+        console.error("Failed to record user completion:", error);
+        // Don't show error to user - completion tracking should be silent
+      }
+    }
   };
 
   const resetGame = (preserveFlip = false) => {
@@ -263,7 +279,7 @@ export default function Game() {
             variant="outline" 
             size="sm" 
             className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200 text-gray-600 hover:text-gray-800"
-            onClick={() => setIsLoginModalOpen(true)}
+            onClick={() => setIsAuthModalOpen(true)}
             data-testid="button-login"
           >
             <LogIn className="h-4 w-4" />
@@ -356,9 +372,9 @@ export default function Game() {
         onOpenChange={setIsContactModalOpen} 
       />
       
-      <LoginModal 
-        open={isLoginModalOpen} 
-        onOpenChange={setIsLoginModalOpen} 
+      <AuthModal 
+        open={isAuthModalOpen} 
+        onOpenChange={setIsAuthModalOpen} 
       />
     </div>
   );

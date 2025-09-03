@@ -1,4 +1,4 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type UpsertUser, type UserChallengeCompletion, type InsertUserChallengeCompletion, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userChallengeCompletions } from "@shared/schema";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db";
 import { eq, and, gt, desc, sql, count } from "drizzle-orm";
@@ -29,10 +29,16 @@ export interface IStorage {
     mostUsedActors: { id: string; name: string; count: number }[];
   }>;
   
-  // User methods (Google OAuth)
-  getUser(id: string): Promise<User | undefined>;
-  getUserByGoogleId(googleId: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  // User methods (email/password)
+  getUserById(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  
+  // User stats methods
+  getUserStats(userId: string): Promise<UserStats | undefined>;
+  createUserStats(stats: InsertUserStats): Promise<UserStats>;
+  updateUserStats(userId: string, stats: Partial<UserStats>): Promise<UserStats>;
   
   // User Challenge Completion methods
   createUserChallengeCompletion(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion>;
@@ -492,38 +498,57 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  // User methods (Google OAuth)
-  async getUser(id: string): Promise<User | undefined> {
+  // User methods (email/password)
+  async getUserById(id: string): Promise<User | undefined> {
     return await withRetry(async () => {
       const [user] = await db.select().from(users).where(eq(users.id, id));
       return user || undefined;
     });
   }
 
-  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+  async getUserByEmail(email: string): Promise<User | undefined> {
     return await withRetry(async () => {
-      const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+      const [user] = await db.select().from(users).where(eq(users.email, email));
       return user || undefined;
     });
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async getUserByUsername(username: string): Promise<User | undefined> {
     return await withRetry(async () => {
-      const [user] = await db
-        .insert(users)
-        .values(userData)
-        .onConflictDoUpdate({
-          target: users.googleId,
-          set: {
-            email: userData.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            profileImageUrl: userData.profileImageUrl,
-            updatedAt: new Date(),
-          },
-        })
-        .returning();
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user || undefined;
+    });
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
+    return await withRetry(async () => {
+      const [user] = await db.insert(users).values(userData).returning();
       return user;
+    });
+  }
+
+  // User stats methods
+  async getUserStats(userId: string): Promise<UserStats | undefined> {
+    return await withRetry(async () => {
+      const [stats] = await db.select().from(userStats).where(eq(userStats.userId, userId));
+      return stats || undefined;
+    });
+  }
+
+  async createUserStats(statsData: InsertUserStats): Promise<UserStats> {
+    return await withRetry(async () => {
+      const [stats] = await db.insert(userStats).values(statsData).returning();
+      return stats;
+    });
+  }
+
+  async updateUserStats(userId: string, updates: Partial<UserStats>): Promise<UserStats> {
+    return await withRetry(async () => {
+      const [stats] = await db.update(userStats)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(userStats.userId, userId))
+        .returning();
+      return stats;
     });
   }
 

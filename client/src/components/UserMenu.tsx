@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,51 +11,47 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { User, BarChart3, Calendar, LogOut, History } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { User, BarChart3, LogOut, History, TrendingUp, Award } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { DailyChallenge } from "@shared/schema";
 
-interface UserData {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  profileImageUrl?: string;
-}
-
-interface UserStats {
-  totalChallenges: number;
-  completedChallenges: number;
-  averageMoves: number;
-  bestScore: number | null;
-  moveDistribution: { moves: number; count: number }[];
-}
-
 interface UserMenuProps {
-  user: UserData;
+  onPlayChallenge?: (challenge: DailyChallenge) => void;
 }
 
-export function UserMenu({ user }: UserMenuProps) {
+export function UserMenu({ onPlayChallenge }: UserMenuProps) {
   const [showStats, setShowStats] = useState(false);
   const [showIncomplete, setShowIncomplete] = useState(false);
+  const { 
+    user, 
+    userStats, 
+    recentChallenges, 
+    moveDistribution, 
+    logoutMutation, 
+    isStatsLoading 
+  } = useAuth();
 
-  // Query for user's historical stats
-  const { data: userStats } = useQuery<UserStats>({
-    queryKey: ["/api/user/stats"],
-    enabled: showStats,
-  });
-
-  // Query for incomplete challenges from past 5 days
-  const { data: incompleteChallenges } = useQuery<DailyChallenge[]>({
-    queryKey: ["/api/user/incomplete-challenges"],
-    enabled: showIncomplete,
-  });
+  if (!user) return null;
 
   const handleLogout = () => {
-    window.location.href = "/api/auth/logout";
+    logoutMutation.mutate();
   };
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    }
+    return username.slice(0, 2).toUpperCase();
+  };
+
+  const displayName = user.firstName || user.username;
+  const fullName = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username;
+
+  const calculateAverageScore = () => {
+    if (!userStats || !userStats.totalCompletions || !userStats.totalMoves) return 0;
+    return Math.round((userStats.totalMoves / userStats.totalCompletions) * 10) / 10;
   };
 
   return (
@@ -70,18 +65,17 @@ export function UserMenu({ user }: UserMenuProps) {
             data-testid="button-user-menu"
           >
             <Avatar className="w-5 h-5">
-              <AvatarImage src={user.profileImageUrl} alt={user.firstName} />
               <AvatarFallback className="text-xs">
-                {getInitials(user.firstName, user.lastName)}
+                {getInitials(user.firstName, user.lastName, user.username)}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden sm:inline">{user.firstName}</span>
+            <span className="hidden sm:inline">{displayName}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
           <DropdownMenuLabel>
             <div className="flex flex-col">
-              <span className="font-medium">{user.firstName} {user.lastName}</span>
+              <span className="font-medium">{fullName}</span>
               <span className="text-xs text-muted-foreground">{user.email}</span>
             </div>
           </DropdownMenuLabel>
@@ -99,16 +93,17 @@ export function UserMenu({ user }: UserMenuProps) {
               data-testid="menu-incomplete-challenges"
             >
               <History className="mr-2 h-4 w-4" />
-              Incomplete Challenges
+              Recent Challenges
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem 
             onClick={handleLogout}
+            disabled={logoutMutation.isPending}
             data-testid="menu-logout"
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Sign out
+            {logoutMutation.isPending ? "Signing out..." : "Sign out"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -122,65 +117,160 @@ export function UserMenu({ user }: UserMenuProps) {
               My Game Statistics
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            {userStats ? (
+          
+          {isStatsLoading ? (
+            <div className="py-8 text-center text-muted-foreground">
+              Loading stats...
+            </div>
+          ) : userStats ? (
+            <div className="grid gap-6 py-4">
+              {/* Overall Stats Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{userStats.totalChallenges}</div>
-                  <div className="text-sm text-gray-600">Challenges Played</div>
-                </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{userStats.completedChallenges}</div>
-                  <div className="text-sm text-gray-600">Completed</div>
-                </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{userStats.averageMoves}</div>
-                  <div className="text-sm text-gray-600">Avg Moves</div>
-                </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">{userStats.bestScore || 'N/A'}</div>
-                  <div className="text-sm text-gray-600">Best Score</div>
-                </div>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {userStats.totalCompletions || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Completed
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {calculateAverageScore()}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Avg Moves
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {userStats.completionsAt1Move || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Perfect Games
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {userStats.totalMoves || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Total Moves
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                Loading your statistics...
-              </div>
-            )}
-          </div>
+
+              {/* Move Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <TrendingUp className="h-4 w-4" />
+                    Completion Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5, 6].map((moves) => {
+                      const count = userStats[`completionsAt${moves}Move${moves > 1 ? 's' : ''}` as keyof typeof userStats] as number || 0;
+                      const percentage = userStats.totalCompletions > 0 ? Math.round((count / userStats.totalCompletions) * 100) : 0;
+                      
+                      return (
+                        <div key={moves} className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{moves} move{moves > 1 ? 's' : ''}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="w-24 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <span className="text-sm text-muted-foreground min-w-[40px] text-right">
+                              {count} ({percentage}%)
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-muted-foreground">
+              No stats available yet. Complete some challenges to see your progress!
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Incomplete Challenges Modal */}
+      {/* Recent Challenges Modal */}
       <Dialog open={showIncomplete} onOpenChange={setShowIncomplete}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Incomplete Challenges (Last 5 Days)
+              Recent Challenges
             </DialogTitle>
           </DialogHeader>
+          
           <div className="py-4">
-            {incompleteChallenges && incompleteChallenges.length > 0 ? (
+            {recentChallenges && recentChallenges.length > 0 ? (
               <div className="space-y-3">
-                {incompleteChallenges.map((challenge) => (
-                  <div key={challenge.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <div>
-                      <div className="font-medium">{challenge.startActorName} → {challenge.endActorName}</div>
-                      <div className="text-sm text-gray-600">{new Date(challenge.date).toLocaleDateString()}</div>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      Resume
-                    </Button>
-                  </div>
+                {recentChallenges.map((item, index) => (
+                  <Card key={index} className="relative">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium">
+                            {item.challenge.startActorName} → {item.challenge.endActorName}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {item.challenge.date}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          {item.completed ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800">
+                              <Award className="h-3 w-3 mr-1" />
+                              {item.moves} moves
+                            </Badge>
+                          ) : (
+                            <>
+                              <Badge variant="outline" className="text-orange-600">
+                                Not completed
+                              </Badge>
+                              {onPlayChallenge && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => onPlayChallenge(item.challenge)}
+                                  data-testid={`button-play-challenge-${index}`}
+                                >
+                                  Play Now
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                {incompleteChallenges === null 
-                  ? "Loading incomplete challenges..." 
-                  : "No incomplete challenges from the past 5 days"
-                }
+              <div className="py-8 text-center text-muted-foreground">
+                No recent challenges found. Keep playing to see your history!
               </div>
             )}
           </div>

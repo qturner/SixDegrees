@@ -180,14 +180,14 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Users table for Google OAuth authentication
+// Users table for email/password authentication
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  googleId: varchar("google_id").unique().notNull(),
   email: varchar("email").unique().notNull(),
+  username: varchar("username").unique().notNull(),
+  password: varchar("password").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -205,9 +205,36 @@ export const userChallengeCompletions = pgTable("user_challenge_completions", {
   index("idx_challenge_completions").on(table.challengeId),
 ]);
 
+// User stats tracking table
+export const userStats = pgTable("user_stats", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  totalCompletions: integer("total_completions").default(0),
+  totalMoves: integer("total_moves").default(0),
+  completionsAt1Move: integer("completions_at_1_move").default(0),
+  completionsAt2Moves: integer("completions_at_2_moves").default(0),
+  completionsAt3Moves: integer("completions_at_3_moves").default(0),
+  completionsAt4Moves: integer("completions_at_4_moves").default(0),
+  completionsAt5Moves: integer("completions_at_5_moves").default(0),
+  completionsAt6Moves: integer("completions_at_6_moves").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   completions: many(userChallengeCompletions),
+  stats: one(userStats, {
+    fields: [users.id],
+    references: [userStats.userId],
+  }),
+}));
+
+export const userStatsRelations = relations(userStats, ({ one }) => ({
+  user: one(users, {
+    fields: [userStats.userId],
+    references: [users.id],
+  }),
 }));
 
 export const userChallengeCompletionsRelations = relations(userChallengeCompletions, ({ one }) => ({
@@ -227,7 +254,9 @@ export const dailyChallengesRelations = relations(dailyChallenges, ({ many }) =>
 
 // Type definitions
 export type User = typeof users.$inferSelect;
-export type UpsertUser = typeof users.$inferInsert;
+export type InsertUser = typeof users.$inferInsert;
+export type UserStats = typeof userStats.$inferSelect;
+export type InsertUserStats = typeof userStats.$inferInsert;
 export type UserChallengeCompletion = typeof userChallengeCompletions.$inferSelect;
 export type InsertUserChallengeCompletion = typeof userChallengeCompletions.$inferInsert;
 
@@ -236,4 +265,30 @@ export const insertUserChallengeCompletionSchema = createInsertSchema(userChalle
   completedAt: true,
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const registerSchema = insertUserSchema.extend({
+  username: z.string().min(3).max(50),
+  password: z.string().min(8),
+});
+
+export const insertUserStatsSchema = createInsertSchema(userStats).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUserChallengeCompletionType = z.infer<typeof insertUserChallengeCompletionSchema>;
+export type InsertUserType = z.infer<typeof insertUserSchema>;
+export type LoginType = z.infer<typeof loginSchema>;
+export type RegisterType = z.infer<typeof registerSchema>;
+export type InsertUserStatsType = z.infer<typeof insertUserStatsSchema>;

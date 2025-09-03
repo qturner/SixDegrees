@@ -6,7 +6,7 @@ import { gameLogicService } from "./services/gameLogic";
 import { withRetry } from "./db";
 import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema } from "@shared/schema";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
-import { setupAuth, isAuthenticated } from "./googleAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { emailService } from "./services/email";
 import { registerTestEmailRoutes } from "./routes/testEmail";
 import cron from "node-cron";
@@ -43,8 +43,8 @@ let challengeCreationPromise: Promise<any> | null = null;
 let lastChallengeDate: string | null = null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup Google OAuth authentication
-  await setupAuth(app);
+  // Setup email/password authentication
+  setupAuth(app);
 
   // Test email service on startup
   setTimeout(async () => {
@@ -1397,6 +1397,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "OAuth callback test failed",
         message: error instanceof Error ? error.message : "Unknown error"
       });
+    }
+  });
+
+  // User challenge completion routes
+  app.post("/api/user-challenge-completion", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const parseResult = insertUserChallengeCompletionSchema.safeParse(req.body);
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request format",
+          errors: parseResult.error.errors 
+        });
+      }
+
+      // Check if user already completed this challenge
+      const existingCompletion = await storage.getUserChallengeCompletion(userId, parseResult.data.challengeId);
+      if (existingCompletion) {
+        return res.status(400).json({ message: "Challenge already completed" });
+      }
+
+      // Record the completion
+      const completion = await storage.createUserChallengeCompletion({
+        ...parseResult.data,
+        userId
+      });
+
+      // Update user stats
+      const currentStats = await storage.getUserStats(userId);
+      if (currentStats) {
+        const moves = parseResult.data.moves;
+        const statUpdates: Partial<typeof currentStats> = {
+          totalCompletions: (currentStats.totalCompletions || 0) + 1,
+          totalMoves: (currentStats.totalMoves || 0) + moves,
+        };
+
+        // Update move count stats
+        if (moves === 1) statUpdates.completionsAt1Move = (currentStats.completionsAt1Move || 0) + 1;
+        else if (moves === 2) statUpdates.completionsAt2Moves = (currentStats.completionsAt2Moves || 0) + 1;
+        else if (moves === 3) statUpdates.completionsAt3Moves = (currentStats.completionsAt3Moves || 0) + 1;
+        else if (moves === 4) statUpdates.completionsAt4Moves = (currentStats.completionsAt4Moves || 0) + 1;
+        else if (moves === 5) statUpdates.completionsAt5Moves = (currentStats.completionsAt5Moves || 0) + 1;
+        else if (moves === 6) statUpdates.completionsAt6Moves = (currentStats.completionsAt6Moves || 0) + 1;
+
+        await storage.updateUserStats(userId, statUpdates);
+      }
+
+      res.status(201).json(completion);
+    } catch (error) {
+      console.error("Error creating user challenge completion:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get user's recent challenges (last 5)
+  app.get("/api/user/recent-challenges", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const recentChallenges = await storage.getRecentChallengesForUser(userId, 5);
+      res.json(recentChallenges);
+    } catch (error) {
+      console.error("Error getting recent challenges:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get user's move distribution stats
+  app.get("/api/user/move-distribution", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const moveDistribution = await storage.getUserMoveDistribution(userId);
+      res.json(moveDistribution);
+    } catch (error) {
+      console.error("Error getting user move distribution:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
