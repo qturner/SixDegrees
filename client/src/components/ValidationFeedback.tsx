@@ -1,14 +1,15 @@
-import { CheckCircle, XCircle, Trophy, Share } from "lucide-react";
+import { CheckCircle, XCircle, Trophy, Share, Film } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { ValidationResult } from "@shared/schema";
+import { ValidationResult, Connection } from "@shared/schema";
 
 interface ValidationFeedbackProps {
   validationResults: ValidationResult[];
   gameResult: ValidationResult | null;
+  connections?: Connection[];
 }
 
-export default function ValidationFeedback({ validationResults, gameResult }: ValidationFeedbackProps) {
+export default function ValidationFeedback({ validationResults, gameResult, connections = [] }: ValidationFeedbackProps) {
   const hasResults = validationResults.length > 0 || gameResult;
 
   if (!hasResults) {
@@ -24,7 +25,7 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
       const shareData = {
         title: "6 Degrees of Separation Challenge",
         text: text,
-        url: window.location.origin, // Just the domain without path
+        url: window.location.origin,
       };
 
       try {
@@ -33,7 +34,6 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
         } else if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(text);
         } else {
-          // Fallback: create a temporary textarea for copying
           const textArea = document.createElement('textarea');
           textArea.value = text;
           textArea.style.position = 'fixed';
@@ -45,7 +45,54 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
         }
       } catch (error) {
         console.error('Error sharing:', error);
-        // Final fallback to manual copy
+        try {
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-9999px';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        } catch (fallbackError) {
+          console.error('Fallback copy failed:', fallbackError);
+        }
+      }
+    }
+  };
+
+  const handleShareMovies = async () => {
+    if (gameResult?.completed && connections.length > 0) {
+      const movieTitles = connections
+        .filter(conn => conn.movieTitle)
+        .map(conn => conn.movieTitle);
+      
+      const movieList = movieTitles.map((title, index) => `${index + 1}. ${title}`).join('\n');
+      const text = `My winning path for today's 6 Degrees challenge:\n\n${movieList}\n\nCan you find a shorter path? Play at ${window.location.origin}`;
+      
+      const shareData = {
+        title: "My 6 Degrees Movie Path",
+        text: text,
+        url: window.location.origin,
+      };
+
+      try {
+        if (navigator.share) {
+          await navigator.share(shareData);
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-9999px';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+      } catch (error) {
+        console.error('Error sharing movies:', error);
         try {
           const textArea = document.createElement('textarea');
           textArea.value = text;
@@ -88,8 +135,8 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
                 </div>
               </div>
               
-              {/* Share button at bottom center */}
-              <div className="flex justify-center pt-1">
+              {/* Share buttons at bottom center */}
+              <div className="flex flex-col sm:flex-row justify-center gap-2 pt-1">
                 <Button
                   onClick={handleShare}
                   variant="outline"
@@ -98,6 +145,15 @@ export default function ValidationFeedback({ validationResults, gameResult }: Va
                 >
                   <Share className="w-4 h-4 mr-2" />
                   Share Victory
+                </Button>
+                <Button
+                  onClick={handleShareMovies}
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-500 text-black hover:bg-gray-100 hover:text-gray-800 btn-hover button-radius transition-all duration-200"
+                >
+                  <Film className="w-4 h-4 mr-2" />
+                  Share Movies
                 </Button>
               </div>
             </div>

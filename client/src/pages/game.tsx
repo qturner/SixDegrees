@@ -358,6 +358,7 @@ export default function Game() {
         <ValidationFeedback 
           validationResults={validationResults}
           gameResult={gameResult}
+          connections={connections}
         />
         
         {/* Show analytics after user validates their game */}
