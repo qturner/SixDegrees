@@ -339,3 +339,33 @@
 .text-muted-dark {
   @apply text-gray-700;
 }
+
+/* Blinking animation for Validate button */
+@keyframes blink-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px #ffff00, 0 0 10px #ffff00, 0 0 15px #ffff00;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 15px #ffff00, 0 0 25px #ffff00, 0 0 35px #ffff00;
+    opacity: 0.85;
+  }
+}
+
+.validate-button-blink {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+  font-weight: 600;
+  animation: blink-glow 1.2s ease-in-out infinite;
+}
+
+.validate-button-blink:hover {
+  background-color: #ffee00 !important;
+  animation: blink-glow 0.8s ease-in-out infinite;
+}
+
+.validate-button-blink:disabled {
+  background-color: #999966 !important;
+  animation: none;
+  opacity: 0.6;
+}

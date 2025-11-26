@@ -285,7 +285,7 @@ export default function GameGrid({
           <Button 
             onClick={handleValidateGame}
             disabled={validateGameMutation.isPending || connections.length === 0}
-            className="px-6 py-3 bg-game-primary text-game-background hover:bg-game-accent btn-hover button-radius transition-all duration-200"
+            className="px-6 py-3 validate-button-blink btn-hover button-radius transition-all duration-200"
           >
             <CheckCircle className="w-4 h-4 mr-2" />
             {validateGameMutation.isPending ? "Validating..." : "Validate Connection"}
