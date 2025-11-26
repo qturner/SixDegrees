@@ -73,7 +73,6 @@ export default function ValidationFeedback({ validationResults, gameResult, conn
       const shareData = {
         title: "My 6 Degrees Movie Path",
         text: text,
-        url: window.location.origin,
       };
 
       try {
