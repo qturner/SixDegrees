@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Shield, LogIn } from "lucide-react";
@@ -50,6 +50,9 @@ const loadGameState = (currentChallengeDate?: string) => {
 };
 
 export default function Game() {
+  const queryClient = useQueryClient();
+  const previousChallengeIdRef = useRef<string | null>(null);
+
   // SEO optimization - update meta tags for game page and track page view
   useEffect(() => {
     document.title = "Play Today's Challenge - Six Degrees of Separation";
@@ -97,6 +100,34 @@ export default function Game() {
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  // Clear cached analytics data when daily challenge changes
+  useEffect(() => {
+    if (challenge?.id) {
+      // Check both in-memory ref and localStorage for previous challenge ID
+      const previousIdFromRef = previousChallengeIdRef.current;
+      const previousIdFromStorage = localStorage.getItem('lastChallengeId');
+      const previousId = previousIdFromRef || previousIdFromStorage;
+      
+      // If we have a previous ID and it's different from the current one, clear caches
+      if (previousId && previousId !== challenge.id) {
+        console.log('Daily challenge changed - clearing analytics cache');
+        
+        // Invalidate all analytics queries to force fresh data
+        queryClient.invalidateQueries({ queryKey: ['/api/analytics'] });
+        
+        // Also clear any search-related caches to ensure fresh actor/movie data
+        queryClient.invalidateQueries({ queryKey: ['/api/search'] });
+        
+        // Reset game state for new challenge
+        setGameStateInitialized(false);
+      }
+      
+      // Update the ref and localStorage with current challenge ID
+      previousChallengeIdRef.current = challenge.id;
+      localStorage.setItem('lastChallengeId', challenge.id);
+    }
+  }, [challenge?.id, queryClient]);
 
   // Initialize or reset game state when challenge loads
   useEffect(() => {
