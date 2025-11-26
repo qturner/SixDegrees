@@ -723,15 +723,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics endpoint for anonymous game statistics
   app.get("/api/analytics", async (req, res) => {
     try {
-      // Get today's challenge to use its ID for analytics
-      const today = getESTDateString();
-      const challenge = await storage.getDailyChallenge(today);
+      // Use provided challengeId or fall back to today's challenge
+      let challengeId = req.query.challengeId as string;
       
-      if (!challenge) {
-        return res.status(404).json({ message: "No challenge found for today" });
+      if (!challengeId) {
+        const today = getESTDateString();
+        const challenge = await storage.getDailyChallenge(today);
+        
+        if (!challenge) {
+          return res.status(404).json({ message: "No challenge found for today" });
+        }
+        challengeId = challenge.id;
       }
 
-      const stats = await storage.getChallengeAnalytics(challenge.id);
+      const stats = await storage.getChallengeAnalytics(challengeId);
       res.json(stats);
     } catch (error) {
       console.error("Error getting analytics:", error);
