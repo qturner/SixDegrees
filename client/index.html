@@ -49,36 +49,82 @@
     <meta name="geo.region" content="US" />
     <meta name="geo.placename" content="United States" />
     
-    <!-- Structured Data -->
+    <!-- Structured Data - WebSite -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Game",
+      "@type": "WebSite",
       "name": "Six Degrees of Separation",
-      "description": "Connect any two actors through movies in 6 moves or less. Daily challenges featuring Hollywood stars with hints and analytics.",
+      "alternateName": "Six Degrees Game",
       "url": "https://sixdegrees.app/",
-      "genre": "Trivia Game",
-      "gamePlatform": "Web Browser",
-      "applicationCategory": "Game",
-      "operatingSystem": "Any",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "author": {
-        "@type": "Organization",
-        "name": "Six Degrees Game"
-      },
-      "gameItem": {
-        "@type": "Thing",
-        "name": "Daily Movie Challenge"
+      "description": "Connect any two actors through movies in 6 moves or less. Daily challenges featuring Hollywood stars.",
+      "inLanguage": "en-US",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://sixdegrees.app/?search={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
       }
     }
     </script>
+    
+    <!-- Structured Data - Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Prologue LLC",
+      "alternateName": "Six Degrees Game",
+      "url": "https://sixdegrees.app/",
+      "logo": "https://sixdegrees.app/og-image.jpg",
+      "description": "Creator of Six Degrees of Separation, the daily movie actor connection game."
+    }
+    </script>
+    
+    <!-- Structured Data - Game -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Six Degrees of Separation",
+      "description": "Connect any two actors through movies in 6 moves or less. Daily challenges featuring Hollywood stars with hints and analytics.",
+      "url": "https://sixdegrees.app/",
+      "image": "https://sixdegrees.app/og-image.jpg",
+      "genre": ["Trivia", "Puzzle", "Word Game"],
+      "gamePlatform": ["Web Browser", "Mobile Web"],
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Any",
+      "inLanguage": "en-US",
+      "playMode": "SinglePlayer",
+      "numberOfPlayers": {
+        "@type": "QuantitativeValue",
+        "minValue": 1,
+        "maxValue": 1
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Prologue LLC"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Prologue LLC"
+      },
+      "datePublished": "2024-01-01",
+      "keywords": "movie trivia, actor game, Hollywood, daily challenge, six degrees of separation, Kevin Bacon"
+    }
+    </script>
+    <!-- Optimized font loading - only load Inter which is used in the app -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Sitemap and additional meta links -->
     <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
