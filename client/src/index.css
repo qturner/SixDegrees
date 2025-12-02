@@ -121,13 +121,34 @@
   --game-accent: hsl(0 0% 80%);         /* Brighter Silver for dark mode */
 }
 
+/* Film reel pattern SVG encoded as data URI */
+.film-reel-bg {
+  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.03'%3E%3Crect x='10' y='10' width='100' height='100' rx='8'/%3E%3Ccircle cx='25' cy='25' r='6'/%3E%3Ccircle cx='95' cy='25' r='6'/%3E%3Ccircle cx='25' cy='95' r='6'/%3E%3Ccircle cx='95' cy='95' r='6'/%3E%3Crect x='35' y='30' width='50' height='60' rx='2'/%3E%3Ccircle cx='60' cy='60' r='15'/%3E%3Ccircle cx='60' cy='60' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 120px 120px;
+}
+
+/* Film grain/noise texture overlay */
+.film-grain::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
 @layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply font-sans antialiased text-foreground;
+    @apply font-sans antialiased text-foreground film-reel-bg film-grain;
     background-color: var(--game-background);
     color: var(--game-text);
     line-height: 1.6;
@@ -165,17 +186,28 @@
   .spacing-lg { @apply p-6; }
   .spacing-xl { @apply p-8; }
   
-  /* Consistent shadow system */
+  /* Enhanced shadow system with more depth */
   .shadow-card { 
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    box-shadow: 
+      0 2px 4px 0 rgb(0 0 0 / 0.25),
+      0 4px 8px -2px rgb(0 0 0 / 0.2),
+      0 0 0 1px rgb(255 255 255 / 0.05) inset;
   }
   
   .shadow-card-hover {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    box-shadow: 
+      0 4px 8px 0 rgb(0 0 0 / 0.3),
+      0 8px 16px -4px rgb(0 0 0 / 0.25),
+      0 0 0 1px rgb(255 255 255 / 0.08) inset,
+      0 0 20px -5px rgb(184 134 11 / 0.15);
   }
   
   .shadow-card-focus {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    box-shadow: 
+      0 8px 16px 0 rgb(0 0 0 / 0.35),
+      0 16px 32px -8px rgb(0 0 0 / 0.3),
+      0 0 0 1px rgb(255 255 255 / 0.1) inset,
+      0 0 30px -5px rgb(184 134 11 / 0.2);
   }
 }
 
