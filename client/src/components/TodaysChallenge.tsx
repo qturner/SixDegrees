@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ArrowRight, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -33,6 +34,11 @@ interface TodaysChallengeProps {
   gameResult?: GameResult | null;
 }
 
+interface ZoomedActor {
+  name: string;
+  profilePath: string;
+}
+
 export default function TodaysChallenge({ 
   challenge, 
   currentMoves, 
@@ -41,6 +47,17 @@ export default function TodaysChallenge({
   canFlip = false,
   gameResult 
 }: TodaysChallengeProps) {
+  const [zoomedActor, setZoomedActor] = useState<ZoomedActor | null>(null);
+
+  const handleImagePress = (name: string, profilePath: string | null | undefined) => {
+    if (profilePath) {
+      setZoomedActor({ name, profilePath });
+    }
+  };
+
+  const handleImageRelease = () => {
+    setZoomedActor(null);
+  };
   // Handle flipped display of actors
   const displayChallenge = isFlipped 
     ? {
@@ -82,7 +99,13 @@ export default function TodaysChallenge({
                 <img
                   src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
                   alt={displayChallenge.startActorName}
-                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200"
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 cursor-pointer select-none"
+                  onMouseDown={() => handleImagePress(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
+                  onMouseUp={handleImageRelease}
+                  onMouseLeave={handleImageRelease}
+                  onTouchStart={() => handleImagePress(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
+                  onTouchEnd={handleImageRelease}
+                  draggable={false}
                 />
               ) : (
                 <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0">
@@ -103,7 +126,13 @@ export default function TodaysChallenge({
                 <img
                   src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
                   alt={displayChallenge.endActorName}
-                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200"
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 cursor-pointer select-none"
+                  onMouseDown={() => handleImagePress(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
+                  onMouseUp={handleImageRelease}
+                  onMouseLeave={handleImageRelease}
+                  onTouchStart={() => handleImagePress(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
+                  onTouchEnd={handleImageRelease}
+                  draggable={false}
                 />
               ) : (
                 <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0">
@@ -140,6 +169,25 @@ export default function TodaysChallenge({
           )}
         </div>
       </div>
+
+      {/* Zoom Modal Overlay */}
+      {zoomedActor && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onMouseUp={handleImageRelease}
+          onTouchEnd={handleImageRelease}
+        >
+          <div className="flex flex-col items-center">
+            <img
+              src={`https://image.tmdb.org/t/p/w342${zoomedActor.profilePath}`}
+              alt={zoomedActor.name}
+              className="w-64 h-64 sm:w-80 sm:h-80 rounded-full object-cover border-4 border-white shadow-2xl"
+              draggable={false}
+            />
+            <p className="mt-4 text-white text-xl font-semibold">{zoomedActor.name}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
