@@ -59,58 +59,56 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                     <stop offset="50%" stopColor="#DAA520"/>
                     <stop offset="100%" stopColor="#B8860B"/>
                   </linearGradient>
-                  <linearGradient id="reel3d" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient id="filmStrip3d" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#3a3a3a"/>
-                    <stop offset="30%" stopColor="#2a2a2a"/>
-                    <stop offset="70%" stopColor="#1a1a1a"/>
+                    <stop offset="50%" stopColor="#1a1a1a"/>
                     <stop offset="100%" stopColor="#0a0a0a"/>
                   </linearGradient>
-                  <radialGradient id="reelHighlight" cx="30%" cy="30%" r="70%">
-                    <stop offset="0%" stopColor="#4a4a4a"/>
-                    <stop offset="50%" stopColor="#2a2a2a"/>
-                    <stop offset="100%" stopColor="#0a0a0a"/>
+                  <radialGradient id="reelBody" cx="35%" cy="35%" r="65%">
+                    <stop offset="0%" stopColor="#454545"/>
+                    <stop offset="40%" stopColor="#2d2d2d"/>
+                    <stop offset="100%" stopColor="#1a1a1a"/>
                   </radialGradient>
                   <filter id="reelShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="2" dy="2" stdDeviation="1" floodOpacity="0.4"/>
+                    <feDropShadow dx="1.5" dy="1.5" stdDeviation="1.5" floodOpacity="0.5"/>
                   </filter>
                 </defs>
                 
                 {/* Film strip trailing from reel */}
                 <path 
-                  d="M28 28 Q35 32 42 38 Q48 42 54 44" 
+                  d="M30 30 Q38 34 46 40 Q52 44 56 46" 
                   fill="none" 
-                  stroke="url(#reel3d)" 
-                  strokeWidth="8"
+                  stroke="url(#filmStrip3d)" 
+                  strokeWidth="7"
                   strokeLinecap="round"
                 />
                 {/* Sprocket holes on trailing film */}
-                <circle cx="36" cy="32" r="1" fill="#F5F5DC"/>
-                <circle cx="42" cy="37" r="1" fill="#F5F5DC"/>
-                <circle cx="48" cy="41" r="1" fill="#F5F5DC"/>
+                <circle cx="38" cy="34" r="0.8" fill="#F5F5DC"/>
+                <circle cx="45" cy="39" r="0.8" fill="#F5F5DC"/>
+                <circle cx="51" cy="43" r="0.8" fill="#F5F5DC"/>
                 
-                {/* Reel shadow/depth layer */}
-                <circle cx="21" cy="23" r="20" fill="#0a0a0a" opacity="0.5"/>
+                {/* Reel shadow for depth */}
+                <ellipse cx="22" cy="25" r="20" ry="20" fill="#000" opacity="0.3"/>
                 
-                {/* Main reel body with 3D gradient */}
-                <circle cx="20" cy="22" r="20" fill="url(#reelHighlight)" filter="url(#reelShadow)"/>
+                {/* Main reel body */}
+                <circle cx="20" cy="22" r="20" fill="url(#reelBody)" filter="url(#reelShadow)"/>
                 
-                {/* Rim highlight for 3D effect */}
-                <circle cx="20" cy="22" r="19" fill="none" stroke="#4a4a4a" strokeWidth="1" opacity="0.6"/>
-                <circle cx="20" cy="22" r="20" fill="none" stroke="#1a1a1a" strokeWidth="0.5"/>
+                {/* Subtle rim highlight */}
+                <circle cx="20" cy="22" r="19.5" fill="none" stroke="#555" strokeWidth="0.5" opacity="0.5"/>
                 
-                {/* 6 oval cutouts arranged in hexagon pattern */}
-                <ellipse cx="20" cy="8" rx="3.5" ry="3" fill="#F5F5DC"/>
-                <ellipse cx="30" cy="13" rx="3.5" ry="3" fill="#F5F5DC"/>
-                <ellipse cx="30" cy="27" rx="3.5" ry="3" fill="#F5F5DC"/>
-                <ellipse cx="20" cy="32" rx="3.5" ry="3" fill="#F5F5DC"/>
-                <ellipse cx="10" cy="27" rx="3.5" ry="3" fill="#F5F5DC"/>
-                <ellipse cx="10" cy="13" rx="3.5" ry="3" fill="#F5F5DC"/>
+                {/* 6 circles precisely centered around hub - radius 11 from center (20,22) */}
+                <circle cx="20" cy="10" r="3.5" fill="#F5F5DC"/>
+                <circle cx="29.5" cy="14.5" r="3.5" fill="#F5F5DC"/>
+                <circle cx="29.5" cy="29.5" r="3.5" fill="#F5F5DC"/>
+                <circle cx="20" cy="34" r="3.5" fill="#F5F5DC"/>
+                <circle cx="10.5" cy="29.5" r="3.5" fill="#F5F5DC"/>
+                <circle cx="10.5" cy="14.5" r="3.5" fill="#F5F5DC"/>
                 
-                {/* Center hub with gold accent and 3D effect */}
-                <circle cx="20" cy="22" r="6" fill="#2a2a2a"/>
-                <circle cx="20" cy="22" r="5" fill="url(#goldGrad)" stroke="#8B6914" strokeWidth="0.5"/>
-                <circle cx="19" cy="21" r="2" fill="#FFE55C" opacity="0.4"/>
-                <circle cx="20" cy="22" r="2" fill="#1a1a1a"/>
+                {/* Center hub - gold with professional 3D look */}
+                <circle cx="20" cy="22" r="5.5" fill="#222"/>
+                <circle cx="20" cy="22" r="4.5" fill="url(#goldGrad)"/>
+                <circle cx="18.5" cy="20.5" r="1.5" fill="#FFF5CC" opacity="0.35"/>
+                <circle cx="20" cy="22" r="1.8" fill="#1a1a1a"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
