@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Shield, RefreshCw, LogOut, Users, Calendar, Search, UserPlus, BarChart3 } from "lucide-react";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
@@ -72,20 +73,13 @@ function useAdminAuth() {
 }
 
 export default function AdminPanel() {
-  // SEO optimization for admin page and track admin access
+  usePageMeta({
+    title: "Admin Dashboard",
+    description: "Admin dashboard for Six Degrees of Separation game. Manage daily challenges, view analytics, and monitor contact submissions.",
+    noIndex: true,
+  });
+
   useEffect(() => {
-    document.title = "Admin Dashboard - Six Degrees of Separation";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute('content', 
-        'Admin dashboard for Six Degrees of Separation game. Manage daily challenges, view analytics, and monitor contact submissions.'
-      );
-    }
-    // Prevent admin page from being indexed
-    const robotsMeta = document.querySelector('meta[name="robots"]');
-    if (robotsMeta) {
-      robotsMeta.setAttribute('content', 'noindex, nofollow');
-    }
     trackPageView('/admin');
     trackEvent('admin_access', 'admin', 'dashboard');
   }, []);

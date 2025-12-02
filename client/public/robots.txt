@@ -1,10 +1,18 @@
 User-agent: *
 Allow: /
-Allow: /game
+
+# Block admin and API routes from indexing
 Disallow: /admin
 Disallow: /admin-login
+Disallow: /api/
+Disallow: /api/*
 
+# Sitemap location
 Sitemap: https://sixdegrees.app/sitemap.xml
 
-# Additional SEO directives
+# Crawl rate limit
 Crawl-delay: 1
+
+# Block common bot paths
+Disallow: /*.json$
+Disallow: /*?*utm_

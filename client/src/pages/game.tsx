@@ -15,6 +15,7 @@ import { ContactModal } from "@/components/ContactModal";
 import { AuthModal } from "@/components/AuthModal";
 import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 import { trackGameEvent, trackPageView } from "@/lib/analytics";
 
@@ -53,15 +54,13 @@ export default function Game() {
   const queryClient = useQueryClient();
   const previousChallengeIdRef = useRef<string | null>(null);
 
-  // SEO optimization - update meta tags for game page and track page view
+  usePageMeta({
+    title: "Play Today's Challenge",
+    description: "Play today's Six Degrees of Separation challenge! Connect two Hollywood actors through movies in 6 moves or less. New daily challenges with hints and analytics.",
+    canonical: "https://sixdegrees.app/",
+  });
+
   useEffect(() => {
-    document.title = "Play Today's Challenge - Six Degrees of Separation";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute('content', 
-        'Play today\'s Six Degrees of Separation challenge! Connect two Hollywood actors through movies in 6 moves or less. New daily challenges with hints and analytics.'
-      );
-    }
     trackPageView('/');
   }, []);
 

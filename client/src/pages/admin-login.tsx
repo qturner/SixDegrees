@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { apiRequest } from "@/lib/queryClient";
 import { Lock, Mail } from "lucide-react";
 import { trackPageView, trackEvent } from "@/lib/analytics";
@@ -16,7 +17,12 @@ export default function AdminLogin() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // Track admin login page visit
+  usePageMeta({
+    title: "Admin Login",
+    description: "Six Degrees of Separation admin panel login",
+    noIndex: true,
+  });
+
   useEffect(() => {
     trackPageView('/admin-login');
     trackEvent('page_view', 'admin', 'login_page');
