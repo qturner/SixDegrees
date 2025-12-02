@@ -52,53 +52,41 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-3">
             <div className="flex items-center justify-center mb-2">
-              <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
+              <svg width="56" height="48" viewBox="0 0 56 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
-                  <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#E8E8E8"/>
-                    <stop offset="25%" stopColor="#C0C0C0"/>
-                    <stop offset="50%" stopColor="#A8A8A8"/>
-                    <stop offset="75%" stopColor="#D0D0D0"/>
-                    <stop offset="100%" stopColor="#909090"/>
-                  </linearGradient>
-                  <linearGradient id="goldCenter" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#FFD700"/>
                     <stop offset="50%" stopColor="#DAA520"/>
                     <stop offset="100%" stopColor="#B8860B"/>
                   </linearGradient>
                 </defs>
                 
-                {/* Outer rim of reel */}
-                <circle cx="24" cy="24" r="22" fill="url(#metalGradient)" stroke="#666" strokeWidth="1"/>
+                {/* Film strip trailing from reel */}
+                <path 
+                  d="M28 28 Q35 32 42 38 Q48 42 54 44" 
+                  fill="none" 
+                  stroke="#1a1a1a" 
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                />
+                {/* Sprocket holes on trailing film */}
+                <circle cx="36" cy="32" r="1" fill="#F5F5DC"/>
+                <circle cx="42" cy="37" r="1" fill="#F5F5DC"/>
+                <circle cx="48" cy="41" r="1" fill="#F5F5DC"/>
                 
-                {/* Film strip (dark ring with sprocket holes) */}
-                <circle cx="24" cy="24" r="19" fill="#1a1a1a" stroke="none"/>
-                <circle cx="24" cy="24" r="15" fill="url(#metalGradient)" stroke="none"/>
+                {/* Main reel body */}
+                <circle cx="20" cy="22" r="20" fill="#1a1a1a"/>
                 
-                {/* Sprocket holes on film strip */}
-                {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, i) => (
-                  <rect
-                    key={i}
-                    x="23"
-                    y="3.5"
-                    width="2"
-                    height="2.5"
-                    rx="0.3"
-                    fill="#F8F8FF"
-                    transform={`rotate(${angle} 24 24)`}
-                  />
-                ))}
+                {/* 5 oval cutouts arranged in pentagon pattern */}
+                <ellipse cx="20" cy="9" rx="4" ry="3.5" fill="#F5F5DC"/>
+                <ellipse cx="30" cy="16" rx="4" ry="3.5" fill="#F5F5DC"/>
+                <ellipse cx="27" cy="30" rx="4" ry="3.5" fill="#F5F5DC"/>
+                <ellipse cx="13" cy="30" rx="4" ry="3.5" fill="#F5F5DC"/>
+                <ellipse cx="10" cy="16" rx="4" ry="3.5" fill="#F5F5DC"/>
                 
-                {/* Large circular cutouts (5 holes like classic reel) */}
-                <circle cx="24" cy="11" r="3.5" fill="#0D0D0D"/>
-                <circle cx="36" cy="19" r="3.5" fill="#0D0D0D"/>
-                <circle cx="32" cy="33" r="3.5" fill="#0D0D0D"/>
-                <circle cx="16" cy="33" r="3.5" fill="#0D0D0D"/>
-                <circle cx="12" cy="19" r="3.5" fill="#0D0D0D"/>
-                
-                {/* Center hub */}
-                <circle cx="24" cy="24" r="5" fill="url(#goldCenter)" stroke="#8B6914" strokeWidth="1"/>
-                <circle cx="24" cy="24" r="2" fill="#1a1a1a"/>
+                {/* Center hub with gold accent */}
+                <circle cx="20" cy="22" r="5" fill="url(#goldGrad)" stroke="#8B6914" strokeWidth="1"/>
+                <circle cx="20" cy="22" r="2" fill="#1a1a1a"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
