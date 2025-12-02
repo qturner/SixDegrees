@@ -54,40 +54,61 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
             <div className="flex items-center justify-center mb-2">
               <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
-                  <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient id="reelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#C0C0C0"/>
+                    <stop offset="30%" stopColor="#E8E8E8"/>
+                    <stop offset="50%" stopColor="#A0A0A0"/>
+                    <stop offset="70%" stopColor="#D0D0D0"/>
+                    <stop offset="100%" stopColor="#808080"/>
+                  </linearGradient>
+                  <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#FFD700"/>
                     <stop offset="50%" stopColor="#DAA520"/>
                     <stop offset="100%" stopColor="#B8860B"/>
                   </linearGradient>
                 </defs>
                 
-                {/* Hexagonal network connections */}
-                <g stroke="url(#goldGradient)" strokeWidth="2.5" strokeLinecap="round" fill="none">
-                  <line x1="24" y1="6" x2="38" y2="14"/>
-                  <line x1="38" y1="14" x2="38" y2="30"/>
-                  <line x1="38" y1="30" x2="24" y2="38"/>
-                  <line x1="24" y1="38" x2="10" y2="30"/>
-                  <line x1="10" y1="30" x2="10" y2="14"/>
-                  <line x1="10" y1="14" x2="24" y2="6"/>
-                  {/* Internal connections to center */}
-                  <line x1="24" y1="6" x2="24" y2="22"/>
-                  <line x1="38" y1="14" x2="24" y2="22"/>
-                  <line x1="38" y1="30" x2="24" y2="22"/>
-                  <line x1="24" y1="38" x2="24" y2="22"/>
-                  <line x1="10" y1="30" x2="24" y2="22"/>
-                  <line x1="10" y1="14" x2="24" y2="22"/>
-                </g>
+                {/* Outer reel ring */}
+                <circle cx="24" cy="24" r="22" fill="url(#reelGradient)" stroke="#606060" strokeWidth="1"/>
                 
-                {/* Outer nodes */}
-                <circle cx="24" cy="6" r="4" fill="#FFFAF0" stroke="#DAA520" strokeWidth="2"/>
-                <circle cx="38" cy="14" r="4" fill="#FFFAF0" stroke="#DAA520" strokeWidth="2"/>
-                <circle cx="38" cy="30" r="4" fill="#FFFAF0" stroke="#DAA520" strokeWidth="2"/>
-                <circle cx="24" cy="38" r="4" fill="#FFFAF0" stroke="#DAA520" strokeWidth="2"/>
-                <circle cx="10" cy="30" r="4" fill="#FFFAF0" stroke="#DAA520" strokeWidth="2"/>
-                <circle cx="10" cy="14" r="4" fill="#FFFAF0" stroke="#DAA520" strokeWidth="2"/>
+                {/* Film strip ring (black) */}
+                <circle cx="24" cy="24" r="18" fill="#1a1a1a" stroke="#333" strokeWidth="0.5"/>
                 
-                {/* Center node */}
-                <circle cx="24" cy="22" r="5" fill="#FFD700" stroke="#B8860B" strokeWidth="2"/>
+                {/* Sprocket holes around the film */}
+                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                  <rect
+                    key={i}
+                    x="22"
+                    y="5"
+                    width="4"
+                    height="3"
+                    rx="0.5"
+                    fill="#F8F8FF"
+                    transform={`rotate(${angle} 24 24)`}
+                  />
+                ))}
+                
+                {/* Inner metallic ring */}
+                <circle cx="24" cy="24" r="12" fill="url(#reelGradient)" stroke="#707070" strokeWidth="0.5"/>
+                
+                {/* Reel spokes */}
+                {[0, 60, 120, 180, 240, 300].map((angle, i) => (
+                  <line
+                    key={i}
+                    x1="24"
+                    y1="24"
+                    x2="24"
+                    y2="13"
+                    stroke="#505050"
+                    strokeWidth="2"
+                    transform={`rotate(${angle} 24 24)`}
+                  />
+                ))}
+                
+                {/* Center hub */}
+                <circle cx="24" cy="24" r="6" fill="url(#goldAccent)" stroke="#8B6914" strokeWidth="1"/>
+                <circle cx="24" cy="24" r="3" fill="#1a1a1a"/>
+                <circle cx="24" cy="24" r="1.5" fill="url(#goldAccent)"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
