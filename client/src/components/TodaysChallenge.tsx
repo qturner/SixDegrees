@@ -101,10 +101,7 @@ export default function TodaysChallenge({
                   alt={displayChallenge.startActorName}
                   className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 cursor-pointer select-none"
                   onMouseDown={() => handleImagePress(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
-                  onMouseUp={handleImageRelease}
-                  onMouseLeave={handleImageRelease}
                   onTouchStart={() => handleImagePress(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
-                  onTouchEnd={handleImageRelease}
                   draggable={false}
                 />
               ) : (
@@ -128,10 +125,7 @@ export default function TodaysChallenge({
                   alt={displayChallenge.endActorName}
                   className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 cursor-pointer select-none"
                   onMouseDown={() => handleImagePress(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
-                  onMouseUp={handleImageRelease}
-                  onMouseLeave={handleImageRelease}
                   onTouchStart={() => handleImagePress(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
-                  onTouchEnd={handleImageRelease}
                   draggable={false}
                 />
               ) : (
