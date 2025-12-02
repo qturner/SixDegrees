@@ -49,13 +49,13 @@ export default function TodaysChallenge({
 }: TodaysChallengeProps) {
   const [zoomedActor, setZoomedActor] = useState<ZoomedActor | null>(null);
 
-  const handleImagePress = (name: string, profilePath: string | null | undefined) => {
+  const handleImageClick = (name: string, profilePath: string | null | undefined) => {
     if (profilePath) {
       setZoomedActor({ name, profilePath });
     }
   };
 
-  const handleImageRelease = () => {
+  const handleCloseModal = () => {
     setZoomedActor(null);
   };
   // Handle flipped display of actors
@@ -100,9 +100,7 @@ export default function TodaysChallenge({
                   src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
                   alt={displayChallenge.startActorName}
                   className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 cursor-pointer select-none"
-                  onMouseDown={() => handleImagePress(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
-                  onTouchStart={() => handleImagePress(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
-                  draggable={false}
+                  onClick={() => handleImageClick(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
                 />
               ) : (
                 <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0">
@@ -124,9 +122,7 @@ export default function TodaysChallenge({
                   src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
                   alt={displayChallenge.endActorName}
                   className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white flex-shrink-0 transition-all duration-200 cursor-pointer select-none"
-                  onMouseDown={() => handleImagePress(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
-                  onTouchStart={() => handleImagePress(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
-                  draggable={false}
+                  onClick={() => handleImageClick(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
                 />
               ) : (
                 <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white/20 flex items-center justify-center border-2 border-white flex-shrink-0">
@@ -167,16 +163,14 @@ export default function TodaysChallenge({
       {/* Zoom Modal Overlay */}
       {zoomedActor && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-          onMouseUp={handleImageRelease}
-          onTouchEnd={handleImageRelease}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 cursor-pointer"
+          onClick={handleCloseModal}
         >
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
             <img
               src={`https://image.tmdb.org/t/p/w342${zoomedActor.profilePath}`}
               alt={zoomedActor.name}
               className="w-64 h-64 sm:w-80 sm:h-80 rounded-full object-cover border-4 border-white shadow-2xl"
-              draggable={false}
             />
             <p className="mt-4 text-white text-xl font-semibold">{zoomedActor.name}</p>
           </div>
