@@ -54,61 +54,51 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
             <div className="flex items-center justify-center mb-2">
               <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
-                  <linearGradient id="reelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#C0C0C0"/>
-                    <stop offset="30%" stopColor="#E8E8E8"/>
-                    <stop offset="50%" stopColor="#A0A0A0"/>
-                    <stop offset="70%" stopColor="#D0D0D0"/>
-                    <stop offset="100%" stopColor="#808080"/>
+                  <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#E8E8E8"/>
+                    <stop offset="25%" stopColor="#C0C0C0"/>
+                    <stop offset="50%" stopColor="#A8A8A8"/>
+                    <stop offset="75%" stopColor="#D0D0D0"/>
+                    <stop offset="100%" stopColor="#909090"/>
                   </linearGradient>
-                  <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient id="goldCenter" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#FFD700"/>
                     <stop offset="50%" stopColor="#DAA520"/>
                     <stop offset="100%" stopColor="#B8860B"/>
                   </linearGradient>
                 </defs>
                 
-                {/* Outer reel ring */}
-                <circle cx="24" cy="24" r="22" fill="url(#reelGradient)" stroke="#606060" strokeWidth="1"/>
+                {/* Outer rim of reel */}
+                <circle cx="24" cy="24" r="22" fill="url(#metalGradient)" stroke="#666" strokeWidth="1"/>
                 
-                {/* Film strip ring (black) */}
-                <circle cx="24" cy="24" r="18" fill="#1a1a1a" stroke="#333" strokeWidth="0.5"/>
+                {/* Film strip (dark ring with sprocket holes) */}
+                <circle cx="24" cy="24" r="19" fill="#1a1a1a" stroke="none"/>
+                <circle cx="24" cy="24" r="15" fill="url(#metalGradient)" stroke="none"/>
                 
-                {/* Sprocket holes around the film */}
-                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                {/* Sprocket holes on film strip */}
+                {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, i) => (
                   <rect
                     key={i}
-                    x="22"
-                    y="5"
-                    width="4"
-                    height="3"
-                    rx="0.5"
+                    x="23"
+                    y="3.5"
+                    width="2"
+                    height="2.5"
+                    rx="0.3"
                     fill="#F8F8FF"
                     transform={`rotate(${angle} 24 24)`}
                   />
                 ))}
                 
-                {/* Inner metallic ring */}
-                <circle cx="24" cy="24" r="12" fill="url(#reelGradient)" stroke="#707070" strokeWidth="0.5"/>
-                
-                {/* Reel spokes */}
-                {[0, 60, 120, 180, 240, 300].map((angle, i) => (
-                  <line
-                    key={i}
-                    x1="24"
-                    y1="24"
-                    x2="24"
-                    y2="13"
-                    stroke="#505050"
-                    strokeWidth="2"
-                    transform={`rotate(${angle} 24 24)`}
-                  />
-                ))}
+                {/* Large circular cutouts (5 holes like classic reel) */}
+                <circle cx="24" cy="11" r="3.5" fill="#0D0D0D"/>
+                <circle cx="36" cy="19" r="3.5" fill="#0D0D0D"/>
+                <circle cx="32" cy="33" r="3.5" fill="#0D0D0D"/>
+                <circle cx="16" cy="33" r="3.5" fill="#0D0D0D"/>
+                <circle cx="12" cy="19" r="3.5" fill="#0D0D0D"/>
                 
                 {/* Center hub */}
-                <circle cx="24" cy="24" r="6" fill="url(#goldAccent)" stroke="#8B6914" strokeWidth="1"/>
-                <circle cx="24" cy="24" r="3" fill="#1a1a1a"/>
-                <circle cx="24" cy="24" r="1.5" fill="url(#goldAccent)"/>
+                <circle cx="24" cy="24" r="5" fill="url(#goldCenter)" stroke="#8B6914" strokeWidth="1"/>
+                <circle cx="24" cy="24" r="2" fill="#1a1a1a"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
