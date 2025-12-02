@@ -59,13 +59,27 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                     <stop offset="50%" stopColor="#DAA520"/>
                     <stop offset="100%" stopColor="#B8860B"/>
                   </linearGradient>
+                  <linearGradient id="reel3d" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3a3a3a"/>
+                    <stop offset="30%" stopColor="#2a2a2a"/>
+                    <stop offset="70%" stopColor="#1a1a1a"/>
+                    <stop offset="100%" stopColor="#0a0a0a"/>
+                  </linearGradient>
+                  <radialGradient id="reelHighlight" cx="30%" cy="30%" r="70%">
+                    <stop offset="0%" stopColor="#4a4a4a"/>
+                    <stop offset="50%" stopColor="#2a2a2a"/>
+                    <stop offset="100%" stopColor="#0a0a0a"/>
+                  </radialGradient>
+                  <filter id="reelShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="2" dy="2" stdDeviation="1" floodOpacity="0.4"/>
+                  </filter>
                 </defs>
                 
                 {/* Film strip trailing from reel */}
                 <path 
                   d="M28 28 Q35 32 42 38 Q48 42 54 44" 
                   fill="none" 
-                  stroke="#1a1a1a" 
+                  stroke="url(#reel3d)" 
                   strokeWidth="8"
                   strokeLinecap="round"
                 />
@@ -74,18 +88,28 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                 <circle cx="42" cy="37" r="1" fill="#F5F5DC"/>
                 <circle cx="48" cy="41" r="1" fill="#F5F5DC"/>
                 
-                {/* Main reel body */}
-                <circle cx="20" cy="22" r="20" fill="#1a1a1a"/>
+                {/* Reel shadow/depth layer */}
+                <circle cx="21" cy="23" r="20" fill="#0a0a0a" opacity="0.5"/>
                 
-                {/* 5 oval cutouts arranged in pentagon pattern */}
-                <ellipse cx="20" cy="9" rx="4" ry="3.5" fill="#F5F5DC"/>
-                <ellipse cx="30" cy="16" rx="4" ry="3.5" fill="#F5F5DC"/>
-                <ellipse cx="27" cy="30" rx="4" ry="3.5" fill="#F5F5DC"/>
-                <ellipse cx="13" cy="30" rx="4" ry="3.5" fill="#F5F5DC"/>
-                <ellipse cx="10" cy="16" rx="4" ry="3.5" fill="#F5F5DC"/>
+                {/* Main reel body with 3D gradient */}
+                <circle cx="20" cy="22" r="20" fill="url(#reelHighlight)" filter="url(#reelShadow)"/>
                 
-                {/* Center hub with gold accent */}
-                <circle cx="20" cy="22" r="5" fill="url(#goldGrad)" stroke="#8B6914" strokeWidth="1"/>
+                {/* Rim highlight for 3D effect */}
+                <circle cx="20" cy="22" r="19" fill="none" stroke="#4a4a4a" strokeWidth="1" opacity="0.6"/>
+                <circle cx="20" cy="22" r="20" fill="none" stroke="#1a1a1a" strokeWidth="0.5"/>
+                
+                {/* 6 oval cutouts arranged in hexagon pattern */}
+                <ellipse cx="20" cy="8" rx="3.5" ry="3" fill="#F5F5DC"/>
+                <ellipse cx="30" cy="13" rx="3.5" ry="3" fill="#F5F5DC"/>
+                <ellipse cx="30" cy="27" rx="3.5" ry="3" fill="#F5F5DC"/>
+                <ellipse cx="20" cy="32" rx="3.5" ry="3" fill="#F5F5DC"/>
+                <ellipse cx="10" cy="27" rx="3.5" ry="3" fill="#F5F5DC"/>
+                <ellipse cx="10" cy="13" rx="3.5" ry="3" fill="#F5F5DC"/>
+                
+                {/* Center hub with gold accent and 3D effect */}
+                <circle cx="20" cy="22" r="6" fill="#2a2a2a"/>
+                <circle cx="20" cy="22" r="5" fill="url(#goldGrad)" stroke="#8B6914" strokeWidth="0.5"/>
+                <circle cx="19" cy="21" r="2" fill="#FFE55C" opacity="0.4"/>
                 <circle cx="20" cy="22" r="2" fill="#1a1a1a"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
