@@ -54,26 +54,26 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
             <div className="flex items-center justify-center mb-2">
               <svg width="56" height="44" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
-                  {/* 3D reel gradients - black to gray for depth */}
+                  {/* 3D reel gradients - higher contrast black to light gray */}
                   <linearGradient id="reelFace" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#4a4a4a"/>
-                    <stop offset="30%" stopColor="#2a2a2a"/>
-                    <stop offset="70%" stopColor="#1a1a1a"/>
+                    <stop offset="0%" stopColor="#808080"/>
+                    <stop offset="25%" stopColor="#505050"/>
+                    <stop offset="75%" stopColor="#252525"/>
                     <stop offset="100%" stopColor="#0a0a0a"/>
                   </linearGradient>
                   <linearGradient id="reelEdge" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#1a1a1a"/>
-                    <stop offset="50%" stopColor="#3a3a3a"/>
+                    <stop offset="50%" stopColor="#606060"/>
                     <stop offset="100%" stopColor="#1a1a1a"/>
                   </linearGradient>
                   <linearGradient id="filmStrip" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#2a2a2a"/>
+                    <stop offset="0%" stopColor="#404040"/>
                     <stop offset="50%" stopColor="#1a1a1a"/>
-                    <stop offset="100%" stopColor="#0a0a0a"/>
+                    <stop offset="100%" stopColor="#000000"/>
                   </linearGradient>
                   <linearGradient id="hubGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#5a5a5a"/>
-                    <stop offset="50%" stopColor="#3a3a3a"/>
+                    <stop offset="0%" stopColor="#909090"/>
+                    <stop offset="50%" stopColor="#505050"/>
                     <stop offset="100%" stopColor="#1a1a1a"/>
                   </linearGradient>
                   <filter id="reelShadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -108,38 +108,42 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                 {/* Main reel face */}
                 <circle cx="20" cy="22" r="18" fill="url(#reelFace)" filter="url(#reelShadow)"/>
                 
-                {/* Outer rim highlight */}
-                <circle cx="20" cy="22" r="17" fill="none" stroke="#4a4a4a" strokeWidth="1"/>
-                <circle cx="20" cy="22" r="16" fill="none" stroke="#2a2a2a" strokeWidth="0.5"/>
+                {/* Outer rim highlight - higher contrast */}
+                <circle cx="20" cy="22" r="17" fill="none" stroke="#a0a0a0" strokeWidth="1.5"/>
+                <circle cx="20" cy="22" r="15.5" fill="none" stroke="#404040" strokeWidth="0.5"/>
                 
-                {/* 5 large holes arranged in circle - with 3D depth */}
-                <circle cx="20" cy="10" r="4" fill="#0a0a0a"/>
-                <circle cx="20" cy="10" r="3.5" fill="#1a1a1a"/>
-                <ellipse cx="20" cy="10.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
+                {/* 6 large holes arranged in circle - with 3D depth (matches "Six Degrees") */}
+                {/* Top hole */}
+                <circle cx="20" cy="9" r="3.5" fill="#000000"/>
+                <ellipse cx="20" cy="9.5" rx="2.5" ry="2" fill="#d0d0d0" opacity="0.2"/>
                 
-                <circle cx="29.5" cy="16" r="4" fill="#0a0a0a"/>
-                <circle cx="29.5" cy="16" r="3.5" fill="#1a1a1a"/>
-                <ellipse cx="29.5" cy="16.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
+                {/* Top right hole */}
+                <circle cx="29" cy="14" r="3.5" fill="#000000"/>
+                <ellipse cx="29" cy="14.5" rx="2.5" ry="2" fill="#d0d0d0" opacity="0.2"/>
                 
-                <circle cx="26" cy="28" r="4" fill="#0a0a0a"/>
-                <circle cx="26" cy="28" r="3.5" fill="#1a1a1a"/>
-                <ellipse cx="26" cy="28.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
+                {/* Bottom right hole */}
+                <circle cx="29" cy="26" r="3.5" fill="#000000"/>
+                <ellipse cx="29" cy="26.5" rx="2.5" ry="2" fill="#d0d0d0" opacity="0.2"/>
                 
-                <circle cx="14" cy="28" r="4" fill="#0a0a0a"/>
-                <circle cx="14" cy="28" r="3.5" fill="#1a1a1a"/>
-                <ellipse cx="14" cy="28.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
+                {/* Bottom hole */}
+                <circle cx="20" cy="31" r="3.5" fill="#000000"/>
+                <ellipse cx="20" cy="31.5" rx="2.5" ry="2" fill="#d0d0d0" opacity="0.2"/>
                 
-                <circle cx="10.5" cy="16" r="4" fill="#0a0a0a"/>
-                <circle cx="10.5" cy="16" r="3.5" fill="#1a1a1a"/>
-                <ellipse cx="10.5" cy="16.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
+                {/* Bottom left hole */}
+                <circle cx="11" cy="26" r="3.5" fill="#000000"/>
+                <ellipse cx="11" cy="26.5" rx="2.5" ry="2" fill="#d0d0d0" opacity="0.2"/>
                 
-                {/* Center hub - 3D effect */}
-                <circle cx="20" cy="22" r="6" fill="#0a0a0a"/>
-                <circle cx="20" cy="22" r="5" fill="url(#hubGrad)"/>
-                <circle cx="20" cy="22" r="3" fill="#2a2a2a"/>
-                <circle cx="20" cy="22" r="2" fill="#0a0a0a"/>
+                {/* Top left hole */}
+                <circle cx="11" cy="14" r="3.5" fill="#000000"/>
+                <ellipse cx="11" cy="14.5" rx="2.5" ry="2" fill="#d0d0d0" opacity="0.2"/>
+                
+                {/* Center hub - 3D effect with higher contrast */}
+                <circle cx="20" cy="20" r="6" fill="#000000"/>
+                <circle cx="20" cy="20" r="5" fill="url(#hubGrad)"/>
+                <circle cx="20" cy="20" r="3" fill="#404040"/>
+                <circle cx="20" cy="20" r="2" fill="#000000"/>
                 {/* Hub highlight */}
-                <circle cx="18.5" cy="20.5" r="1.5" fill="#6a6a6a" opacity="0.4"/>
+                <circle cx="18.5" cy="18.5" r="1.5" fill="#c0c0c0" opacity="0.5"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
