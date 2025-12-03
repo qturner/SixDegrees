@@ -52,67 +52,56 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-3">
             <div className="flex items-center justify-center mb-2">
-              <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
+              <svg width="36" height="48" viewBox="0 0 36 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
                   <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#FFD700"/>
                     <stop offset="50%" stopColor="#DAA520"/>
                     <stop offset="100%" stopColor="#B8860B"/>
                   </linearGradient>
-                  <linearGradient id="spotlightBody" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3a3a3a"/>
-                    <stop offset="50%" stopColor="#2a2a2a"/>
-                    <stop offset="100%" stopColor="#1a1a1a"/>
-                  </linearGradient>
-                  <radialGradient id="lightBeam" cx="50%" cy="0%" r="100%">
-                    <stop offset="0%" stopColor="#FFFACD" stopOpacity="0.9"/>
-                    <stop offset="40%" stopColor="#FFD700" stopOpacity="0.4"/>
-                    <stop offset="100%" stopColor="#B8860B" stopOpacity="0"/>
-                  </radialGradient>
-                  <radialGradient id="lensGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#FFFEF0"/>
-                    <stop offset="60%" stopColor="#FFD700"/>
+                  <linearGradient id="goldShine" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#B8860B"/>
+                    <stop offset="30%" stopColor="#FFD700"/>
+                    <stop offset="50%" stopColor="#FFFACD"/>
+                    <stop offset="70%" stopColor="#FFD700"/>
                     <stop offset="100%" stopColor="#B8860B"/>
-                  </radialGradient>
-                  <filter id="spotlightShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="1" dy="1.5" stdDeviation="1.5" floodOpacity="0.4"/>
-                  </filter>
-                  <filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="2" result="blur"/>
-                    <feMerge>
-                      <feMergeNode in="blur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
+                  </linearGradient>
+                  <linearGradient id="baseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#DAA520"/>
+                    <stop offset="100%" stopColor="#8B6914"/>
+                  </linearGradient>
+                  <filter id="statuetteShadow" x="-20%" y="-10%" width="140%" height="120%">
+                    <feDropShadow dx="1" dy="1" stdDeviation="1" floodOpacity="0.3"/>
                   </filter>
                 </defs>
                 
-                {/* Light beam cone */}
-                <path 
-                  d="M24 18 L8 44 L40 44 Z" 
-                  fill="url(#lightBeam)" 
-                  opacity="0.7"
-                />
+                {/* Base/pedestal */}
+                <rect x="10" y="42" width="16" height="4" rx="1" fill="url(#baseGrad)" filter="url(#statuetteShadow)"/>
+                <rect x="12" y="38" width="12" height="5" rx="0.5" fill="url(#goldGrad)"/>
                 
-                {/* Spotlight housing */}
-                <ellipse cx="24" cy="14" rx="14" ry="10" fill="url(#spotlightBody)" filter="url(#spotlightShadow)"/>
+                {/* Legs */}
+                <path d="M15 38 L14 32 L16 32 L16.5 38 Z" fill="url(#goldShine)"/>
+                <path d="M21 38 L22 32 L20 32 L19.5 38 Z" fill="url(#goldShine)"/>
                 
-                {/* Housing rim highlight */}
-                <ellipse cx="24" cy="14" rx="13.5" ry="9.5" fill="none" stroke="#555" strokeWidth="0.5" opacity="0.5"/>
+                {/* Body/torso */}
+                <path d="M14 32 L13 22 Q13 20 15 19 L15 18 L21 18 L21 19 Q23 20 23 22 L22 32 Z" fill="url(#goldShine)" filter="url(#statuetteShadow)"/>
                 
-                {/* Lens ring */}
-                <circle cx="24" cy="16" r="8" fill="#333" filter="url(#spotlightShadow)"/>
-                <circle cx="24" cy="16" r="7" fill="url(#goldGrad)"/>
+                {/* Arms holding sword/reel */}
+                <ellipse cx="11" cy="22" rx="2.5" ry="1.5" fill="url(#goldGrad)" transform="rotate(-20, 11, 22)"/>
+                <ellipse cx="25" cy="22" rx="2.5" ry="1.5" fill="url(#goldGrad)" transform="rotate(20, 25, 22)"/>
                 
-                {/* Inner lens with glow */}
-                <circle cx="24" cy="16" r="5" fill="url(#lensGlow)" filter="url(#glowFilter)"/>
+                {/* Sword/crusader element held in front */}
+                <rect x="17" y="14" width="2" height="12" fill="url(#goldGrad)"/>
+                <rect x="14" y="16" width="8" height="2" rx="0.5" fill="url(#goldGrad)"/>
                 
-                {/* Lens reflection highlights */}
-                <circle cx="22" cy="14" r="1.5" fill="#FFFEF0" opacity="0.6"/>
-                <circle cx="26" cy="18" r="0.8" fill="#FFFEF0" opacity="0.4"/>
+                {/* Head */}
+                <circle cx="18" cy="10" r="5" fill="url(#goldShine)" filter="url(#statuetteShadow)"/>
                 
-                {/* Mount bracket */}
-                <rect x="22" y="4" width="4" height="4" rx="1" fill="#333"/>
-                <circle cx="24" cy="5" r="1.5" fill="url(#goldGrad)"/>
+                {/* Subtle face indication */}
+                <ellipse cx="18" cy="11" rx="3" ry="2" fill="url(#goldGrad)" opacity="0.3"/>
+                
+                {/* Highlight on head */}
+                <circle cx="16.5" cy="8.5" r="1.5" fill="#FFFACD" opacity="0.4"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
