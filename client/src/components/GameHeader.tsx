@@ -91,18 +91,6 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                   <rect x="38" y="7" width="5" height="6" fill="#F5F5DC"/>
                 </g>
                 
-                {/* Golden "6" prominently displayed */}
-                <text 
-                  x="26" 
-                  y="37" 
-                  fontFamily="Georgia, serif" 
-                  fontSize="16" 
-                  fontWeight="bold" 
-                  fill="url(#goldGrad)" 
-                  textAnchor="middle"
-                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
-                >6</text>
-                
                 {/* Pivot hinge */}
                 <circle cx="6" cy="14" r="3" fill="#333"/>
                 <circle cx="6" cy="14" r="2" fill="url(#goldGrad)"/>
