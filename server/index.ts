@@ -83,12 +83,31 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, () => {
+  }, async () => {
     log(`serving on port ${port}`);
     
     // Always setup daily challenge reset at midnight EST after server is running
     // The cron job will handle database connectivity issues internally
     setupDailyChallengeReset(port);
+    
+    // Cleanup orphaned active challenges on startup (keep only today's)
+    if (dbHealthy) {
+      try {
+        const today = getESTDateString();
+        const allActive = await storage.getAllChallengesByStatus('active');
+        const orphaned = allActive.filter(c => c.date !== today);
+        
+        if (orphaned.length > 0) {
+          log(`🧹 Found ${orphaned.length} orphaned active challenge(s) from missed resets, cleaning up...`);
+          for (const challenge of orphaned) {
+            await storage.deleteDailyChallenge(challenge.date);
+            log(`   Removed orphaned: ${challenge.startActorName} to ${challenge.endActorName} (${challenge.date})`);
+          }
+        }
+      } catch (cleanupError) {
+        log(`⚠️ Error during orphaned challenge cleanup: ${cleanupError}`);
+      }
+    }
     
     if (!dbHealthy) {
       log('⚠️ Database initially unhealthy, but cron job will retry connections as needed');

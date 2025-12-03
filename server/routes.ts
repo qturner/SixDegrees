@@ -375,6 +375,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // FALLBACK: If no challenge for today, check if there's a "next" challenge that should be promoted
+      // This handles the case when the midnight cron job didn't run (server was down)
+      if (!challenge) {
+        console.log(`No challenge found for ${today}, checking for pending 'next' challenge to promote...`);
+        
+        try {
+          const nextChallenge = await storage.getChallengeByStatus('next');
+          
+          if (nextChallenge) {
+            console.log(`Found pending 'next' challenge: ${nextChallenge.startActorName} to ${nextChallenge.endActorName} - promoting to active`);
+            
+            // Archive old active challenge(s) if any exist
+            const activeChallenge = await storage.getChallengeByStatus('active');
+            if (activeChallenge) {
+              await storage.deleteDailyChallenge(activeChallenge.date);
+              console.log(`Archived old active challenge: ${activeChallenge.startActorName} to ${activeChallenge.endActorName}`);
+            }
+            
+            // Delete the next challenge and recreate as active with today's date
+            await storage.deleteDailyChallenge(nextChallenge.date);
+            
+            challenge = await storage.createDailyChallenge({
+              date: today,
+              status: 'active',
+              startActorId: nextChallenge.startActorId,
+              startActorName: nextChallenge.startActorName,
+              startActorProfilePath: nextChallenge.startActorProfilePath,
+              endActorId: nextChallenge.endActorId,
+              endActorName: nextChallenge.endActorName,
+              endActorProfilePath: nextChallenge.endActorProfilePath,
+              hintsUsed: 0,
+            });
+            
+            console.log(`Successfully promoted 'next' to 'active': ${challenge.startActorName} to ${challenge.endActorName} for ${today}`);
+            
+            // Generate a new "next" challenge for tomorrow
+            const tomorrow = getTomorrowDateString();
+            try {
+              const excludeActorIds = [challenge.startActorId, challenge.endActorId];
+              const actors = await gameLogicService.generateDailyActors(excludeActorIds);
+              
+              if (actors) {
+                await storage.createDailyChallenge({
+                  date: tomorrow,
+                  status: "next",
+                  startActorId: actors.actor1.id,
+                  startActorName: actors.actor1.name,
+                  startActorProfilePath: actors.actor1.profile_path,
+                  endActorId: actors.actor2.id,
+                  endActorName: actors.actor2.name,
+                  endActorProfilePath: actors.actor2.profile_path,
+                  hintsUsed: 0,
+                });
+                console.log(`Generated new 'next' challenge for ${tomorrow}: ${actors.actor1.name} to ${actors.actor2.name}`);
+              }
+            } catch (nextGenError) {
+              console.error("Error generating next challenge:", nextGenError);
+              // Continue even if next challenge generation fails
+            }
+          }
+        } catch (promotionError) {
+          console.error("Error checking/promoting next challenge:", promotionError);
+          // Continue to fallback generation below
+        }
+      }
+
       if (!challenge) {
         console.log(`No challenge found for ${today}, generating new challenge...`);
         
