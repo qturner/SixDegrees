@@ -52,49 +52,67 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-3">
             <div className="flex items-center justify-center mb-2">
-              <svg width="52" height="44" viewBox="0 0 52 44" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
+              <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
                   <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#FFD700"/>
                     <stop offset="50%" stopColor="#DAA520"/>
                     <stop offset="100%" stopColor="#B8860B"/>
                   </linearGradient>
-                  <linearGradient id="clapperBody" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#2a2a2a"/>
+                  <linearGradient id="spotlightBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3a3a3a"/>
+                    <stop offset="50%" stopColor="#2a2a2a"/>
                     <stop offset="100%" stopColor="#1a1a1a"/>
                   </linearGradient>
-                  <linearGradient id="clapperTop" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#3a3a3a"/>
-                    <stop offset="100%" stopColor="#252525"/>
-                  </linearGradient>
-                  <filter id="clapperShadow" x="-10%" y="-10%" width="120%" height="120%">
-                    <feDropShadow dx="1" dy="1.5" stdDeviation="1" floodOpacity="0.4"/>
+                  <radialGradient id="lightBeam" cx="50%" cy="0%" r="100%">
+                    <stop offset="0%" stopColor="#FFFACD" stopOpacity="0.9"/>
+                    <stop offset="40%" stopColor="#FFD700" stopOpacity="0.4"/>
+                    <stop offset="100%" stopColor="#B8860B" stopOpacity="0"/>
+                  </radialGradient>
+                  <radialGradient id="lensGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#FFFEF0"/>
+                    <stop offset="60%" stopColor="#FFD700"/>
+                    <stop offset="100%" stopColor="#B8860B"/>
+                  </radialGradient>
+                  <filter id="spotlightShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="1" dy="1.5" stdDeviation="1.5" floodOpacity="0.4"/>
+                  </filter>
+                  <filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2" result="blur"/>
+                    <feMerge>
+                      <feMergeNode in="blur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
                   </filter>
                 </defs>
                 
-                {/* Clapperboard body */}
-                <rect x="4" y="14" width="44" height="28" rx="2" fill="url(#clapperBody)" filter="url(#clapperShadow)"/>
+                {/* Light beam cone */}
+                <path 
+                  d="M24 18 L8 44 L40 44 Z" 
+                  fill="url(#lightBeam)" 
+                  opacity="0.7"
+                />
                 
-                {/* White stripes on clapperboard */}
-                <rect x="6" y="16" width="40" height="3" fill="#F5F5DC" opacity="0.9"/>
-                <rect x="6" y="21" width="40" height="1.5" fill="#F5F5DC" opacity="0.6"/>
-                <rect x="6" y="24" width="40" height="1.5" fill="#F5F5DC" opacity="0.6"/>
+                {/* Spotlight housing */}
+                <ellipse cx="24" cy="14" rx="14" ry="10" fill="url(#spotlightBody)" filter="url(#spotlightShadow)"/>
                 
-                {/* Clapper stick (top part that moves) */}
-                <g transform="rotate(-12, 4, 14)">
-                  <rect x="4" y="6" width="44" height="8" rx="1" fill="url(#clapperTop)"/>
-                  {/* Diagonal stripes on clapper stick */}
-                  <rect x="6" y="7" width="5" height="6" fill="#F5F5DC"/>
-                  <rect x="14" y="7" width="5" height="6" fill="#F5F5DC"/>
-                  <rect x="22" y="7" width="5" height="6" fill="#F5F5DC"/>
-                  <rect x="30" y="7" width="5" height="6" fill="#F5F5DC"/>
-                  <rect x="38" y="7" width="5" height="6" fill="#F5F5DC"/>
-                </g>
+                {/* Housing rim highlight */}
+                <ellipse cx="24" cy="14" rx="13.5" ry="9.5" fill="none" stroke="#555" strokeWidth="0.5" opacity="0.5"/>
                 
-                {/* Pivot hinge */}
-                <circle cx="6" cy="14" r="3" fill="#333"/>
-                <circle cx="6" cy="14" r="2" fill="url(#goldGrad)"/>
-                <circle cx="5.5" cy="13.5" r="0.6" fill="#FFF5CC" opacity="0.4"/>
+                {/* Lens ring */}
+                <circle cx="24" cy="16" r="8" fill="#333" filter="url(#spotlightShadow)"/>
+                <circle cx="24" cy="16" r="7" fill="url(#goldGrad)"/>
+                
+                {/* Inner lens with glow */}
+                <circle cx="24" cy="16" r="5" fill="url(#lensGlow)" filter="url(#glowFilter)"/>
+                
+                {/* Lens reflection highlights */}
+                <circle cx="22" cy="14" r="1.5" fill="#FFFEF0" opacity="0.6"/>
+                <circle cx="26" cy="18" r="0.8" fill="#FFFEF0" opacity="0.4"/>
+                
+                {/* Mount bracket */}
+                <rect x="22" y="4" width="4" height="4" rx="1" fill="#333"/>
+                <circle cx="24" cy="5" r="1.5" fill="url(#goldGrad)"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
