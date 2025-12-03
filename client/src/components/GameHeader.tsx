@@ -52,56 +52,94 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-3">
             <div className="flex items-center justify-center mb-2">
-              <svg width="36" height="48" viewBox="0 0 36 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
+              <svg width="56" height="44" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
-                  <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#FFD700"/>
-                    <stop offset="50%" stopColor="#DAA520"/>
-                    <stop offset="100%" stopColor="#B8860B"/>
+                  {/* 3D reel gradients - black to gray for depth */}
+                  <linearGradient id="reelFace" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#4a4a4a"/>
+                    <stop offset="30%" stopColor="#2a2a2a"/>
+                    <stop offset="70%" stopColor="#1a1a1a"/>
+                    <stop offset="100%" stopColor="#0a0a0a"/>
                   </linearGradient>
-                  <linearGradient id="goldShine" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#B8860B"/>
-                    <stop offset="30%" stopColor="#FFD700"/>
-                    <stop offset="50%" stopColor="#FFFACD"/>
-                    <stop offset="70%" stopColor="#FFD700"/>
-                    <stop offset="100%" stopColor="#B8860B"/>
+                  <linearGradient id="reelEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#1a1a1a"/>
+                    <stop offset="50%" stopColor="#3a3a3a"/>
+                    <stop offset="100%" stopColor="#1a1a1a"/>
                   </linearGradient>
-                  <linearGradient id="baseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#DAA520"/>
-                    <stop offset="100%" stopColor="#8B6914"/>
+                  <linearGradient id="filmStrip" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#2a2a2a"/>
+                    <stop offset="50%" stopColor="#1a1a1a"/>
+                    <stop offset="100%" stopColor="#0a0a0a"/>
                   </linearGradient>
-                  <filter id="statuetteShadow" x="-20%" y="-10%" width="140%" height="120%">
-                    <feDropShadow dx="1" dy="1" stdDeviation="1" floodOpacity="0.3"/>
+                  <linearGradient id="hubGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#5a5a5a"/>
+                    <stop offset="50%" stopColor="#3a3a3a"/>
+                    <stop offset="100%" stopColor="#1a1a1a"/>
+                  </linearGradient>
+                  <filter id="reelShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="2" dy="2" stdDeviation="2" floodOpacity="0.5"/>
                   </filter>
                 </defs>
                 
-                {/* Base/pedestal */}
-                <rect x="10" y="42" width="16" height="4" rx="1" fill="url(#baseGrad)" filter="url(#statuetteShadow)"/>
-                <rect x="12" y="38" width="12" height="5" rx="0.5" fill="url(#goldGrad)"/>
+                {/* Film strip unrolling - curved 3D effect */}
+                <path 
+                  d="M32 22 Q40 24 46 30 Q52 36 56 42" 
+                  fill="none" 
+                  stroke="url(#filmStrip)" 
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                />
+                {/* Film strip highlight edge */}
+                <path 
+                  d="M32 20 Q40 22 46 28 Q52 34 56 40" 
+                  fill="none" 
+                  stroke="#3a3a3a" 
+                  strokeWidth="1"
+                  strokeLinecap="round"
+                />
+                {/* Sprocket holes on film strip */}
+                <circle cx="38" cy="25" r="1" fill="#c0c0c0"/>
+                <circle cx="44" cy="30" r="1" fill="#c0c0c0"/>
+                <circle cx="50" cy="36" r="1" fill="#c0c0c0"/>
                 
-                {/* Legs */}
-                <path d="M15 38 L14 32 L16 32 L16.5 38 Z" fill="url(#goldShine)"/>
-                <path d="M21 38 L22 32 L20 32 L19.5 38 Z" fill="url(#goldShine)"/>
+                {/* 3D reel edge (side thickness) */}
+                <ellipse cx="20" cy="24" rx="18" ry="4" fill="url(#reelEdge)"/>
                 
-                {/* Body/torso */}
-                <path d="M14 32 L13 22 Q13 20 15 19 L15 18 L21 18 L21 19 Q23 20 23 22 L22 32 Z" fill="url(#goldShine)" filter="url(#statuetteShadow)"/>
+                {/* Main reel face */}
+                <circle cx="20" cy="22" r="18" fill="url(#reelFace)" filter="url(#reelShadow)"/>
                 
-                {/* Arms holding sword/reel */}
-                <ellipse cx="11" cy="22" rx="2.5" ry="1.5" fill="url(#goldGrad)" transform="rotate(-20, 11, 22)"/>
-                <ellipse cx="25" cy="22" rx="2.5" ry="1.5" fill="url(#goldGrad)" transform="rotate(20, 25, 22)"/>
+                {/* Outer rim highlight */}
+                <circle cx="20" cy="22" r="17" fill="none" stroke="#4a4a4a" strokeWidth="1"/>
+                <circle cx="20" cy="22" r="16" fill="none" stroke="#2a2a2a" strokeWidth="0.5"/>
                 
-                {/* Sword/crusader element held in front */}
-                <rect x="17" y="14" width="2" height="12" fill="url(#goldGrad)"/>
-                <rect x="14" y="16" width="8" height="2" rx="0.5" fill="url(#goldGrad)"/>
+                {/* 5 large holes arranged in circle - with 3D depth */}
+                <circle cx="20" cy="10" r="4" fill="#0a0a0a"/>
+                <circle cx="20" cy="10" r="3.5" fill="#1a1a1a"/>
+                <ellipse cx="20" cy="10.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
                 
-                {/* Head */}
-                <circle cx="18" cy="10" r="5" fill="url(#goldShine)" filter="url(#statuetteShadow)"/>
+                <circle cx="29.5" cy="16" r="4" fill="#0a0a0a"/>
+                <circle cx="29.5" cy="16" r="3.5" fill="#1a1a1a"/>
+                <ellipse cx="29.5" cy="16.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
                 
-                {/* Subtle face indication */}
-                <ellipse cx="18" cy="11" rx="3" ry="2" fill="url(#goldGrad)" opacity="0.3"/>
+                <circle cx="26" cy="28" r="4" fill="#0a0a0a"/>
+                <circle cx="26" cy="28" r="3.5" fill="#1a1a1a"/>
+                <ellipse cx="26" cy="28.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
                 
-                {/* Highlight on head */}
-                <circle cx="16.5" cy="8.5" r="1.5" fill="#FFFACD" opacity="0.4"/>
+                <circle cx="14" cy="28" r="4" fill="#0a0a0a"/>
+                <circle cx="14" cy="28" r="3.5" fill="#1a1a1a"/>
+                <ellipse cx="14" cy="28.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
+                
+                <circle cx="10.5" cy="16" r="4" fill="#0a0a0a"/>
+                <circle cx="10.5" cy="16" r="3.5" fill="#1a1a1a"/>
+                <ellipse cx="10.5" cy="16.5" rx="3" ry="2.5" fill="#c0c0c0" opacity="0.15"/>
+                
+                {/* Center hub - 3D effect */}
+                <circle cx="20" cy="22" r="6" fill="#0a0a0a"/>
+                <circle cx="20" cy="22" r="5" fill="url(#hubGrad)"/>
+                <circle cx="20" cy="22" r="3" fill="#2a2a2a"/>
+                <circle cx="20" cy="22" r="2" fill="#0a0a0a"/>
+                {/* Hub highlight */}
+                <circle cx="18.5" cy="20.5" r="1.5" fill="#6a6a6a" opacity="0.4"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
