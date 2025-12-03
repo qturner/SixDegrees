@@ -52,63 +52,61 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-3">
             <div className="flex items-center justify-center mb-2">
-              <svg width="56" height="48" viewBox="0 0 56 48" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
+              <svg width="52" height="44" viewBox="0 0 52 44" xmlns="http://www.w3.org/2000/svg" className="mr-3" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
                   <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#FFD700"/>
                     <stop offset="50%" stopColor="#DAA520"/>
                     <stop offset="100%" stopColor="#B8860B"/>
                   </linearGradient>
-                  <linearGradient id="filmStrip3d" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3a3a3a"/>
-                    <stop offset="50%" stopColor="#1a1a1a"/>
-                    <stop offset="100%" stopColor="#0a0a0a"/>
-                  </linearGradient>
-                  <radialGradient id="reelBody" cx="35%" cy="35%" r="65%">
-                    <stop offset="0%" stopColor="#454545"/>
-                    <stop offset="40%" stopColor="#2d2d2d"/>
+                  <linearGradient id="clapperBody" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#2a2a2a"/>
                     <stop offset="100%" stopColor="#1a1a1a"/>
-                  </radialGradient>
-                  <filter id="reelShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="1.5" dy="1.5" stdDeviation="1.5" floodOpacity="0.5"/>
+                  </linearGradient>
+                  <linearGradient id="clapperTop" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#3a3a3a"/>
+                    <stop offset="100%" stopColor="#252525"/>
+                  </linearGradient>
+                  <filter id="clapperShadow" x="-10%" y="-10%" width="120%" height="120%">
+                    <feDropShadow dx="1" dy="1.5" stdDeviation="1" floodOpacity="0.4"/>
                   </filter>
                 </defs>
                 
-                {/* Film strip trailing from reel */}
-                <path 
-                  d="M30 30 Q38 34 46 40 Q52 44 56 46" 
-                  fill="none" 
-                  stroke="url(#filmStrip3d)" 
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                />
-                {/* Sprocket holes on trailing film */}
-                <circle cx="38" cy="34" r="0.8" fill="#F5F5DC"/>
-                <circle cx="45" cy="39" r="0.8" fill="#F5F5DC"/>
-                <circle cx="51" cy="43" r="0.8" fill="#F5F5DC"/>
+                {/* Clapperboard body */}
+                <rect x="4" y="14" width="44" height="28" rx="2" fill="url(#clapperBody)" filter="url(#clapperShadow)"/>
                 
-                {/* Reel shadow for depth */}
-                <ellipse cx="22" cy="25" r="20" ry="20" fill="#000" opacity="0.3"/>
+                {/* White stripes on clapperboard */}
+                <rect x="6" y="16" width="40" height="3" fill="#F5F5DC" opacity="0.9"/>
+                <rect x="6" y="21" width="40" height="1.5" fill="#F5F5DC" opacity="0.6"/>
+                <rect x="6" y="24" width="40" height="1.5" fill="#F5F5DC" opacity="0.6"/>
                 
-                {/* Main reel body */}
-                <circle cx="20" cy="22" r="20" fill="url(#reelBody)" filter="url(#reelShadow)"/>
+                {/* Clapper stick (top part that moves) */}
+                <g transform="rotate(-12, 4, 14)">
+                  <rect x="4" y="6" width="44" height="8" rx="1" fill="url(#clapperTop)"/>
+                  {/* Diagonal stripes on clapper stick */}
+                  <rect x="6" y="7" width="5" height="6" fill="#F5F5DC"/>
+                  <rect x="14" y="7" width="5" height="6" fill="#F5F5DC"/>
+                  <rect x="22" y="7" width="5" height="6" fill="#F5F5DC"/>
+                  <rect x="30" y="7" width="5" height="6" fill="#F5F5DC"/>
+                  <rect x="38" y="7" width="5" height="6" fill="#F5F5DC"/>
+                </g>
                 
-                {/* Subtle rim highlight */}
-                <circle cx="20" cy="22" r="19.5" fill="none" stroke="#555" strokeWidth="0.5" opacity="0.5"/>
+                {/* Golden "6" prominently displayed */}
+                <text 
+                  x="26" 
+                  y="37" 
+                  fontFamily="Georgia, serif" 
+                  fontSize="16" 
+                  fontWeight="bold" 
+                  fill="url(#goldGrad)" 
+                  textAnchor="middle"
+                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
+                >6</text>
                 
-                {/* 6 circles precisely centered around hub - radius 11 from center (20,22) */}
-                <circle cx="20" cy="10" r="3.5" fill="#F5F5DC"/>
-                <circle cx="29.5" cy="14.5" r="3.5" fill="#F5F5DC"/>
-                <circle cx="29.5" cy="29.5" r="3.5" fill="#F5F5DC"/>
-                <circle cx="20" cy="34" r="3.5" fill="#F5F5DC"/>
-                <circle cx="10.5" cy="29.5" r="3.5" fill="#F5F5DC"/>
-                <circle cx="10.5" cy="14.5" r="3.5" fill="#F5F5DC"/>
-                
-                {/* Center hub - gold with professional 3D look */}
-                <circle cx="20" cy="22" r="5.5" fill="#222"/>
-                <circle cx="20" cy="22" r="4.5" fill="url(#goldGrad)"/>
-                <circle cx="18.5" cy="20.5" r="1.5" fill="#FFF5CC" opacity="0.35"/>
-                <circle cx="20" cy="22" r="1.8" fill="#1a1a1a"/>
+                {/* Pivot hinge */}
+                <circle cx="6" cy="14" r="3" fill="#333"/>
+                <circle cx="6" cy="14" r="2" fill="url(#goldGrad)"/>
+                <circle cx="5.5" cy="13.5" r="0.6" fill="#FFF5CC" opacity="0.4"/>
               </svg>
               <h1 className="text-heading-lg text-game-primary whitespace-nowrap">Six Degrees of Separation</h1>
             </div>
