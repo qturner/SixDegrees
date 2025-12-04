@@ -1,4 +1,4 @@
-import { Calendar, ArrowRight, ArrowLeftRight } from "lucide-react";
+import { Calendar, ArrowRight, ArrowLeftRight, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DailyChallenge, ValidationResult } from "@shared/schema";
 
@@ -44,6 +44,13 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
     if (status === "Complete") return "text-game-success";
     if (status === "Game Over") return "text-game-error";
     return "text-game-warning";
+  };
+
+  const scrollToHowToPlay = () => {
+    const element = document.getElementById('how-to-play');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
@@ -149,10 +156,18 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
             </div>
           </div>
           <p className="text-game-accent text-body-lg">Connect two actors through movies in 6 moves or less</p>
+          <Button
+            onClick={scrollToHowToPlay}
+            variant="ghost"
+            size="sm"
+            className="mt-2 text-game-accent hover:text-game-primary hover:bg-game-background/50 btn-hover button-radius transition-all duration-200"
+            data-testid="button-how-to-play"
+          >
+            <HelpCircle className="w-4 h-4 mr-1" />
+            How to Play
+          </Button>
         </div>
       </div>
-
-
     </header>
   );
 }

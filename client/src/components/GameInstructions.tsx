@@ -2,7 +2,7 @@ import { HelpCircle, Circle, Trophy } from "lucide-react";
 
 export default function GameInstructions() {
   return (
-    <div className="bg-game-surface border border-game-accent card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-lg mb-8">
+    <div id="how-to-play" className="bg-game-surface border border-game-accent card-radius shadow-card hover:shadow-card-hover transition-all duration-300 spacing-lg mb-8">
       <h3 className="text-heading-md text-game-primary mb-4 text-center">
         <HelpCircle className="inline-block w-5 h-5 mr-2" />
         How to Play
