@@ -240,9 +240,9 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
               variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
-              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-white ${
+              className={`flex-1 text-body-sm button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-white ${
                 startActorHint ? 'bg-game-primary text-white' : 'text-game-primary'
-              }`}
+              } ${startActorHint && activeHintType === 'start' ? 'btn-active-3d' : startActorHint ? 'btn-inactive-3d' : 'btn-hover'}`}
               size="sm"
             >
               {loadingHintType === 'start' ? (
@@ -257,9 +257,9 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               onClick={() => handleHintClick('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
               variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
-              className={`flex-1 text-body-sm btn-hover button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-white ${
+              className={`flex-1 text-body-sm button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-white ${
                 endActorHint ? 'bg-game-primary text-white' : 'text-game-primary'
-              }`}
+              } ${endActorHint && activeHintType === 'end' ? 'btn-active-3d' : endActorHint ? 'btn-inactive-3d' : 'btn-hover'}`}
               size="sm"
             >
               {loadingHintType === 'end' ? (
