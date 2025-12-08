@@ -303,7 +303,7 @@ export default function Game() {
         {currentUser ? (
           <UserMenu />
         ) : (
-          <Link href="/admin/login">
+          <Link href="/admin-login">
             <Button 
               variant="outline" 
               size="sm" 
