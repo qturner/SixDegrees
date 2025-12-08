@@ -1107,13 +1107,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin challenge reset
+  // Admin challenge reset - promotes next to active and generates new next
   app.delete("/api/admin/reset-challenge", requireAdminAuth, async (req, res) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getESTDateString();
+      const tomorrow = getTomorrowDateString();
+      
+      // Delete today's active challenge
       await storage.deleteDailyChallenge(today);
       console.log(`Admin reset challenge for ${today}`);
-      res.json({ message: "Daily challenge reset successfully" });
+      
+      // Check if there's a "next" challenge that will be promoted
+      const nextChallenge = await storage.getChallengeByStatus('next');
+      
+      if (nextChallenge) {
+        // The GET endpoint will promote this to active
+        // But we need to generate a NEW next challenge so we don't have duplicates
+        console.log(`Next challenge (${nextChallenge.startActorName} to ${nextChallenge.endActorName}) will be promoted to active`);
+        
+        // Generate a brand new next challenge with different actors
+        const excludeActorIds = [nextChallenge.startActorId, nextChallenge.endActorId];
+        const actors = await gameLogicService.generateDailyActors(excludeActorIds);
+        
+        if (actors) {
+          // Delete the old next challenge date entry if it exists for tomorrow
+          const existingTomorrow = await storage.getDailyChallenge(tomorrow);
+          if (existingTomorrow) {
+            await storage.deleteDailyChallenge(tomorrow);
+          }
+          
+          // Create new next challenge for tomorrow
+          const newNextChallenge = await storage.createDailyChallenge({
+            date: tomorrow,
+            status: "next",
+            startActorId: actors.actor1.id,
+            startActorName: actors.actor1.name,
+            startActorProfilePath: actors.actor1.profile_path,
+            endActorId: actors.actor2.id,
+            endActorName: actors.actor2.name,
+            endActorProfilePath: actors.actor2.profile_path,
+            hintsUsed: 0,
+          });
+          
+          console.log(`Generated new next challenge: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
+        }
+      }
+      
+      res.json({ message: "Daily challenge reset successfully, new next challenge generated" });
     } catch (error) {
       console.error("Admin challenge reset error:", error);
       res.status(500).json({ message: "Internal server error" });
