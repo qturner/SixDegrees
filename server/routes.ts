@@ -1031,28 +1031,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Schedule daily challenge generation at midnight
-  cron.schedule('0 0 * * *', async () => {
-    try {
-      console.log('Generating new daily challenge...');
-      const actors = await gameLogicService.generateDailyActors();
-      if (actors) {
-        const today = getESTDateString();
-        await storage.createDailyChallenge({
-          date: today,
-          startActorId: actors.actor1.id,
-          startActorName: actors.actor1.name,
-          startActorProfilePath: actors.actor1.profile_path,
-          endActorId: actors.actor2.id,
-          endActorName: actors.actor2.name,
-          endActorProfilePath: actors.actor2.profile_path,
-        });
-        console.log('Daily challenge generated successfully');
-      }
-    } catch (error) {
-      console.error('Error generating daily challenge:', error);
-    }
-  });
+  // NOTE: Daily challenge reset is handled in server/index.ts with proper EST/EDT timezone
+  // The cron job there promotes "next" to "active" and generates new "next" at midnight Eastern
 
   // Admin authentication middleware
   const requireAdminAuth = async (req: any, res: any, next: any) => {
