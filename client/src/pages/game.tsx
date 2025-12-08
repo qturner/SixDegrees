@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Shield, LogIn } from "lucide-react";
+import { Shield } from "lucide-react";
 import GameHeader from "@/components/GameHeader";
 import GameGrid from "@/components/GameGrid";
 import GameInstructions from "@/components/GameInstructions";
@@ -12,7 +12,6 @@ import GameAnalytics from "@/components/GameAnalytics";
 import TodaysChallenge from "@/components/TodaysChallenge";
 import { AboutModal } from "@/components/AboutModal";
 import { ContactModal } from "@/components/ContactModal";
-import { AuthModal } from "@/components/AuthModal";
 import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -71,7 +70,6 @@ export default function Game() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { user, recordCompletion } = useAuth();
   const [gameStateInitialized, setGameStateInitialized] = useState(false);
 
@@ -300,21 +298,22 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-game-background text-game-text font-sans">
-      {/* Login/User Menu - Bottom right */}
+      {/* Admin Login - Bottom right */}
       <div className="fixed bottom-4 right-4 z-50">
         {currentUser ? (
           <UserMenu />
         ) : (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200 text-gray-600 hover:text-gray-800"
-            onClick={() => setIsAuthModalOpen(true)}
-            data-testid="button-login"
-          >
-            <LogIn className="h-4 w-4" />
-            Login
-          </Button>
+          <Link href="/admin/login">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200 text-gray-600 hover:text-gray-800"
+              data-testid="button-admin"
+            >
+              <Shield className="h-4 w-4" />
+              Admin
+            </Button>
+          </Link>
         )}
       </div>
 
@@ -401,11 +400,6 @@ export default function Game() {
       <ContactModal 
         open={isContactModalOpen} 
         onOpenChange={setIsContactModalOpen} 
-      />
-      
-      <AuthModal 
-        open={isAuthModalOpen} 
-        onOpenChange={setIsAuthModalOpen} 
       />
     </div>
   );
