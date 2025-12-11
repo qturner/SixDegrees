@@ -453,7 +453,7 @@ class TMDbService {
   }
 
   /**
-   * Check if an actor has career activity after 1980 and is still living
+   * Check if an actor has career activity after 1980 (includes deceased actors with modern careers)
    */
   private async hasCareerActivityAfter1980(actorId: number): Promise<boolean> {
     try {
@@ -463,10 +463,22 @@ class TMDbService {
         this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`)
       ]);
       
-      // Exclude deceased actors to ensure current relevance
+      // For deceased actors, include them if they had a modern career (1990+)
+      // This includes beloved actors like Robin Williams who had recent careers
       if (actorDetails?.deathday) {
-        console.log(`Excluding deceased actor: ${actorDetails.name} (died: ${actorDetails.deathday})`);
-        return false;
+        const recentMoviesForDeceased = movieCredits.cast.filter(movie => {
+          if (!movie.release_date) return false;
+          const releaseYear = new Date(movie.release_date).getFullYear();
+          return releaseYear >= 1990; // Must have movies from 1990 onwards
+        });
+        
+        if (recentMoviesForDeceased.length >= 3) {
+          console.log(`Including deceased actor with modern career: ${actorDetails.name} (${recentMoviesForDeceased.length} movies from 1990+)`);
+          return true;
+        } else {
+          console.log(`Excluding deceased actor without modern career: ${actorDetails.name}`);
+          return false;
+        }
       }
       
       // Check if actor has any movies released after 1980
@@ -485,7 +497,7 @@ class TMDbService {
   }
 
   /**
-   * Filter actors by career activity - only include those active after 1980 and still living
+   * Filter actors by career activity - includes living actors and deceased actors with modern careers (1990+)
    */
   private async filterActorsByCareerActivity(actors: Actor[]): Promise<Actor[]> {
     console.log("Applying career activity filtering (post-1980) and living status to popular actors...");

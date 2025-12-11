@@ -46,7 +46,7 @@ Back-to-Back Actor Prevention: Implemented comprehensive actor exclusion logic a
 -   **Tables**: Daily Challenges (actor pairs, date-based uniqueness), Game Attempts (user gameplay, move counts), Visitor Analytics (referrer tracking, UTM, geo/device data).
 
 ## Game Logic & Features
--   **Challenge Generation**: Automated daily challenges using TMDB data with multi-layer filtering (post-1980 career, excludes voice actors/comedians, minimum 5 English films, excludes deceased actors, prevents back-to-back actors). Challenges are generated 24 hours in advance.
+-   **Challenge Generation**: Automated daily challenges using TMDB data with multi-layer filtering (post-1980 career, excludes voice actors/comedians, minimum 5 English films, includes deceased actors with modern careers 1990+, prevents back-to-back actors). Challenges are generated 24 hours in advance.
 -   **Connection Validation**: Real-time validation of actor-movie relationships via TMDB API.
 -   **Daily Reset System**: Single automated midnight Eastern (EST/EDT) challenge reset via node-cron in server/index.ts with `timezone: "America/New_York"`. Uses dual-challenge system: promotes "next" to "active" and generates new "next" for tomorrow. Includes retry logic, fallback promotion in GET endpoint, and startup cleanup of orphaned challenges. Duplicate cron job removed from routes.ts to prevent UTC timing conflicts.
 -   **Analytics**: Anonymous tracking of player statistics (attempts, success rates, best moves, average moves, most-used movies/actors) with an admin dashboard.
