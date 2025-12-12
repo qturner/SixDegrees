@@ -191,8 +191,13 @@ class TMDbService {
           const releaseYear = new Date(movie.release_date).getFullYear();
           return releaseYear >= 1970;
         })
-        // Sort by vote average and vote count to show more well-known movies first
-        .sort((a, b) => (b.vote_average * Math.log(b.vote_count + 1)) - (a.vote_average * Math.log(a.vote_count + 1)))
+        // Sort primarily by vote count (popularity) to ensure well-known films appear first
+        // Movies with 1000+ votes are likely mainstream releases users are looking for
+        .sort((a, b) => {
+          const aScore = (a.vote_count >= 1000 ? 100000 : 0) + a.vote_count + (a.vote_average * 100);
+          const bScore = (b.vote_count >= 1000 ? 100000 : 0) + b.vote_count + (b.vote_average * 100);
+          return bScore - aScore;
+        })
         .map(movie => ({
           id: movie.id,
           title: movie.title,
