@@ -576,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search for movies
+  // Search for movies - also checks challenge actors' filmographies for titles with special characters
   app.get("/api/search/movies", async (req, res) => {
     try {
       const query = req.query.q as string;
@@ -584,7 +584,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
 
+      // Get standard search results
       const movies = await tmdbService.searchMovies(query);
+      
+      // Also search within challenge actors' filmographies for better results
+      // This helps find movies with special characters like "Romeo + Juliet"
+      try {
+        const today = getESTDateString();
+        const challenge = await storage.getDailyChallenge(today);
+        
+        if (challenge) {
+          const queryLower = query.toLowerCase().trim();
+          const existingIds = new Set(movies.map(m => m.id));
+          
+          // Get filmographies of both challenge actors
+          const [startMovies, endMovies] = await Promise.all([
+            tmdbService.getActorMovies(challenge.startActorId),
+            tmdbService.getActorMovies(challenge.endActorId)
+          ]);
+          
+          // Find matching movies from filmographies that aren't in search results
+          const allActorMovies = [...startMovies, ...endMovies];
+          const matchingMovies = allActorMovies.filter(movie => {
+            if (existingIds.has(movie.id)) return false;
+            const titleLower = movie.title.toLowerCase();
+            // Match if query words appear in title (handles "Romeo Juliet" matching "Romeo + Juliet")
+            const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
+            return queryWords.every(word => titleLower.includes(word));
+          });
+          
+          // Add unique matching movies to results, prioritizing by popularity
+          const uniqueMatches = matchingMovies.filter((movie, index, self) => 
+            self.findIndex(m => m.id === movie.id) === index
+          );
+          
+          // Insert filmography matches at the beginning (they're likely what user wants)
+          movies.unshift(...uniqueMatches);
+        }
+      } catch (filmographyError) {
+        // Non-critical, continue with standard results
+        console.log("Filmography search enhancement skipped:", filmographyError);
+      }
+
       res.json(movies);
     } catch (error) {
       console.error("Error searching movies:", error);

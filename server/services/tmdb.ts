@@ -178,13 +178,40 @@ class TMDbService {
     if (!query.trim()) return [];
 
     try {
+      // Perform primary search
       const response = await this.makeRequest<TMDbResponse<TMDbMovie>>("/search/movie", {
         query: query.trim(),
         include_adult: "false",
-        "primary_release_date.gte": "1970-01-01", // Only movies from 1970 onwards
+        "primary_release_date.gte": "1970-01-01",
       });
 
-      return response.results
+      let allResults = [...response.results];
+
+      // For titles that might contain special characters (e.g., "Romeo + Juliet"),
+      // also try searching with "+" between words if space-separated
+      const words = query.trim().split(/\s+/);
+      if (words.length >= 2 && !query.includes('+')) {
+        try {
+          const plusQuery = words.join(' + ');
+          const plusResponse = await this.makeRequest<TMDbResponse<TMDbMovie>>("/search/movie", {
+            query: plusQuery,
+            include_adult: "false",
+            "primary_release_date.gte": "1970-01-01",
+          });
+          
+          // Add results that aren't already in the list
+          const existingIds = new Set(allResults.map(m => m.id));
+          for (const movie of plusResponse.results) {
+            if (!existingIds.has(movie.id)) {
+              allResults.push(movie);
+            }
+          }
+        } catch (e) {
+          // Ignore secondary search errors
+        }
+      }
+
+      return allResults
         .filter(movie => {
           // Additional filter to ensure movies are from 1970+
           if (!movie.release_date) return false;
