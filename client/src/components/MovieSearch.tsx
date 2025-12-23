@@ -25,7 +25,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
 
   const { data: movies = [], isLoading } = useQuery<Movie[]>({
     queryKey: [`/api/search/movies?q=${encodeURIComponent(searchQuery)}`],
-    enabled: searchQuery.length > 2,
+    enabled: searchQuery.length >= 2,
     staleTime: 10000,
     gcTime: 20000,
   });
@@ -42,7 +42,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
   };
 
   const handleSearch = () => {
-    if (displayValue.length > 2) {
+    if (displayValue.length >= 2) {
       setSearchQuery(displayValue);
       setOpen(true);
     }
@@ -92,7 +92,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
         />
         <Button
           onClick={handleSearch}
-          disabled={disabled || displayValue.length <= 2}
+          disabled={disabled || displayValue.length < 2}
           className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Search className="w-4 h-4" />
@@ -105,7 +105,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
               {isLoading && (
                 <CommandEmpty>Searching movies...</CommandEmpty>
               )}
-              {!isLoading && movies.length === 0 && searchQuery.length > 2 && (
+              {!isLoading && movies.length === 0 && searchQuery.length >= 2 && (
                 <CommandEmpty>No movies found.</CommandEmpty>
               )}
               {movies.length > 0 && (
