@@ -62,9 +62,12 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
       <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 relative z-10">
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-4">
-            <div className="flex items-center justify-center mb-3">
+            <div className="flex items-center justify-center mb-3 relative">
+              {/* Glow effect behind title area */}
+              <div className="absolute inset-0 bg-gradient-radial from-deco-gold/20 via-transparent to-transparent blur-xl" />
+              
               {/* Art Deco Film Reel Logo - Gold Theme */}
-              <svg width="60" height="48" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg" className="mr-4" style={{ shapeRendering: 'geometricPrecision' }}>
+              <svg width="60" height="48" viewBox="0 0 56 44" xmlns="http://www.w3.org/2000/svg" className="mr-4 relative z-10 drop-shadow-[0_0_12px_rgba(196,151,49,0.5)]" style={{ shapeRendering: 'geometricPrecision' }}>
                 <defs>
                   <linearGradient id="reelFaceGold" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#F4C979"/>
@@ -148,11 +151,11 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
                 <circle cx="20" cy="20" r="2" fill="#0B0B0D"/>
                 <circle cx="18.5" cy="18.5" r="1.5" fill="#FFF1D1" opacity="0.4"/>
               </svg>
-              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-deco-gold tracking-wide">
+              <h1 className="relative z-10 font-display text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-deco-champagne via-deco-gold to-deco-bronze tracking-wide drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{ textShadow: '0 0 30px rgba(196,151,49,0.6), 0 0 60px rgba(196,151,49,0.3)' }}>
                 Six Degrees
               </h1>
             </div>
-            <p className="text-deco-champagne/80 text-sm uppercase tracking-[0.3em] font-light">of Separation</p>
+            <p className="text-deco-champagne/80 text-sm uppercase tracking-[0.3em] font-light drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" style={{ textShadow: '0 0 20px rgba(196,151,49,0.3)' }}>of Separation</p>
           </div>
           
           {/* Decorative divider */}
