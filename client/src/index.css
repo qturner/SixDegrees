@@ -1,134 +1,129 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Raleway:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(210 25% 7.8431%);
-  --card: hsl(180 6.6667% 97.0588%);
-  --card-foreground: hsl(210 25% 7.8431%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(210 25% 7.8431%);
-  --primary: hsl(217.2 91.2% 59.8%);
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(210 25% 7.8431%);
-  --secondary-foreground: hsl(0 0% 100%);
-  --muted: hsl(240 1.9608% 90%);
-  --muted-foreground: hsl(210 25% 7.8431%);
-  --accent: hsl(211.5789 51.3514% 92.7451%);
-  --accent-foreground: hsl(217.2 91.2% 59.8%);
-  --destructive: hsl(0 84.2% 60.2%);
+  --background: hsl(0 0% 4%);
+  --foreground: hsl(43 30% 95%);
+  --card: hsl(0 0% 8%);
+  --card-foreground: hsl(43 30% 95%);
+  --popover: hsl(0 0% 6%);
+  --popover-foreground: hsl(43 30% 95%);
+  --primary: hsl(43 76% 49%);
+  --primary-foreground: hsl(0 0% 4%);
+  --secondary: hsl(0 0% 12%);
+  --secondary-foreground: hsl(43 30% 95%);
+  --muted: hsl(0 0% 15%);
+  --muted-foreground: hsl(43 10% 60%);
+  --accent: hsl(43 76% 49%);
+  --accent-foreground: hsl(0 0% 4%);
+  --destructive: hsl(0 62% 50%);
   --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(201.4286 30.4348% 90.9804%);
-  --input: hsl(200 23.0769% 97.4510%);
-  --ring: hsl(217.2 91.2% 59.8%);
-  --chart-1: hsl(217.2 91.2% 59.8%);
-  --chart-2: hsl(159.7826 100% 36.0784%);
-  --chart-3: hsl(42.0290 92.8251% 56.2745%);
-  --chart-4: hsl(147.1429 78.5047% 41.9608%);
-  --chart-5: hsl(341.4894 75.2000% 50.9804%);
-  --sidebar: hsl(180 6.6667% 97.0588%);
-  --sidebar-foreground: hsl(210 25% 7.8431%);
-  --sidebar-primary: hsl(217.2 91.2% 59.8%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(211.5789 51.3514% 92.7451%);
-  --sidebar-accent-foreground: hsl(217.2 91.2% 59.8%);
-  --sidebar-border: hsl(205.0000 25.0000% 90.5882%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-serif: Georgia, serif;
+  --border: hsl(43 30% 20%);
+  --input: hsl(0 0% 10%);
+  --ring: hsl(43 76% 49%);
+  --chart-1: hsl(43 76% 49%);
+  --chart-2: hsl(43 60% 35%);
+  --chart-3: hsl(43 90% 60%);
+  --chart-4: hsl(30 70% 45%);
+  --chart-5: hsl(35 80% 55%);
+  --sidebar: hsl(0 0% 6%);
+  --sidebar-foreground: hsl(43 30% 95%);
+  --sidebar-primary: hsl(43 76% 49%);
+  --sidebar-primary-foreground: hsl(0 0% 4%);
+  --sidebar-accent: hsl(0 0% 12%);
+  --sidebar-accent-foreground: hsl(43 76% 49%);
+  --sidebar-border: hsl(43 20% 15%);
+  --sidebar-ring: hsl(43 76% 49%);
+  --font-sans: 'Raleway', system-ui, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono: Menlo, monospace;
-  --radius: 1.3rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 1px 2px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 1px 2px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 2px 4px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 4px 6px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 8px 10px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
+  --radius: 0.5rem;
+  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.3);
+  --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.4);
+  --shadow-sm: 0px 2px 4px 0px hsl(0 0% 0% / 0.4), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
+  --shadow: 0px 4px 6px 0px hsl(0 0% 0% / 0.5), 0px 2px 4px -1px hsl(0 0% 0% / 0.4);
+  --shadow-md: 0px 6px 10px 0px hsl(0 0% 0% / 0.5), 0px 4px 6px -2px hsl(0 0% 0% / 0.4);
+  --shadow-lg: 0px 10px 15px 0px hsl(0 0% 0% / 0.5), 0px 6px 10px -3px hsl(0 0% 0% / 0.4);
+  --shadow-xl: 0px 15px 25px 0px hsl(0 0% 0% / 0.5), 0px 10px 15px -5px hsl(0 0% 0% / 0.4);
+  --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.6);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Game specific colors - Classic Hollywood Glamour Theme */
-  --game-primary: hsl(43 100% 35%);     /* Rich Gold #B8860B */
-  --game-blue: hsl(43 100% 35%);        /* Rich Gold #B8860B */
-  --game-success: hsl(43 59% 90%);      /* Cream #F7E7CE */
-  --game-error: hsl(0 84.2% 60.2%);     /* Keep red for errors */
-  --game-warning: hsl(43 100% 35%);     /* Rich Gold #B8860B */
-  --game-background: hsl(0 0% 5%);      /* Deep Black #0D0D0D */
-  --game-surface: hsl(207 15% 23%);     /* Charcoal #36454F */
-  --game-text: hsl(240 100% 99%);       /* Ghost White #F8F8FF */
-  --game-accent: hsl(0 0% 75%);         /* Silver #C0C0C0 */
+  /* Art Deco Theme Colors */
+  --deco-black: #0B0B0D;
+  --deco-charcoal: #141417;
+  --deco-onyx: #1a1a1f;
+  --deco-gold: #C49731;
+  --deco-gold-light: #F4C979;
+  --deco-gold-bright: #D4AF37;
+  --deco-champagne: #FFF1D1;
+  --deco-bronze: #5A4632;
+  --deco-pewter: #8A8F9D;
+  --deco-cream: #F8F5EA;
+  
+  /* Game specific colors - Art Deco Theme */
+  --game-primary: hsl(43 76% 49%);
+  --game-blue: hsl(43 76% 49%);
+  --game-success: hsl(120 40% 45%);
+  --game-error: hsl(0 62% 50%);
+  --game-warning: hsl(43 90% 55%);
+  --game-background: hsl(0 0% 4%);
+  --game-surface: hsl(0 0% 8%);
+  --game-text: hsl(43 30% 95%);
+  --game-accent: hsl(43 76% 49%);
 }
 
 .dark {
-  --background: hsl(0 0% 0%);
-  --foreground: hsl(200 6.6667% 91.1765%);
-  --card: hsl(228 9.8039% 10%);
-  --card-foreground: hsl(0 0% 85.0980%);
-  --popover: hsl(0 0% 0%);
-  --popover-foreground: hsl(200 6.6667% 91.1765%);
-  --primary: hsl(217.2 91.2% 59.8%);
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(195.0000 15.3846% 94.9020%);
-  --secondary-foreground: hsl(210 25% 7.8431%);
-  --muted: hsl(0 0% 9.4118%);
-  --muted-foreground: hsl(210 3.3898% 46.2745%);
-  --accent: hsl(205.7143 70% 7.8431%);
-  --accent-foreground: hsl(217.2 91.2% 59.8%);
-  --destructive: hsl(0 84.2% 60.2%);
+  --background: hsl(0 0% 3%);
+  --foreground: hsl(43 30% 95%);
+  --card: hsl(0 0% 6%);
+  --card-foreground: hsl(43 30% 95%);
+  --popover: hsl(0 0% 5%);
+  --popover-foreground: hsl(43 30% 95%);
+  --primary: hsl(43 76% 52%);
+  --primary-foreground: hsl(0 0% 4%);
+  --secondary: hsl(0 0% 10%);
+  --secondary-foreground: hsl(43 30% 95%);
+  --muted: hsl(0 0% 12%);
+  --muted-foreground: hsl(43 10% 55%);
+  --accent: hsl(43 76% 52%);
+  --accent-foreground: hsl(0 0% 4%);
+  --destructive: hsl(0 62% 50%);
   --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(210 5.2632% 14.9020%);
-  --input: hsl(207.6923 27.6596% 18.4314%);
-  --ring: hsl(217.2 91.2% 59.8%);
-  --chart-1: hsl(217.2 91.2% 59.8%);
-  --chart-2: hsl(159.7826 100% 36.0784%);
-  --chart-3: hsl(42.0290 92.8251% 56.2745%);
-  --chart-4: hsl(147.1429 78.5047% 41.9608%);
-  --chart-5: hsl(341.4894 75.2000% 50.9804%);
-  --sidebar: hsl(228 9.8039% 10%);
-  --sidebar-foreground: hsl(0 0% 85.0980%);
-  --sidebar-primary: hsl(217.2 91.2% 59.8%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(205.7143 70% 7.8431%);
-  --sidebar-accent-foreground: hsl(217.2 91.2% 59.8%);
-  --sidebar-border: hsl(205.7143 15.7895% 26.0784%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: Menlo, monospace;
-  --radius: 1.3rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 1px 2px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 1px 2px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 2px 4px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 4px 6px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00), 0px 8px 10px -1px hsl(217.2 91.2% 59.8% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(217.2 91.2% 59.8% / 0.00);
+  --border: hsl(43 25% 18%);
+  --input: hsl(0 0% 8%);
+  --ring: hsl(43 76% 52%);
   
-  /* Game specific colors for dark mode - Classic Hollywood Glamour Theme */
-  --game-primary: hsl(43 100% 45%);     /* Brighter Gold for dark mode */
-  --game-blue: hsl(43 100% 45%);        /* Brighter Gold for dark mode */
-  --game-success: hsl(43 59% 85%);      /* Lighter Cream for dark mode */
-  --game-error: hsl(0 84.2% 60.2%);     /* Keep red for errors */
-  --game-warning: hsl(43 100% 45%);     /* Brighter Gold for dark mode */
-  --game-background: hsl(0 0% 8%);      /* Slightly lighter black for dark mode */
-  --game-surface: hsl(207 15% 28%);     /* Lighter Charcoal for dark mode */
-  --game-text: hsl(240 100% 99%);       /* Ghost White #F8F8FF */
-  --game-accent: hsl(0 0% 80%);         /* Brighter Silver for dark mode */
+  /* Game specific colors for dark mode */
+  --game-primary: hsl(43 76% 52%);
+  --game-blue: hsl(43 76% 52%);
+  --game-success: hsl(120 45% 50%);
+  --game-error: hsl(0 62% 55%);
+  --game-warning: hsl(43 90% 58%);
+  --game-background: hsl(0 0% 3%);
+  --game-surface: hsl(0 0% 6%);
+  --game-text: hsl(43 30% 95%);
+  --game-accent: hsl(43 76% 52%);
 }
 
-/* Film reel pattern SVG encoded as data URI */
-.film-reel-bg {
-  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.03'%3E%3Crect x='10' y='10' width='100' height='100' rx='8'/%3E%3Ccircle cx='25' cy='25' r='6'/%3E%3Ccircle cx='95' cy='25' r='6'/%3E%3Ccircle cx='25' cy='95' r='6'/%3E%3Ccircle cx='95' cy='95' r='6'/%3E%3Crect x='35' y='30' width='50' height='60' rx='2'/%3E%3Ccircle cx='60' cy='60' r='15'/%3E%3Ccircle cx='60' cy='60' r='8'/%3E%3C/g%3E%3C/svg%3E");
+/* Art Deco geometric pattern SVG */
+.art-deco-bg {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23C49731' stroke-width='0.5' opacity='0.08'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z'/%3E%3Cpath d='M30 10 L50 30 L30 50 L10 30 Z'/%3E%3Cpath d='M30 20 L40 30 L30 40 L20 30 Z'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat;
-  background-size: 120px 120px;
+  background-size: 60px 60px;
 }
 
-/* Film grain/noise texture overlay */
+/* Art Deco chevron pattern */
+.art-deco-chevron {
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='24' viewBox='0 0 40 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 12 L20 0 L40 12 L20 24 Z' fill='none' stroke='%23C49731' stroke-width='0.3' opacity='0.06'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 40px 24px;
+}
+
+/* Subtle film grain texture overlay */
 .film-grain::before {
   content: '';
   position: fixed;
@@ -138,8 +133,21 @@
   height: 100%;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.035;
+  opacity: 0.02;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Radial vignette effect */
+.vignette::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0,0,0,0.4) 100%);
 }
 
 @layer base {
@@ -148,10 +156,14 @@
   }
 
   body {
-    @apply font-sans antialiased text-foreground film-reel-bg film-grain;
-    background-color: var(--game-background);
+    @apply font-sans antialiased art-deco-bg film-grain;
+    background-color: var(--deco-black);
     color: var(--game-text);
     line-height: 1.6;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: var(--font-display);
   }
   
   /* Smooth transitions for all interactive elements */
@@ -159,22 +171,24 @@
     @apply transition-all duration-200 ease-in-out;
   }
   
-  /* Consistent focus states */
+  /* Consistent focus states with gold ring */
   button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-    @apply outline-none ring-2 ring-game-blue ring-offset-2;
+    @apply outline-none ring-2 ring-offset-2;
+    --tw-ring-color: var(--deco-gold);
+    --tw-ring-offset-color: var(--deco-black);
   }
   
-  /* Standardized border radius */
+  /* Angular card style */
   .card-radius {
-    border-radius: 12px;
+    border-radius: 4px;
   }
   
   .button-radius {
-    border-radius: 8px;
+    border-radius: 2px;
   }
   
   .input-radius {
-    border-radius: 6px;
+    border-radius: 2px;
   }
 }
 
@@ -186,54 +200,167 @@
   .spacing-lg { @apply p-6; }
   .spacing-xl { @apply p-8; }
   
-  /* Enhanced shadow system with smooth blending to dark background */
+  /* Art Deco card styling */
+  .deco-card {
+    background: linear-gradient(135deg, var(--deco-charcoal) 0%, var(--deco-onyx) 100%);
+    border: 1px solid var(--deco-gold);
+    box-shadow: 
+      0 0 0 1px rgba(196, 151, 49, 0.1),
+      0 4px 20px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    position: relative;
+  }
+  
+  .deco-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--deco-gold-light), transparent);
+    opacity: 0.5;
+  }
+  
+  /* Gold metallic button */
+  .deco-button {
+    background: linear-gradient(180deg, var(--deco-gold-light) 0%, var(--deco-gold) 50%, var(--deco-bronze) 100%);
+    color: var(--deco-black);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: none;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  }
+  
+  .deco-button:hover {
+    background: linear-gradient(180deg, var(--deco-champagne) 0%, var(--deco-gold-light) 50%, var(--deco-gold) 100%);
+    transform: translateY(-1px);
+    box-shadow: 
+      0 4px 8px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba(196, 151, 49, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Gold bordered outline button */
+  .deco-button-outline {
+    background: transparent;
+    color: var(--deco-gold);
+    border: 2px solid var(--deco-gold);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .deco-button-outline:hover {
+    background: rgba(196, 151, 49, 0.1);
+    box-shadow: 0 0 15px rgba(196, 151, 49, 0.2);
+  }
+  
+  /* Art Deco input styling */
+  .deco-input {
+    background: var(--deco-onyx);
+    border: 1px solid rgba(196, 151, 49, 0.3);
+    color: var(--deco-cream);
+    transition: all 0.2s ease;
+  }
+  
+  .deco-input:focus {
+    border-color: var(--deco-gold);
+    box-shadow: 0 0 0 2px rgba(196, 151, 49, 0.15), 0 0 20px rgba(196, 151, 49, 0.1);
+    outline: none;
+  }
+  
+  .deco-input::placeholder {
+    color: var(--deco-pewter);
+  }
+  
+  /* Enhanced shadow system */
   .shadow-card { 
     box-shadow: 
-      0 0 0 1px rgb(0 0 0 / 0.4),
-      0 2px 8px 0 rgb(0 0 0 / 0.5),
-      0 8px 24px -4px rgb(0 0 0 / 0.6),
-      0 16px 48px -8px rgb(0 0 0 / 0.4);
+      0 0 0 1px rgba(196, 151, 49, 0.1),
+      0 4px 12px 0 rgba(0, 0, 0, 0.5),
+      0 8px 24px -4px rgba(0, 0, 0, 0.4);
   }
   
   .shadow-card-hover {
     box-shadow: 
-      0 0 0 1px rgb(0 0 0 / 0.5),
-      0 4px 12px 0 rgb(0 0 0 / 0.55),
-      0 12px 32px -4px rgb(0 0 0 / 0.65),
-      0 24px 64px -8px rgb(0 0 0 / 0.45),
-      0 0 20px -5px rgb(184 134 11 / 0.15);
+      0 0 0 1px rgba(196, 151, 49, 0.2),
+      0 6px 16px 0 rgba(0, 0, 0, 0.5),
+      0 12px 32px -4px rgba(0, 0, 0, 0.4),
+      0 0 30px -5px rgba(196, 151, 49, 0.15);
   }
   
   .shadow-card-focus {
     box-shadow: 
-      0 0 0 1px rgb(0 0 0 / 0.6),
-      0 8px 16px 0 rgb(0 0 0 / 0.6),
-      0 16px 48px -8px rgb(0 0 0 / 0.7),
-      0 32px 80px -16px rgb(0 0 0 / 0.5),
-      0 0 30px -5px rgb(184 134 11 / 0.2);
+      0 0 0 1px rgba(196, 151, 49, 0.3),
+      0 8px 20px 0 rgba(0, 0, 0, 0.5),
+      0 16px 40px -8px rgba(0, 0, 0, 0.4),
+      0 0 40px -5px rgba(196, 151, 49, 0.2);
   }
   
-  /* Smooth card edge blending */
-  .card-blend {
+  /* Gold shimmer effect */
+  .gold-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .gold-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(196, 151, 49, 0.1), transparent);
+    animation: shimmer 3s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { left: -100%; }
+    50%, 100% { left: 100%; }
+  }
+  
+  /* Geometric corner decoration */
+  .deco-corners {
     position: relative;
   }
   
-  .card-blend::after {
+  .deco-corners::before,
+  .deco-corners::after {
     content: '';
     position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    background: linear-gradient(
-      135deg,
-      rgb(255 255 255 / 0.03) 0%,
-      transparent 50%,
-      rgb(0 0 0 / 0.2) 100%
-    );
-    pointer-events: none;
-    z-index: 1;
+    width: 20px;
+    height: 20px;
+    border-color: var(--deco-gold);
+    border-style: solid;
+  }
+  
+  .deco-corners::before {
+    top: -1px;
+    left: -1px;
+    border-width: 2px 0 0 2px;
+  }
+  
+  .deco-corners::after {
+    bottom: -1px;
+    right: -1px;
+    border-width: 0 2px 2px 0;
+  }
+  
+  /* Decorative divider */
+  .deco-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--deco-gold), transparent);
+    opacity: 0.5;
   }
 }
 
+/* Game color utilities */
 .game-primary {
   color: var(--game-primary);
 }
@@ -252,41 +379,6 @@
 
 .border-game-blue {
   border-color: var(--game-blue);
-}
-
-/* Mobile-specific improvements */
-@media (max-width: 640px) {
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  input, button, select, textarea {
-    font-size: 16px !important; /* Prevents zoom on iOS */
-  }
-  
-  .no-zoom {
-    touch-action: manipulation;
-  }
-  
-  /* Better touch targets */
-  button, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  /* Improve scrolling on mobile */
-  body {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-}
-
-.focus\:border-game-blue:focus {
-  border-color: var(--game-blue);
-}
-
-.hover\:bg-blue-600:hover {
-  background-color: hsl(221.2 83.2% 53.3%);
 }
 
 .text-game-success {
@@ -321,7 +413,6 @@
   background-color: var(--game-warning);
 }
 
-/* Hollywood Glamour Theme Classes */
 .bg-game-background {
   background-color: var(--game-background);
 }
@@ -340,6 +431,47 @@
 
 .border-game-accent {
   border-color: var(--game-accent);
+}
+
+/* Art Deco specific colors */
+.bg-deco-black { background-color: var(--deco-black); }
+.bg-deco-charcoal { background-color: var(--deco-charcoal); }
+.bg-deco-onyx { background-color: var(--deco-onyx); }
+.bg-deco-gold { background-color: var(--deco-gold); }
+.text-deco-gold { color: var(--deco-gold); }
+.text-deco-gold-light { color: var(--deco-gold-light); }
+.text-deco-champagne { color: var(--deco-champagne); }
+.text-deco-cream { color: var(--deco-cream); }
+.text-deco-pewter { color: var(--deco-pewter); }
+.border-deco-gold { border-color: var(--deco-gold); }
+
+/* Mobile-specific improvements */
+@media (max-width: 640px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  input, button, select, textarea {
+    font-size: 16px !important;
+  }
+  
+  .no-zoom {
+    touch-action: manipulation;
+  }
+  
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+.focus\:border-game-blue:focus {
+  border-color: var(--game-blue);
 }
 
 /* Enhanced button hover states */
@@ -366,7 +498,7 @@
   box-shadow: 
     0 4px 6px rgba(0, 0, 0, 0.15),
     0 2px 4px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(196, 151, 49, 0.1);
 }
 
 .btn-inactive-3d:hover {
@@ -374,24 +506,28 @@
   box-shadow: 
     0 6px 10px rgba(0, 0, 0, 0.2),
     0 3px 6px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    inset 0 1px 0 rgba(196, 151, 49, 0.2);
 }
 
-/* Typography improvements */
+/* Typography improvements with Art Deco styling */
 .text-heading-xl {
-  @apply text-2xl sm:text-3xl md:text-4xl font-bold leading-tight;
+  @apply text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-wide;
+  font-family: var(--font-display);
 }
 
 .text-heading-lg {
-  @apply text-xl sm:text-2xl md:text-3xl font-semibold leading-tight;
+  @apply text-xl sm:text-2xl md:text-3xl font-semibold leading-tight tracking-wide;
+  font-family: var(--font-display);
 }
 
 .text-heading-md {
   @apply text-lg sm:text-xl font-semibold leading-snug;
+  font-family: var(--font-display);
 }
 
 .text-heading-sm {
   @apply text-base sm:text-lg font-medium leading-snug;
+  font-family: var(--font-display);
 }
 
 .text-body-lg {
@@ -408,43 +544,53 @@
 
 /* Consistent color palette extensions */
 .text-muted {
-  @apply text-gray-600;
+  color: var(--deco-pewter);
 }
 
 .text-muted-light {
-  @apply text-gray-500;
+  color: rgba(138, 143, 157, 0.8);
 }
 
 .text-muted-dark {
-  @apply text-gray-700;
+  color: rgba(138, 143, 157, 1.2);
 }
 
-/* Blinking animation for Validate button */
+/* Blinking animation for Validate button - Art Deco gold style */
 @keyframes blink-glow {
   0%, 100% {
-    box-shadow: 0 0 5px #5bc0de, 0 0 10px #5bc0de, 0 0 15px #5bc0de;
+    box-shadow: 0 0 5px var(--deco-gold), 0 0 10px var(--deco-gold), 0 0 15px var(--deco-gold);
     opacity: 1;
   }
   50% {
-    box-shadow: 0 0 15px #5bc0de, 0 0 25px #5bc0de, 0 0 35px #5bc0de;
-    opacity: 0.85;
+    box-shadow: 0 0 15px var(--deco-gold), 0 0 25px var(--deco-gold), 0 0 35px var(--deco-gold);
+    opacity: 0.9;
   }
 }
 
 .validate-button-blink {
-  background-color: #5bc0de !important;
-  color: #000000 !important;
+  background: linear-gradient(180deg, var(--deco-gold-light) 0%, var(--deco-gold) 100%) !important;
+  color: var(--deco-black) !important;
   font-weight: 600;
   animation: blink-glow 1.2s ease-in-out infinite;
 }
 
 .validate-button-blink:hover {
-  background-color: #46b8da !important;
+  background: linear-gradient(180deg, var(--deco-champagne) 0%, var(--deco-gold-light) 100%) !important;
   animation: blink-glow 0.8s ease-in-out infinite;
 }
 
 .validate-button-blink:disabled {
-  background-color: #7a9aa8 !important;
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%) !important;
   animation: none;
   opacity: 0.6;
+}
+
+/* Sparkle animation for celebrations */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
 }
