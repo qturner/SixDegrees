@@ -88,25 +88,25 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px] text-black"
+          className="flex-1 p-3 bg-deco-onyx border border-deco-gold/30 focus:border-deco-gold focus:outline-none transition-colors text-deco-cream placeholder:text-deco-pewter"
         />
         <Button
           onClick={handleSearch}
           disabled={disabled || displayValue.length < 2}
-          className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-deco-gold text-deco-black hover:bg-deco-gold-light border border-deco-gold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Search className="w-4 h-4" />
         </Button>
       </div>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-0">
-          <Command>
-            <CommandList>
+        <div className="absolute top-full left-0 right-0 mt-1 bg-deco-charcoal border border-deco-gold/40 shadow-lg z-50">
+          <Command className="bg-transparent">
+            <CommandList className="bg-transparent">
               {isLoading && (
-                <CommandEmpty>Searching movies...</CommandEmpty>
+                <CommandEmpty className="text-deco-pewter py-3">Searching movies...</CommandEmpty>
               )}
               {!isLoading && movies.length === 0 && searchQuery.length >= 2 && (
-                <CommandEmpty>No movies found.</CommandEmpty>
+                <CommandEmpty className="text-deco-pewter py-3">No movies found.</CommandEmpty>
               )}
               {movies.length > 0 && (
                 <CommandGroup>
@@ -115,25 +115,25 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
                       key={movie.id}
                       value={movie.title}
                       onSelect={() => handleSelect(movie)}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:bg-deco-gold/10 text-deco-cream data-[selected=true]:bg-deco-gold/20"
                     >
                       <div className="flex items-center space-x-3">
                         {movie.poster_path ? (
                           <img
                             src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
                             alt={movie.title}
-                            className="w-8 h-12 object-cover rounded"
+                            className="w-8 h-12 object-cover border border-deco-gold/30"
                           />
                         ) : (
-                          <div className="w-8 h-12 bg-gray-200 flex items-center justify-center rounded">
-                            <span className="text-xs font-medium text-gray-600">
+                          <div className="w-8 h-12 bg-deco-gold/20 flex items-center justify-center border border-deco-gold/30">
+                            <span className="text-xs font-medium text-deco-gold">
                               {movie.title.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                             </span>
                           </div>
                         )}
                         <div>
-                          <div className="font-medium">{movie.title}</div>
-                          <div className="text-sm text-gray-500">
+                          <div className="font-medium text-deco-cream">{movie.title}</div>
+                          <div className="text-sm text-deco-pewter">
                             {formatYear(movie.release_date)}
                           </div>
                         </div>

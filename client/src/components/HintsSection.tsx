@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Lightbulb, Film } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -221,93 +219,96 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   };
 
   return (
-    <Card className="w-full card-radius shadow-card hover:shadow-card-hover transition-all duration-300 bg-game-surface border-game-accent">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-center gap-2 text-heading-md text-game-primary">
-          <Lightbulb className="h-5 w-5 text-game-primary" />
-          Daily Hints
-        </CardTitle>
-        <CardDescription className="text-body text-game-text">
-          Get movie titles for either actor to help find connections. You have{" "}
-          <Badge variant="secondary" className="button-radius bg-game-primary text-game-background">{hintsRemaining} hints remaining</Badge> today.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="deco-card p-6 relative overflow-hidden">
+      <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
+      
+      <div className="relative z-10">
+        <div className="text-center mb-4">
+          <h3 className="font-display text-lg sm:text-xl text-deco-gold mb-2 tracking-wide flex items-center justify-center gap-2">
+            <Lightbulb className="h-5 w-5 text-deco-gold" />
+            Daily Hints
+          </h3>
+          <p className="text-deco-cream/70 text-sm">
+            Get movie titles for either actor to help find connections. You have{" "}
+            <span className="inline-flex items-center px-2 py-0.5 bg-deco-gold text-deco-black text-xs font-bold">{hintsRemaining} hints</span> remaining today.
+          </p>
+        </div>
+        
         <div className="space-y-4">
-          {/* Hint Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <Button 
               onClick={() => handleHintClick('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
-              variant={startActorHint ? (activeHintType === 'start' ? "default" : "secondary") : "outline"}
-              className={`flex-1 text-body-sm button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-white ${
-                startActorHint ? 'bg-game-primary text-white' : 'text-game-primary'
-              } ${startActorHint && activeHintType === 'start' ? 'btn-active-3d' : startActorHint ? 'btn-inactive-3d' : 'btn-hover'}`}
+              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider ${
+                startActorHint 
+                  ? activeHintType === 'start'
+                    ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]'
+                    : 'bg-deco-charcoal text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold'
+                  : 'bg-transparent text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold hover:bg-deco-gold/10'
+              }`}
               size="sm"
             >
               {loadingHintType === 'start' ? (
-                <span className="text-white">Getting hint...</span>
+                <span>Getting hint...</span>
               ) : (
-                <span className={`truncate ${startActorHint ? 'text-white' : ''}`}>
-                  {startActorHint ? `Show ${dailyChallenge.startActorName} hint` : `Hint for ${dailyChallenge.startActorName}`}
+                <span className="truncate">
+                  {startActorHint ? `Show ${dailyChallenge.startActorName}` : `Hint: ${dailyChallenge.startActorName}`}
                 </span>
               )}
             </Button>
             <Button 
               onClick={() => handleHintClick('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
-              variant={endActorHint ? (activeHintType === 'end' ? "default" : "secondary") : "outline"}
-              className={`flex-1 text-body-sm button-radius transition-all duration-200 border-game-primary hover:bg-game-primary hover:text-white ${
-                endActorHint ? 'bg-game-primary text-white' : 'text-game-primary'
-              } ${endActorHint && activeHintType === 'end' ? 'btn-active-3d' : endActorHint ? 'btn-inactive-3d' : 'btn-hover'}`}
+              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider ${
+                endActorHint 
+                  ? activeHintType === 'end'
+                    ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]'
+                    : 'bg-deco-charcoal text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold'
+                  : 'bg-transparent text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold hover:bg-deco-gold/10'
+              }`}
               size="sm"
             >
               {loadingHintType === 'end' ? (
-                <span className="text-white">Getting hint...</span>
+                <span>Getting hint...</span>
               ) : (
-                <span className={`truncate ${endActorHint ? 'text-white' : ''}`}>
-                  {endActorHint ? `Show ${dailyChallenge.endActorName} hint` : `Hint for ${dailyChallenge.endActorName}`}
+                <span className="truncate">
+                  {endActorHint ? `Show ${dailyChallenge.endActorName}` : `Hint: ${dailyChallenge.endActorName}`}
                 </span>
               )}
             </Button>
           </div>
 
-          {/* Active Hint Display */}
           {activeHint && (
-            <Card className="card-radius shadow-card transition-all duration-300 bg-game-background border-game-accent">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-heading-sm flex items-center gap-2 text-game-primary">
-                  <Film className="h-4 w-4" />
-                  Movies featuring {activeHint.actorName}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {activeHint.movies.map((movie) => (
-                    <div 
-                      key={movie.id}
-                      className="spacing-sm input-radius border border-game-accent bg-game-surface transition-all duration-200 hover:bg-game-primary hover:text-game-background hover:shadow-card"
-                    >
-                      <div className="font-medium text-body-sm text-game-text">{movie.title}</div>
-                      {movie.release_date && (
-                        <div className="text-body-sm text-game-accent">
-                          ({new Date(movie.release_date).getFullYear()})
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="bg-deco-black/50 border border-deco-gold/30 p-4">
+              <h4 className="font-display text-deco-gold text-sm mb-3 flex items-center gap-2">
+                <Film className="h-4 w-4" />
+                Movies featuring {activeHint.actorName}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {activeHint.movies.map((movie) => (
+                  <div 
+                    key={movie.id}
+                    className="p-3 border border-deco-gold/20 bg-deco-charcoal/50 transition-all duration-200 hover:border-deco-gold/50 hover:bg-deco-gold/5"
+                  >
+                    <div className="font-medium text-sm text-deco-cream">{movie.title}</div>
+                    {movie.release_date && (
+                      <div className="text-xs text-deco-pewter">
+                        ({new Date(movie.release_date).getFullYear()})
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {hintsRemaining === 0 && !activeHint && (
-            <div className="text-center text-game-accent py-4 text-body">
+            <div className="text-center text-deco-pewter py-4 text-sm">
               You've used all your daily hints. Come back tomorrow for more!
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

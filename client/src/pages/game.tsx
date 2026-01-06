@@ -367,27 +367,39 @@ export default function Game() {
         
         <GameInstructions />
         
-        <footer className="text-center text-muted text-body-sm mt-12">
-          <div className="mb-4">
-            <div className="text-game-primary font-medium mb-2 text-heading-sm">Six Degrees of Separation</div>
-            <div>A new daily challenge connecting Hollywood's finest</div>
-            <div className="text-xs mt-1 opacity-75">A Prologue LLC Project</div>
+        <footer className="text-center mt-16 mb-8 relative">
+          {/* Decorative top border */}
+          <div className="h-px w-full max-w-md mx-auto bg-gradient-to-r from-transparent via-deco-gold/40 to-transparent mb-8" />
+          
+          <div className="mb-6">
+            <div className="font-display text-xl text-deco-gold mb-2 tracking-wide">Six Degrees of Separation</div>
+            <div className="text-deco-pewter text-sm">A new daily challenge connecting Hollywood's finest</div>
+            <div className="text-xs mt-2 text-deco-pewter/60 tracking-wider uppercase">A Prologue LLC Project</div>
           </div>
-          <div className="flex justify-center space-x-6">
+          
+          <div className="flex justify-center space-x-8">
             <button 
               onClick={() => setIsAboutModalOpen(true)}
-              className="hover:text-game-primary transition-all duration-200 cursor-pointer"
+              className="text-deco-pewter hover:text-deco-gold transition-all duration-200 cursor-pointer text-sm uppercase tracking-wider"
               data-testid="button-about"
             >
               About
             </button>
+            <span className="text-deco-gold/30">|</span>
             <button 
               onClick={() => setIsContactModalOpen(true)}
-              className="hover:text-game-primary transition-all duration-200 cursor-pointer"
+              className="text-deco-pewter hover:text-deco-gold transition-all duration-200 cursor-pointer text-sm uppercase tracking-wider"
               data-testid="button-contact"
             >
               Contact
             </button>
+          </div>
+          
+          {/* Decorative bottom element */}
+          <div className="flex items-center justify-center gap-3 mt-8">
+            <div className="h-px w-8 bg-deco-gold/30" />
+            <div className="w-2 h-2 rotate-45 border border-deco-gold/40" />
+            <div className="h-px w-8 bg-deco-gold/30" />
           </div>
         </footer>
       </main>

@@ -77,25 +77,25 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 p-4 border-2 border-gray-200 rounded-l-lg focus:border-game-blue focus:outline-none transition-colors ml-[5px] mr-[5px] text-black"
+          className="flex-1 p-3 bg-deco-onyx border border-deco-gold/30 focus:border-deco-gold focus:outline-none transition-colors text-deco-cream placeholder:text-deco-pewter"
         />
         <Button
           onClick={handleSearch}
           disabled={disabled || displayValue.length <= 2}
-          className="px-4 py-2 bg-game-blue text-white rounded-r-lg hover:bg-game-blue/90 border-2 border-l-0 border-game-blue disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-deco-gold text-deco-black hover:bg-deco-gold-light border border-deco-gold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Search className="w-4 h-4" />
         </Button>
       </div>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-0">
-          <Command>
-            <CommandList>
+        <div className="absolute top-full left-0 right-0 mt-1 bg-deco-charcoal border border-deco-gold/40 shadow-lg z-50">
+          <Command className="bg-transparent">
+            <CommandList className="bg-transparent">
               {isLoading && (
-                <CommandEmpty>Searching actors...</CommandEmpty>
+                <CommandEmpty className="text-deco-pewter py-3">Searching actors...</CommandEmpty>
               )}
               {!isLoading && actors.length === 0 && searchQuery.length > 2 && (
-                <CommandEmpty>No actors found.</CommandEmpty>
+                <CommandEmpty className="text-deco-pewter py-3">No actors found.</CommandEmpty>
               )}
               {actors.length > 0 && (
                 <CommandGroup>
@@ -104,23 +104,23 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
                       key={actor.id}
                       value={actor.name}
                       onSelect={() => handleSelect(actor)}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:bg-deco-gold/10 text-deco-cream data-[selected=true]:bg-deco-gold/20"
                     >
                       <div className="flex items-center space-x-3">
                         {actor.profile_path ? (
                           <img
                             src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
                             alt={actor.name}
-                            className="w-8 h-8 rounded-full object-cover"
+                            className="w-8 h-8 rounded-full object-cover border border-deco-gold/30"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-600">
+                          <div className="w-8 h-8 rounded-full bg-deco-gold/20 flex items-center justify-center border border-deco-gold/30">
+                            <span className="text-xs font-medium text-deco-gold">
                               {actor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                             </span>
                           </div>
                         )}
-                        <span>{actor.name}</span>
+                        <span className="text-deco-cream">{actor.name}</span>
                       </div>
                     </CommandItem>
                   ))}
