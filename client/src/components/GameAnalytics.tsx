@@ -48,50 +48,61 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
   }
 
   return (
-    <Card className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center justify-center gap-2">
-          <Users className="h-5 w-5 text-blue-600" />
-          Today's Challenge Stats
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="mt-6 group relative">
+      {/* Glow effect behind card */}
+      <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded blur-md opacity-60" />
+      
+      {/* Main card */}
+      <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border border-deco-gold/40 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+        {/* Corner accents */}
+        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-deco-gold" />
+        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-deco-gold" />
+        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-deco-gold" />
+        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-deco-gold" />
+        
+        {/* Header */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <Users className="h-5 w-5 text-deco-gold" />
+          <h3 className="font-display text-xl text-deco-gold tracking-wide">Today's Challenge Stats</h3>
+        </div>
+        
+        {/* Stats grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="text-center">
+          <div className="text-center p-3 bg-deco-black/30 border border-deco-gold/20">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <Target className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium text-gray-600">Best Completion</span>
+              <Target className="h-4 w-4 text-game-success" />
+              <span className="text-sm font-medium text-deco-cream/70">Best Completion</span>
             </div>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-game-success">
               {analytics.completedAttempts > 0 ? `${bestCompletion} moves` : 'None yet'}
             </div>
           </div>
           
-          <div className="text-center">
+          <div className="text-center p-3 bg-deco-black/30 border border-deco-gold/20">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-gray-600">Average Moves</span>
+              <TrendingUp className="h-4 w-4 text-deco-gold" />
+              <span className="text-sm font-medium text-deco-cream/70">Average Moves</span>
             </div>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-deco-gold">
               {analytics.avgMoves > 0 ? `${analytics.avgMoves}` : 'None yet'}
             </div>
           </div>
 
-          <div className="text-center">
+          <div className="text-center p-3 bg-deco-black/30 border border-deco-gold/20">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <Users className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium text-gray-600">Players</span>
+              <Users className="h-4 w-4 text-deco-champagne" />
+              <span className="text-sm font-medium text-deco-cream/70">Players</span>
             </div>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-deco-champagne">
               {analytics.completedAttempts}/{analytics.totalAttempts}
             </div>
-            <div className="text-xs text-gray-500">completed</div>
+            <div className="text-xs text-deco-cream/50">completed</div>
           </div>
         </div>
 
         {analytics.completedAttempts > 0 && (
-          <div className="mt-4 pt-3 border-t border-blue-200">
-            <p className="text-xs text-center text-gray-600 mb-3">
+          <div className="mt-4 pt-3 border-t border-deco-gold/20">
+            <p className="text-xs text-center text-deco-cream/60">
               {analytics.completionRate}% success rate • Anonymous player data
             </p>
           </div>
@@ -99,20 +110,20 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
 
         {/* Most Used Movies and Actors */}
         {(analytics.mostUsedMovies?.length > 0 || analytics.mostUsedActors?.length > 0) && (
-          <div className="mt-4 pt-3 border-t border-blue-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mt-4 pt-4 border-t border-deco-gold/20 grid grid-cols-1 md:grid-cols-2 gap-6">
             {analytics.mostUsedMovies && analytics.mostUsedMovies.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Film className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-gray-700">Popular Movies</span>
+                  <Film className="h-4 w-4 text-deco-gold" />
+                  <span className="text-sm font-medium text-deco-gold">Popular Movies</span>
                 </div>
                 <div className="space-y-2">
                   {analytics.mostUsedMovies.slice(0, 3).map((movie, index) => (
                     <div key={movie.id} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600 truncate mr-2">
+                      <span className="text-deco-cream/80 truncate mr-2">
                         {index + 1}. {movie.title}
                       </span>
-                      <span className="text-amber-600 font-medium">
+                      <span className="text-deco-gold font-medium">
                         {movie.count}x
                       </span>
                     </div>
@@ -124,16 +135,16 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
             {analytics.mostUsedActors && analytics.mostUsedActors.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <UserCheck className="h-4 w-4 text-emerald-600" />
-                  <span className="text-sm font-medium text-gray-700">Popular Actors</span>
+                  <UserCheck className="h-4 w-4 text-deco-champagne" />
+                  <span className="text-sm font-medium text-deco-champagne">Popular Actors</span>
                 </div>
                 <div className="space-y-2">
                   {analytics.mostUsedActors.slice(0, 3).map((actor, index) => (
                     <div key={actor.id} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600 truncate mr-2">
+                      <span className="text-deco-cream/80 truncate mr-2">
                         {index + 1}. {actor.name}
                       </span>
-                      <span className="text-emerald-600 font-medium">
+                      <span className="text-deco-champagne font-medium">
                         {actor.count}x
                       </span>
                     </div>
@@ -143,7 +154,7 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
