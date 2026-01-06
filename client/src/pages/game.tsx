@@ -72,6 +72,24 @@ export default function Game() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const { user, recordCompletion } = useAuth();
   const [gameStateInitialized, setGameStateInitialized] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+
+  // Scroll detection for admin button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const threshold = 100; // Show when within 100px of bottom
+      
+      setIsAtBottom(scrollTop + windowHeight >= documentHeight - threshold);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial state
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const { data: challenge, isLoading, error, refetch } = useQuery<DailyChallenge>({
     queryKey: ["/api/daily-challenge"],
@@ -298,24 +316,26 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-game-background text-game-text font-sans">
-      {/* Admin Login - Bottom right */}
-      <div className="fixed bottom-4 right-4 z-50">
-        {currentUser ? (
-          <UserMenu />
-        ) : (
-          <Link href="/admin-login">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover btn-hover button-radius transition-all duration-200 text-gray-600 hover:text-gray-800"
-              data-testid="button-admin"
-            >
-              <Shield className="h-4 w-4" />
-              Admin
-            </Button>
-          </Link>
-        )}
-      </div>
+      {/* Admin Login - Bottom right, only visible when scrolled to bottom */}
+      {isAtBottom && (
+        <div className="fixed bottom-4 right-4 z-50 transition-opacity duration-300">
+          {currentUser ? (
+            <UserMenu />
+          ) : (
+            <Link href="/admin-login">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2 bg-deco-charcoal/90 backdrop-blur-sm border-deco-gold/30 shadow-lg hover:border-deco-gold text-deco-gold hover:text-deco-gold-light transition-all duration-200"
+                data-testid="button-admin"
+              >
+                <Shield className="h-4 w-4" />
+                Admin
+              </Button>
+            </Link>
+          )}
+        </div>
+      )}
 
       <GameHeader 
         challenge={challenge} 
