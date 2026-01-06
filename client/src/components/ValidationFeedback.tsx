@@ -110,74 +110,89 @@ export default function ValidationFeedback({ validationResults, gameResult, conn
 
   return (
     <div className="space-y-4 mb-8">
-      {/* Individual connection validation is now shown inline with icons */}
       {/* Game completion result */}
       {gameResult && (
-        <Alert
-          className={`card-radius shadow-card transition-all duration-300 ${
+        <div className="group relative">
+          {/* Glow effect behind card */}
+          <div className={`absolute -inset-1 rounded blur-md transition-opacity duration-300 ${
             gameResult.valid && gameResult.completed
-              ? "bg-green-100 border-green-500 text-green-800"
+              ? "bg-gradient-to-br from-deco-gold/40 via-game-success/30 to-transparent opacity-70"
               : gameResult.valid
-              ? "bg-green-100 border-green-500 text-green-800"
-              : "bg-red-100 border-red-500 text-red-800"
-          }`}
-        >
-          {gameResult.completed ? (
-            <div className="space-y-2">
-              {/* Congratulations message */}
-              <div className="flex justify-center">
-                <div className="flex items-center">
-                  <Trophy className="w-5 h-5 mr-2" />
-                  <div className="font-semibold text-green-800 text-center text-body">
-                    Congratulations! You finished in {gameResult.moves || validConnectionsCount} moves!
+              ? "bg-gradient-to-br from-game-success/30 via-deco-gold/20 to-transparent opacity-60"
+              : "bg-gradient-to-br from-game-error/30 via-deco-bronze/20 to-transparent opacity-60"
+          }`} />
+          
+          {/* Main card */}
+          <div className={`relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 ${
+            gameResult.valid && gameResult.completed
+              ? "border-deco-gold"
+              : gameResult.valid
+              ? "border-game-success/60"
+              : "border-game-error/60"
+          }`}>
+            {/* Corner accents */}
+            <div className={`absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 ${gameResult.valid ? 'border-deco-gold' : 'border-game-error/60'}`} />
+            <div className={`absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 ${gameResult.valid ? 'border-deco-gold' : 'border-game-error/60'}`} />
+            <div className={`absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 ${gameResult.valid ? 'border-deco-gold' : 'border-game-error/60'}`} />
+            <div className={`absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 ${gameResult.valid ? 'border-deco-gold' : 'border-game-error/60'}`} />
+            
+            {gameResult.completed ? (
+              <div className="space-y-4">
+                {/* Trophy icon with glow */}
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-deco-gold/30 rounded-full blur-md" />
+                    <Trophy className="relative w-12 h-12 text-deco-gold drop-shadow-[0_0_8px_rgba(196,151,49,0.6)]" />
                   </div>
                 </div>
-              </div>
-              
-              {/* Share buttons at bottom center */}
-              <div className="flex flex-col sm:flex-row justify-center gap-2 pt-1">
-                <Button
-                  onClick={handleShare}
-                  variant="outline"
-                  size="sm"
-                  className="border-green-500 text-black hover:bg-gray-100 hover:text-gray-800 btn-hover button-radius transition-all duration-200"
-                >
-                  <Share className="w-4 h-4 mr-2" />
-                  Share Victory
-                </Button>
-                <Button
-                  onClick={handleShareMovies}
-                  variant="outline"
-                  size="sm"
-                  className="border-amber-500 text-black hover:bg-gray-100 hover:text-gray-800 btn-hover button-radius transition-all duration-200"
-                >
-                  <Film className="w-4 h-4 mr-2" />
-                  Share Movies
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className={gameResult.valid ? "flex items-center" : "flex justify-center items-center"}>
-              {gameResult.valid ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-3" />
-                  <div>
-                    <AlertDescription>
-                      <div>{gameResult.message}</div>
-                    </AlertDescription>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center">
-                  <XCircle className="w-4 h-4 mr-3" />
-                  <AlertDescription>
-                    <div className="text-red-800 font-medium text-[17px]">Try harder you bum</div>
-                  </AlertDescription>
+                
+                {/* Congratulations message */}
+                <div className="text-center">
+                  <h3 className="font-display text-2xl text-deco-gold mb-2 tracking-wide" style={{ textShadow: '0 0 20px rgba(196,151,49,0.4)' }}>
+                    Congratulations!
+                  </h3>
+                  <p className="text-deco-cream text-lg">
+                    You finished in <span className="text-deco-gold font-bold">{gameResult.moves || validConnectionsCount}</span> moves!
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
-        </Alert>
+                
+                {/* Share buttons */}
+                <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+                  <Button
+                    onClick={handleShare}
+                    size="sm"
+                    className="bg-transparent border-2 border-deco-gold text-deco-gold hover:bg-deco-gold hover:text-deco-black uppercase tracking-wider transition-all duration-200"
+                  >
+                    <Share className="w-4 h-4 mr-2" />
+                    Share Victory
+                  </Button>
+                  <Button
+                    onClick={handleShareMovies}
+                    size="sm"
+                    className="bg-transparent border-2 border-deco-bronze text-deco-cream hover:bg-deco-bronze hover:text-deco-black uppercase tracking-wider transition-all duration-200"
+                  >
+                    <Film className="w-4 h-4 mr-2" />
+                    Share Movies
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center items-center py-2">
+                {gameResult.valid ? (
+                  <div className="flex items-center text-game-success">
+                    <CheckCircle className="w-5 h-5 mr-3" />
+                    <span className="text-lg">{gameResult.message}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center text-game-error">
+                    <XCircle className="w-5 h-5 mr-3" />
+                    <span className="text-lg font-medium">Try harder you bum</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
