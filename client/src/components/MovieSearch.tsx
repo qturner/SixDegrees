@@ -80,7 +80,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
 
   return (
     <div className="relative">
-      <div className="relative flex gap-2">
+      <div className="relative flex gap-2 items-stretch">
         <Input
           value={displayValue}
           onChange={(e) => handleInputChange(e.target.value)}

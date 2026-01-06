@@ -70,7 +70,7 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
 
   return (
     <div className="relative">
-      <div className="relative flex gap-2">
+      <div className="relative flex gap-2 items-stretch">
         <Input
           value={displayValue}
           onChange={(e) => handleInputChange(e.target.value)}
