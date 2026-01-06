@@ -178,7 +178,18 @@ export default function GameGrid({
             }
             
             return (
-              <div key={`connection-${index}`} className="border border-deco-gold/30 p-4 space-y-4 transition-all duration-200 hover:border-deco-gold/60 bg-deco-black/40">
+              <div key={`connection-${index}`} className="group relative">
+                {/* Glow effect behind card */}
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-70 transition-opacity duration-300" />
+                
+                {/* Main card */}
+                <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border border-deco-gold/40 p-4 space-y-4 transition-all duration-200 hover:border-deco-gold/70 shadow-[0_4px_16px_rgba(196,151,49,0.15)] hover:shadow-[0_6px_24px_rgba(196,151,49,0.25)]">
+                  {/* Corner accents */}
+                  <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-deco-gold/60" />
+                  <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-deco-gold/60" />
+                  <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-deco-gold/60" />
+                  <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-deco-gold/60" />
+                  
                 <h4 className="text-xs font-medium text-deco-pewter text-center uppercase tracking-wider">
                   Connection {index + 1} of {connectionSlots.length}
                 </h4>
@@ -260,6 +271,7 @@ export default function GameGrid({
                     )}
                   </div>
                 )}
+                </div>
               </div>
             );
           })}
