@@ -80,7 +80,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
 
   return (
     <div className="relative">
-      <div className="relative flex">
+      <div className="relative flex gap-2">
         <Input
           value={displayValue}
           onChange={(e) => handleInputChange(e.target.value)}
@@ -93,7 +93,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
         <Button
           onClick={handleSearch}
           disabled={disabled || displayValue.length < 2}
-          className="px-4 py-2 bg-deco-gold text-deco-black hover:bg-deco-gold-light border border-deco-gold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-deco-gold text-deco-black hover:bg-deco-gold-light border border-deco-gold disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >
           <Search className="w-4 h-4" />
         </Button>
