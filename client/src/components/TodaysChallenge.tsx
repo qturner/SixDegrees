@@ -101,104 +101,92 @@ export default function TodaysChallenge({
           <div className="h-px w-12 bg-gradient-to-l from-transparent to-deco-gold/40" />
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center space-y-6 sm:space-y-0 sm:space-x-8 mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 mb-6">
           {/* Start Actor Card */}
-          <div className="group relative w-full sm:w-64">
+          <div className="group relative w-full sm:w-auto">
             {/* Spotlight/glow effect behind card */}
             <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
             
             {/* Main card */}
-            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold">
-              {/* Inner decorative frame */}
-              <div className="absolute inset-2 border border-deco-gold/20 pointer-events-none" />
-              
+            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-6 sm:py-4 min-h-[80px]">
               {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-deco-gold" />
-              <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-deco-gold" />
-              <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-deco-gold" />
-              <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-deco-gold" />
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-deco-gold" />
+              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-deco-gold" />
+              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
               
-              {/* Content */}
-              <div className="relative p-4 flex flex-col items-center">
+              {/* Content - horizontal layout */}
+              <div className="relative flex items-center gap-4">
                 {/* Photo with ring glow */}
-                <div className="relative mb-3">
+                <div className="relative flex-shrink-0">
                   <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
                   {displayChallenge.startActorProfilePath ? (
                     <img
                       src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
                       alt={displayChallenge.startActorName}
-                      className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-3 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
+                      className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
                       onClick={() => handleImageClick(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
                     />
                   ) : (
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-3 border-deco-gold">
-                      <span className="text-2xl font-display font-bold text-deco-gold">
+                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-2 border-deco-gold">
+                      <span className="text-lg font-display font-bold text-deco-gold">
                         {displayChallenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </span>
                     </div>
                   )}
                 </div>
                 
-                {/* Name with elegant styling */}
-                <div className="text-center">
-                  <span className="font-display text-lg sm:text-xl text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                    {displayChallenge.startActorName}
-                  </span>
-                  <div className="mt-1 text-xs text-deco-gold/60 uppercase tracking-widest">Start</div>
-                </div>
+                {/* Name */}
+                <span className="font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                  {displayChallenge.startActorName}
+                </span>
               </div>
             </div>
           </div>
           
           {/* Arrow */}
           <div className="text-deco-gold rotate-90 sm:rotate-0 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(196,151,49,0.5)]">
-            <ArrowRight className="w-8 h-8 sm:w-10 sm:h-10" />
+            <ArrowRight className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           
           {/* End Actor Card */}
-          <div className="group relative w-full sm:w-64">
+          <div className="group relative w-full sm:w-auto">
             {/* Spotlight/glow effect behind card */}
             <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
             
             {/* Main card */}
-            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold">
-              {/* Inner decorative frame */}
-              <div className="absolute inset-2 border border-deco-gold/20 pointer-events-none" />
-              
+            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-6 sm:py-4 min-h-[80px]">
               {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-deco-gold" />
-              <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-deco-gold" />
-              <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-deco-gold" />
-              <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-deco-gold" />
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-deco-gold" />
+              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-deco-gold" />
+              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
+              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
               
-              {/* Content */}
-              <div className="relative p-4 flex flex-col items-center">
+              {/* Content - horizontal layout */}
+              <div className="relative flex items-center gap-4">
                 {/* Photo with ring glow */}
-                <div className="relative mb-3">
+                <div className="relative flex-shrink-0">
                   <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
                   {displayChallenge.endActorProfilePath ? (
                     <img
                       src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
                       alt={displayChallenge.endActorName}
-                      className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-3 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
+                      className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
                       onClick={() => handleImageClick(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
                     />
                   ) : (
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-3 border-deco-gold">
-                      <span className="text-2xl font-display font-bold text-deco-gold">
+                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-2 border-deco-gold">
+                      <span className="text-lg font-display font-bold text-deco-gold">
                         {displayChallenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </span>
                     </div>
                   )}
                 </div>
                 
-                {/* Name with elegant styling */}
-                <div className="text-center">
-                  <span className="font-display text-lg sm:text-xl text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                    {displayChallenge.endActorName}
-                  </span>
-                  <div className="mt-1 text-xs text-deco-gold/60 uppercase tracking-widest">Target</div>
-                </div>
+                {/* Name */}
+                <span className="font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                  {displayChallenge.endActorName}
+                </span>
               </div>
             </div>
           </div>
