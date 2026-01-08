@@ -103,22 +103,22 @@ export default function TodaysChallenge({
         
         <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 mb-6">
           {/* Start Actor Card */}
-          <div className="group relative w-full sm:w-auto">
+          <div className="group relative w-full sm:w-auto sm:min-w-[280px]">
             {/* Spotlight/glow effect behind card */}
             <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
             
             {/* Main card */}
-            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-6 sm:py-4 min-h-[80px]">
+            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-5 sm:py-4">
               {/* Corner accents */}
               <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-deco-gold" />
               <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-deco-gold" />
               <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
               
-              {/* Content - photo on left, name centered in full card */}
-              <div className="relative min-h-[56px] sm:min-h-[64px]">
-                {/* Photo with ring glow - absolute positioned on left */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+              {/* Content - flexbox layout */}
+              <div className="flex items-center gap-4">
+                {/* Photo with ring glow */}
+                <div className="relative flex-shrink-0">
                   <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
                   {displayChallenge.startActorProfilePath ? (
                     <img
@@ -136,12 +136,10 @@ export default function TodaysChallenge({
                   )}
                 </div>
                 
-                {/* Name - absolutely centered in full card width */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                    {displayChallenge.startActorName}
-                  </span>
-                </div>
+                {/* Name */}
+                <span className="font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                  {displayChallenge.startActorName}
+                </span>
               </div>
             </div>
           </div>
@@ -152,22 +150,22 @@ export default function TodaysChallenge({
           </div>
           
           {/* End Actor Card */}
-          <div className="group relative w-full sm:w-auto">
+          <div className="group relative w-full sm:w-auto sm:min-w-[280px]">
             {/* Spotlight/glow effect behind card */}
             <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
             
             {/* Main card */}
-            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-6 sm:py-4 min-h-[80px]">
+            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-5 sm:py-4">
               {/* Corner accents */}
               <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-deco-gold" />
               <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-deco-gold" />
               <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
               
-              {/* Content - photo on left, name centered in full card */}
-              <div className="relative min-h-[56px] sm:min-h-[64px]">
-                {/* Photo with ring glow - absolute positioned on left */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+              {/* Content - flexbox layout */}
+              <div className="flex items-center gap-4">
+                {/* Photo with ring glow */}
+                <div className="relative flex-shrink-0">
                   <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
                   {displayChallenge.endActorProfilePath ? (
                     <img
@@ -185,12 +183,10 @@ export default function TodaysChallenge({
                   )}
                 </div>
                 
-                {/* Name - absolutely centered in full card width */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                    {displayChallenge.endActorName}
-                  </span>
-                </div>
+                {/* Name */}
+                <span className="font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                  {displayChallenge.endActorName}
+                </span>
               </div>
             </div>
           </div>
