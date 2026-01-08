@@ -239,10 +239,10 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
             <Button 
               onClick={() => handleHintClick('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
-              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider ${
+              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider shadow-[0_8px_32px_rgba(196,151,49,0.3)] hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] ${
                 startActorHint 
                   ? activeHintType === 'start'
-                    ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]'
+                    ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2),0_8px_32px_rgba(196,151,49,0.3)]'
                     : 'bg-deco-charcoal text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold'
                   : 'bg-transparent text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold hover:bg-deco-gold/10'
               }`}
@@ -259,10 +259,10 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
             <Button 
               onClick={() => handleHintClick('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
-              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider ${
+              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider shadow-[0_8px_32px_rgba(196,151,49,0.3)] hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] ${
                 endActorHint 
                   ? activeHintType === 'end'
-                    ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]'
+                    ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2),0_8px_32px_rgba(196,151,49,0.3)]'
                     : 'bg-deco-charcoal text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold'
                   : 'bg-transparent text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold hover:bg-deco-gold/10'
               }`}

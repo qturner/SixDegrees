@@ -77,12 +77,12 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
           onKeyPress={handleKeyPress}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 p-3 bg-deco-onyx border border-deco-gold/30 focus:border-deco-gold focus:outline-none transition-colors text-deco-cream placeholder:text-deco-pewter"
+          className="flex-1 p-3 bg-deco-onyx border border-deco-gold/30 focus:border-deco-gold focus:outline-none transition-colors text-deco-cream placeholder:text-deco-pewter shadow-[0_8px_32px_rgba(196,151,49,0.2)] focus:shadow-[0_12px_40px_rgba(196,151,49,0.4)]"
         />
         <Button
           onClick={handleSearch}
           disabled={disabled || displayValue.length <= 2}
-          className="px-4 py-2 bg-deco-gold text-deco-black hover:bg-deco-gold-light border border-deco-gold disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          className="px-4 py-2 bg-deco-gold text-deco-black hover:bg-deco-gold-light border border-deco-gold disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-[0_8px_32px_rgba(196,151,49,0.3)] hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)]"
         >
           <Search className="w-4 h-4" />
         </Button>
