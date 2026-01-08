@@ -196,10 +196,14 @@ export default function GameGrid({
                 
                 {/* Movie Input */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-deco-cream flex items-center">
-                    <Film className="w-4 h-4 mr-2 text-deco-gold" />
-                    Movie featuring {previousActorName || 'previous actor'}
-                    {isLastConnection && <span className="text-deco-gold"> and {challenge.endActorName}</span>}
+                  <label className="text-sm font-medium text-deco-cream">
+                    <div className="flex items-center">
+                      <Film className="w-4 h-4 mr-2 text-deco-gold" />
+                      Movie featuring {previousActorName || 'previous actor'}
+                    </div>
+                    {isLastConnection && (
+                      <div className="text-deco-gold ml-6 mt-1">and {challenge.endActorName}</div>
+                    )}
                   </label>
                   <div className="relative">
                     <MovieSearch
