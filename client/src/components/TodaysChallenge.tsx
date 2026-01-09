@@ -115,29 +115,31 @@ export default function TodaysChallenge({
               <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
               
-              {/* Content - flexbox layout */}
-              <div className="flex items-center gap-4">
-                {/* Photo with ring glow */}
-                <div className="relative flex-shrink-0">
-                  <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
-                  {displayChallenge.startActorProfilePath ? (
-                    <img
-                      src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
-                      alt={displayChallenge.startActorName}
-                      className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
-                      onClick={() => handleImageClick(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
-                    />
-                  ) : (
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-2 border-deco-gold">
-                      <span className="text-lg font-display font-bold text-deco-gold">
-                        {displayChallenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </span>
-                    </div>
-                  )}
+              {/* Content - relative layout for true centering */}
+              <div className="relative flex items-center min-h-[56px] sm:min-h-[64px]">
+                {/* Photo with ring glow - absolute left */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
+                    {displayChallenge.startActorProfilePath ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
+                        alt={displayChallenge.startActorName}
+                        className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
+                        onClick={() => handleImageClick(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
+                      />
+                    ) : (
+                      <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-2 border-deco-gold">
+                        <span className="text-lg font-display font-bold text-deco-gold">
+                          {displayChallenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
-                {/* Name - centered dynamically */}
-                <span className="flex-1 text-center font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                {/* Name - truly centered in full card width */}
+                <span className="w-full text-center font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                   {displayChallenge.startActorName}
                 </span>
               </div>
@@ -162,29 +164,31 @@ export default function TodaysChallenge({
               <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
               
-              {/* Content - flexbox layout */}
-              <div className="flex items-center gap-4">
-                {/* Photo with ring glow */}
-                <div className="relative flex-shrink-0">
-                  <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
-                  {displayChallenge.endActorProfilePath ? (
-                    <img
-                      src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
-                      alt={displayChallenge.endActorName}
-                      className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
-                      onClick={() => handleImageClick(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
-                    />
-                  ) : (
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-2 border-deco-gold">
-                      <span className="text-lg font-display font-bold text-deco-gold">
-                        {displayChallenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </span>
-                    </div>
-                  )}
+              {/* Content - relative layout for true centering */}
+              <div className="relative flex items-center min-h-[56px] sm:min-h-[64px]">
+                {/* Photo with ring glow - absolute left */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
+                    {displayChallenge.endActorProfilePath ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
+                        alt={displayChallenge.endActorName}
+                        className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
+                        onClick={() => handleImageClick(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
+                      />
+                    ) : (
+                      <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-2 border-deco-gold">
+                        <span className="text-lg font-display font-bold text-deco-gold">
+                          {displayChallenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
-                {/* Name - centered dynamically */}
-                <span className="flex-1 text-center font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                {/* Name - truly centered in full card width */}
+                <span className="w-full text-center font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                   {displayChallenge.endActorName}
                 </span>
               </div>
