@@ -68,19 +68,27 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const publicPath = path.resolve(import.meta.dirname, "..", "public");
+  const publicPath = path.resolve(import.meta.dirname);
+  const rootPublicPath = path.resolve(import.meta.dirname, "..", "dist");
 
-  if (!fs.existsSync(publicPath)) {
-    throw new Error(
-      `Could not find the public directory: ${publicPath}, make sure to build the client first`,
-    );
+  let actualPublicPath = publicPath;
+
+  // Check if index.html exists in the current directory (likely 'dist' in production)
+  if (!fs.existsSync(path.resolve(actualPublicPath, "index.html"))) {
+    if (fs.existsSync(path.resolve(rootPublicPath, "index.html"))) {
+      actualPublicPath = rootPublicPath;
+    } else {
+      throw new Error(
+        `Could not find index.html in: ${actualPublicPath} or ${rootPublicPath}, make sure to build the client first`,
+      );
+    }
   }
 
-  log(`Serving static files from: ${publicPath}`);
-  app.use(express.static(publicPath));
+  log(`Serving static files from: ${actualPublicPath}`);
+  app.use(express.static(actualPublicPath));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(publicPath, "index.html"));
+    res.sendFile(path.resolve(actualPublicPath, "index.html"));
   });
 }
