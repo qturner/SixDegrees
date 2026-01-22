@@ -76,10 +76,14 @@ export const initServer = async () => {
   return { app, server, dbHealthy };
 };
 
-// Start the server if this file is run directly (not as a module)
+// Initialize the server
+const serverPromise = initServer();
+
+// Start the server if this file is run directly (not as a module) 
+// or if we are not on Vercel (where it acts as a serverless function)
 if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
   (async () => {
-    const { server, dbHealthy } = await initServer();
+    const { server, dbHealthy } = await serverPromise;
     const port = parseInt(process.env.PORT || '5001', 10);
     server.listen({
       port,
@@ -108,6 +112,8 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     });
   })();
 }
+
+export default app;
 
 function setupDailyChallengeReset(port: number) {
   // Schedule for midnight EST/EDT - dual-challenge system
