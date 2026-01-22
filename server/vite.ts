@@ -68,19 +68,12 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
-  const rootPublicPath = path.resolve(import.meta.dirname, "..", "dist", "public");
-
-  let publicPath = distPath;
+  const publicPath = path.resolve(import.meta.dirname, "..", "public");
 
   if (!fs.existsSync(publicPath)) {
-    if (fs.existsSync(rootPublicPath)) {
-      publicPath = rootPublicPath;
-    } else {
-      throw new Error(
-        `Could not find the build directory: ${publicPath} or ${rootPublicPath}, make sure to build the client first`,
-      );
-    }
+    throw new Error(
+      `Could not find the public directory: ${publicPath}, make sure to build the client first`,
+    );
   }
 
   log(`Serving static files from: ${publicPath}`);
