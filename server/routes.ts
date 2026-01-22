@@ -17,10 +17,10 @@ function getESTDateString(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
     year: 'numeric',
-    month: '2-digit', 
+    month: '2-digit',
     day: '2-digit'
   });
-  
+
   return formatter.format(now); // Returns YYYY-MM-DD format
 }
 
@@ -31,10 +31,10 @@ function getTomorrowDateString(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
     year: 'numeric',
-    month: '2-digit', 
+    month: '2-digit',
     day: '2-digit'
   });
-  
+
   return formatter.format(tomorrow); // Returns YYYY-MM-DD format
 }
 
@@ -267,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { date, forceNew } = req.body;
       const today = date || getESTDateString();
-      
+
       if (forceNew) {
         console.log(`Force generating new challenge for ${today}`);
         // Delete existing challenge if it exists
@@ -276,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Deleting existing challenge: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
           await storage.deleteDailyChallenge(today);
         }
-        
+
         // Generate new challenge with exclusion logic
         // Get yesterday's challenge to exclude those actors
         let excludeActorIds: number[] = [];
@@ -292,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (exclusionError) {
           console.log("Could not check for actors to exclude, proceeding with normal generation");
         }
-        
+
         const actors = await gameLogicService.generateDailyActors(excludeActorIds);
         if (!actors) {
           return res.status(500).json({ message: "Unable to generate daily challenge" });
@@ -309,11 +309,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           endActorProfilePath: actors.actor2.profile_path,
           hintsUsed: 0,
         });
-        
+
         console.log(`Force-created new challenge for ${today}: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
         return res.json(newChallenge);
       }
-      
+
       // Regular generation logic (same as GET)
       let challenge = await storage.getDailyChallenge(today);
       if (!challenge) {
@@ -331,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (exclusionError) {
           console.log("Could not check for actors to exclude, proceeding with normal generation");
         }
-        
+
         const actors = await gameLogicService.generateDailyActors(excludeActorIds);
         if (!actors) {
           return res.status(500).json({ message: "Unable to generate daily challenge" });
@@ -349,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hintsUsed: 0,
         });
       }
-      
+
       res.json(challenge);
     } catch (error) {
       console.error("Error in POST daily challenge:", error);
@@ -361,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/daily-challenge", async (req, res) => {
     try {
       const today = getESTDateString(); // Use EST date, not UTC
-      
+
       // Try to get challenge with longer timeout for better resilience
       let challenge;
       try {
@@ -369,9 +369,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (dbError) {
         console.error("Database error when fetching challenge:", dbError);
         // Return a fallback error that doesn't block the UI completely
-        return res.status(503).json({ 
+        return res.status(503).json({
           message: "Database temporarily unavailable. Please refresh in a moment.",
-          retry: true 
+          retry: true
         });
       }
 
@@ -379,23 +379,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // This handles the case when the midnight cron job didn't run (server was down)
       if (!challenge) {
         console.log(`No challenge found for ${today}, checking for pending 'next' challenge to promote...`);
-        
+
         try {
           const nextChallenge = await storage.getChallengeByStatus('next');
-          
+
           if (nextChallenge) {
             console.log(`Found pending 'next' challenge: ${nextChallenge.startActorName} to ${nextChallenge.endActorName} - promoting to active`);
-            
+
             // Archive old active challenge(s) if any exist
             const activeChallenge = await storage.getChallengeByStatus('active');
             if (activeChallenge) {
               await storage.deleteDailyChallenge(activeChallenge.date);
               console.log(`Archived old active challenge: ${activeChallenge.startActorName} to ${activeChallenge.endActorName}`);
             }
-            
+
             // Delete the next challenge and recreate as active with today's date
             await storage.deleteDailyChallenge(nextChallenge.date);
-            
+
             challenge = await storage.createDailyChallenge({
               date: today,
               status: 'active',
@@ -407,15 +407,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               endActorProfilePath: nextChallenge.endActorProfilePath,
               hintsUsed: 0,
             });
-            
+
             console.log(`Successfully promoted 'next' to 'active': ${challenge.startActorName} to ${challenge.endActorName} for ${today}`);
-            
+
             // Generate a new "next" challenge for tomorrow
             const tomorrow = getTomorrowDateString();
             try {
               const excludeActorIds = [challenge.startActorId, challenge.endActorId];
               const actors = await gameLogicService.generateDailyActors(excludeActorIds);
-              
+
               if (actors) {
                 await storage.createDailyChallenge({
                   date: tomorrow,
@@ -443,14 +443,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!challenge) {
         console.log(`No challenge found for ${today}, generating new challenge...`);
-        
+
         // Prevent race conditions by using a shared promise
         // Reset promise if date has changed (new day)
         if (lastChallengeDate !== today) {
           challengeCreationPromise = null;
           lastChallengeDate = today;
         }
-        
+
         if (!challengeCreationPromise) {
           challengeCreationPromise = (async () => {
             try {
@@ -476,7 +476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } catch (exclusionError) {
                 console.log("Could not check for actors to exclude, proceeding with normal generation");
               }
-              
+
               const actors = await gameLogicService.generateDailyActors(excludeActorIds);
               if (!actors) {
                 throw new Error("Unable to generate daily challenge");
@@ -501,23 +501,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           })();
         }
-        
+
         try {
           challenge = await challengeCreationPromise;
         } catch (creationError) {
           console.error("Error creating new challenge:", creationError);
-          return res.status(503).json({ 
+          return res.status(503).json({
             message: "Unable to generate daily challenge due to database issues. Please refresh in a moment.",
-            retry: true 
+            retry: true
           });
         }
-        
+
         if (!challenge) {
           return res.status(500).json({ message: "Unable to generate daily challenge" });
         }
       } else {
         console.log(`Found existing challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0})`);
-        
+
         // Automatic thumbnail verification for existing challenges
         try {
           const verification = await tmdbService.verifyChallengeThumbnails({
@@ -532,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (verification.needsUpdate) {
             console.log(`Detected thumbnail issues for challenge ${challenge.id}: ${verification.issues.join(', ')}`);
-            
+
             // Auto-repair thumbnails
             const updates: any = {};
             if (verification.correctStartPath !== undefined) {
@@ -586,23 +586,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get standard search results
       const movies = await tmdbService.searchMovies(query);
-      
+
       // Also search within challenge actors' filmographies for better results
       // This helps find movies with special characters like "Romeo + Juliet"
       try {
         const today = getESTDateString();
         const challenge = await storage.getDailyChallenge(today);
-        
+
         if (challenge) {
           const queryLower = query.toLowerCase().trim();
           const existingIds = new Set(movies.map(m => m.id));
-          
+
           // Get filmographies of both challenge actors
           const [startMovies, endMovies] = await Promise.all([
             tmdbService.getActorMovies(challenge.startActorId),
             tmdbService.getActorMovies(challenge.endActorId)
           ]);
-          
+
           // Find matching movies from filmographies that aren't in search results
           const allActorMovies = [...startMovies, ...endMovies];
           const matchingMovies = allActorMovies.filter(movie => {
@@ -612,12 +612,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
             return queryWords.every(word => titleLower.includes(word));
           });
-          
+
           // Add unique matching movies to results, prioritizing by popularity
-          const uniqueMatches = matchingMovies.filter((movie, index, self) => 
+          const uniqueMatches = matchingMovies.filter((movie, index, self) =>
             self.findIndex(m => m.id === movie.id) === index
           );
-          
+
           // Insert filmography matches at the beginning (they're likely what user wants)
           movies.unshift(...uniqueMatches);
         }
@@ -675,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const today = new Date().toISOString().split('T')[0];
       const challenge = await storage.getDailyChallenge(today);
-      
+
       if (!challenge) {
         return res.status(404).json({ message: "No challenge found" });
       }
@@ -719,19 +719,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/daily-challenge/hint", async (req, res) => {
     try {
       const { actorType } = req.body; // 'start' or 'end'
-      
+
       if (!actorType || (actorType !== 'start' && actorType !== 'end')) {
         return res.status(400).json({ message: "Actor type must be 'start' or 'end'" });
       }
 
       const today = getESTDateString();
       const challenge = await storage.getDailyChallenge(today);
-      
+
       console.log(`Hint request for ${today}, challenge found: ${challenge ? 'YES' : 'NO'}`);
       if (challenge) {
         console.log(`Challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0}) [ID: ${challenge.id}]`);
       }
-      
+
       if (!challenge) {
         return res.status(404).json({ message: "No challenge found for today" });
       }
@@ -740,24 +740,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const actorId = actorType === 'start' ? challenge.startActorId : challenge.endActorId;
       const actorName = actorType === 'start' ? challenge.startActorName : challenge.endActorName;
-      
+
       const movies = await tmdbService.getActorHintMovies(actorId, 5);
-      
+
       // Check if this hint has already been generated and stored
       const existingHintField = actorType === 'start' ? challenge.startActorHint : challenge.endActorHint;
       let updatedChallenge = challenge;
-      
+
       if (!existingHintField) {
         // Only increment hint count and store hint if it hasn't been generated before
         const hintContent = JSON.stringify(movies);
         updatedChallenge = await storage.updateDailyChallengeHints(
-          challenge.id, 
+          challenge.id,
           (challenge.hintsUsed || 0) + 1,
           actorType === 'start' ? hintContent : undefined,
           actorType === 'end' ? hintContent : undefined
         );
       }
-      
+
       res.json({
         actorName,
         movies,
@@ -773,13 +773,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/validate-game", async (req, res) => {
     let validationResult = null;
     let connections = [];
-    
+
     try {
       const parseResult = gameConnectionSchema.safeParse(req.body);
       if (!parseResult.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Invalid request format",
-          errors: parseResult.error.errors 
+          errors: parseResult.error.errors
         });
       }
 
@@ -806,7 +806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const today = getESTDateString();
         const challenge = await storage.getDailyChallenge(today);
-        
+
         if (challenge) {
           await storage.createGameAttempt({
             challengeId: challenge.id,
@@ -832,11 +832,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Use provided challengeId or fall back to today's challenge
       let challengeId = req.query.challengeId as string;
-      
+
       if (!challengeId) {
         const today = getESTDateString();
         const challenge = await storage.getDailyChallenge(today);
-        
+
         if (!challenge) {
           return res.status(404).json({ message: "No challenge found for today" });
         }
@@ -882,10 +882,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const completions = await storage.getUserCompletions(userId);
       const moveDistribution = await storage.getUserMoveDistribution(userId);
-      
+
       const totalChallenges = completions.length;
       const completedChallenges = completions.filter(c => c.moves <= 6).length;
-      const averageMoves = completions.length > 0 
+      const averageMoves = completions.length > 0
         ? Math.round((completions.reduce((sum, c) => sum + c.moves, 0) / completions.length) * 10) / 10
         : 0;
       const bestScore = completions.length > 0
@@ -917,7 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const date = new Date();
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         const challenge = await storage.getDailyChallenge(dateStr);
         if (challenge) {
           // Check if user has completed this challenge
@@ -972,7 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { challengeId } = req.body;
       let challenge;
-      
+
       if (challengeId) {
         challenge = await storage.getDailyChallengeById(challengeId);
       } else {
@@ -980,13 +980,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const today = getESTDateString();
         challenge = await storage.getDailyChallenge(today);
       }
-      
+
       if (!challenge) {
         return res.status(404).json({ message: "Challenge not found" });
       }
 
       console.log(`Verifying thumbnails for challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
-      
+
       const verification = await tmdbService.verifyChallengeThumbnails({
         id: challenge.id,
         startActorId: challenge.startActorId,
@@ -1047,7 +1047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (exclusionError) {
         console.log("Could not check for actors to exclude, proceeding with normal generation");
       }
-      
+
       const actors = await gameLogicService.generateDailyActors(excludeActorIds);
       if (!actors) {
         return res.status(500).json({ message: "Unable to generate challenge" });
@@ -1082,12 +1082,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!token) {
         return res.status(401).json({ message: "Admin authentication required" });
       }
-      
+
       const session = await validateAdminSession(token);
       if (!session) {
         return res.status(401).json({ message: "Invalid or expired admin session" });
       }
-      
+
       req.adminSession = session;
       next();
     } catch (error) {
@@ -1103,7 +1103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (email !== "qturner17@gmail.com") {
         return res.status(403).json({ message: "Unauthorized" });
       }
-      
+
       const user = await createAdminUser(email, password);
       res.json({ message: "Admin user created successfully", userId: user.id });
     } catch (error) {
@@ -1116,17 +1116,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       const user = await authenticateAdmin(email, password);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
+
       const session = await createAdminSession(user.id);
-      res.json({ 
-        message: "Login successful", 
+      res.json({
+        message: "Login successful",
         token: session.token,
-        expiresAt: session.expiresAt 
+        expiresAt: session.expiresAt
       });
     } catch (error) {
       console.error("Admin login error:", error);
@@ -1153,30 +1153,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const today = getESTDateString();
       const tomorrow = getTomorrowDateString();
-      
+
       // Delete today's active challenge
       await storage.deleteDailyChallenge(today);
       console.log(`Admin reset challenge for ${today}`);
-      
+
       // Check if there's a "next" challenge that will be promoted
       const nextChallenge = await storage.getChallengeByStatus('next');
-      
+
       if (nextChallenge) {
         // The GET endpoint will promote this to active
         // But we need to generate a NEW next challenge so we don't have duplicates
         console.log(`Next challenge (${nextChallenge.startActorName} to ${nextChallenge.endActorName}) will be promoted to active`);
-        
+
         // Generate a brand new next challenge with different actors
         const excludeActorIds = [nextChallenge.startActorId, nextChallenge.endActorId];
         const actors = await gameLogicService.generateDailyActors(excludeActorIds);
-        
+
         if (actors) {
           // Delete the old next challenge date entry if it exists for tomorrow
           const existingTomorrow = await storage.getDailyChallenge(tomorrow);
           if (existingTomorrow) {
             await storage.deleteDailyChallenge(tomorrow);
           }
-          
+
           // Create new next challenge for tomorrow
           const newNextChallenge = await storage.createDailyChallenge({
             date: tomorrow,
@@ -1189,11 +1189,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             endActorProfilePath: actors.actor2.profile_path,
             hintsUsed: 0,
           });
-          
+
           console.log(`Generated new next challenge: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
         }
       }
-      
+
       res.json({ message: "Daily challenge reset successfully, new next challenge generated" });
     } catch (error) {
       console.error("Admin challenge reset error:", error);
@@ -1205,20 +1205,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/set-challenge", requireAdminAuth, async (req, res) => {
     try {
       const { startActorId, startActorName, endActorId, endActorName } = req.body;
-      
+
       if (!startActorId || !startActorName || !endActorId || !endActorName) {
         return res.status(400).json({ message: "All actor fields are required" });
       }
 
       const tomorrow = getTomorrowDateString();
-      
+
       // Delete existing next challenge
       const existingNext = await storage.getChallengeByStatus('next');
       if (existingNext) {
         console.log(`Deleting existing next challenge: ${existingNext.startActorName} to ${existingNext.endActorName}`);
         await storage.deleteDailyChallenge(existingNext.date);
       }
-      
+
       // Create new NEXT challenge with selected actors (will become tomorrow's challenge)
       const challenge = await storage.createDailyChallenge({
         date: tomorrow,
@@ -1228,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endActorId,
         endActorName,
       });
-      
+
       console.log(`Admin set custom NEXT challenge for ${tomorrow}: ${startActorName} to ${endActorName}`);
       res.json({ message: "Custom next challenge set successfully - will become active tomorrow", challenge });
     } catch (error) {
@@ -1242,15 +1242,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const tomorrow = getTomorrowDateString();
       console.log(`Looking for next daily challenge for date: ${tomorrow}`);
-      
+
       // Get challenge with status 'next' for tomorrow
       const challenge = await storage.getDailyChallenge(tomorrow);
-      
+
       if (!challenge || challenge.status !== 'next') {
         console.log(`No next challenge found for ${tomorrow}, current status: ${challenge?.status || 'not found'}`);
         return res.status(404).json({ message: "No challenge scheduled for tomorrow" });
       }
-      
+
       console.log(`Found next challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
       res.json(challenge);
     } catch (error) {
@@ -1263,14 +1263,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/reset-next-challenge", requireAdminAuth, async (req, res) => {
     try {
       const tomorrow = getTomorrowDateString();
-      
+
       // Delete existing next challenge if it exists
       const existingChallenge = await storage.getDailyChallenge(tomorrow);
       if (existingChallenge) {
         console.log(`Deleting existing next challenge: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
         await storage.deleteDailyChallenge(tomorrow);
       }
-      
+
       // Generate new next challenge (24 hours in advance)
       const actors = await gameLogicService.generateDailyActors();
       if (!actors) {
@@ -1288,7 +1288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endActorProfilePath: actors.actor2.profile_path,
         hintsUsed: 0,
       });
-      
+
       console.log(`Created new next challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
       res.json({ message: "Next challenge reset successfully", challenge: newChallenge });
     } catch (error) {
@@ -1302,22 +1302,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const parseResult = insertContactSubmissionSchema.safeParse(req.body);
       if (!parseResult.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Invalid request format",
-          errors: parseResult.error.errors 
+          errors: parseResult.error.errors
         });
       }
 
       const submission = await storage.createContactSubmission(parseResult.data);
-      
+
       // Send email notification (non-blocking)
       emailService.sendContactNotification(submission).catch(error => {
         console.error('Email notification failed:', error);
       });
-      
-      res.json({ 
+
+      res.json({
         message: "Contact submission received successfully",
-        id: submission.id 
+        id: submission.id
       });
     } catch (error) {
       console.error("Error creating contact submission:", error);
@@ -1331,7 +1331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!token) {
       return res.status(401).json({ message: "Admin authentication required" });
     }
-    
+
     const adminUser = await validateAdminSession(token);
     if (!adminUser) {
       return res.status(401).json({ message: "Invalid or expired token" });
@@ -1353,7 +1353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!token) {
       return res.status(401).json({ message: "Admin authentication required" });
     }
-    
+
     const adminUser = await validateAdminSession(token);
     if (!adminUser) {
       return res.status(401).json({ message: "Invalid or expired token" });
@@ -1361,11 +1361,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      
+
       if (!status || typeof status !== 'string') {
         return res.status(400).json({ message: "Status is required" });
       }
-      
+
       await storage.updateContactSubmissionStatus(id, status);
       res.json({ message: "Status updated successfully" });
     } catch (error) {
@@ -1378,12 +1378,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/analytics/track-visit", async (req, res) => {
     try {
       const visitorData = req.body;
-      
+
       // Ensure sessionId is provided in the request body
       if (!visitorData.sessionId) {
         return res.status(400).json({ message: "Session ID is required" });
       }
-      
+
       // Create visitor session with proper error handling
       try {
         const session = await withRetry(() => storage.trackVisitor({
@@ -1393,7 +1393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bounced: true, // Will be updated to false if user engages
           sessionDuration: 0,
         }), 3);
-        
+
         res.json({ sessionId: session.id, message: "Visit tracked" });
       } catch (dbError) {
         console.error("Database error tracking visitor:", dbError);
@@ -1424,12 +1424,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!sessionId) {
         return res.status(400).json({ message: "Session ID required" });
       }
-      
-      await storage.updateVisitorSession(sessionId, { 
-        converted: true, 
-        bounced: false 
+
+      await storage.updateVisitorSession(sessionId, {
+        converted: true,
+        bounced: false
       });
-      
+
       res.json({ message: "Conversion tracked" });
     } catch (error) {
       console.error("Error tracking conversion:", error);
@@ -1443,12 +1443,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = (req as any).user;
       const hasGoogleCredentials = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
       const repolyDomain = process.env.REPLIT_DOMAINS || 'not-set';
-      
+
       res.json({
         timestamp: new Date().toISOString(),
         isAuthenticated: !!user,
-        user: user ? { 
-          sub: user.claims?.sub, 
+        user: user ? {
+          sub: user.claims?.sub,
           email: user.claims?.email,
           name: `${user.claims?.given_name} ${user.claims?.family_name}`.trim()
         } : null,
@@ -1470,11 +1470,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`🧪 Session test - Session ID: ${req.sessionID}`);
     console.log(`🧪 Session exists:`, !!req.session);
     console.log(`🧪 Session contents:`, req.session);
-    
+
     if (!req.session) {
       return res.json({ error: 'No session found', sessionId: req.sessionID });
     }
-    
+
     // Set a test value
     (req.session as any).testValue = 'test-' + Date.now();
     req.session.save((err) => {
@@ -1483,10 +1483,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ error: 'Session save failed', details: err.message });
       }
       console.log(`🧪 Session saved successfully`);
-      res.json({ 
+      res.json({
         sessionId: req.sessionID,
         testValue: (req.session as any).testValue,
-        success: true 
+        success: true
       });
     });
   });
@@ -1496,7 +1496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`🧪 Session retrieve - Session ID: ${req.sessionID}`);
     console.log(`🧪 Session exists:`, !!req.session);
     console.log(`🧪 Session contents:`, req.session);
-    
+
     res.json({
       sessionId: req.sessionID,
       testValue: req.session ? (req.session as any).testValue : null,
@@ -1509,16 +1509,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/debug/test-callback", async (req, res) => {
     try {
       console.log("🔧 Testing OAuth callback with mock parameters");
-      
+
       // Simulate what Google would send back
       const mockCallbackParams = {
         code: "test-auth-code",
         state: "test-state",
         scope: "openid email profile"
       };
-      
+
       console.log("🔧 Mock callback params:", mockCallbackParams);
-      
+
       res.json({
         message: "OAuth callback test initiated",
         mockParams: mockCallbackParams,
@@ -1537,11 +1537,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.session as any).userId;
       const parseResult = insertUserChallengeCompletionSchema.safeParse(req.body);
-      
+
       if (!parseResult.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Invalid request format",
-          errors: parseResult.error.errors 
+          errors: parseResult.error.errors
         });
       }
 
@@ -1605,6 +1605,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting user move distribution:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Secure Cron Reset endpoint for Vercel
+  app.get("/api/cron/reset", async (req, res) => {
+    // Basic security check using Vercel's CRON_SECRET or a custom one
+    const authHeader = req.headers.authorization;
+    if (process.env.NODE_ENV === "production" && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      console.log("🚀 Vercel Cron trigger: Daily challenge reset initiated");
+
+      const today = getESTDateString();
+      const tomorrow = getTomorrowDateString();
+
+      // Transition 'next' to 'active'
+      const nextChallenge = await storage.getChallengeByStatus('next');
+      if (nextChallenge) {
+        console.log(`Promoting next challenge: ${nextChallenge.startActorName} to ${nextChallenge.endActorName}`);
+
+        const activeChallenge = await storage.getChallengeByStatus('active');
+        if (activeChallenge) {
+          await storage.deleteDailyChallenge(activeChallenge.date);
+        }
+
+        await storage.deleteDailyChallenge(nextChallenge.date);
+        await storage.createDailyChallenge({
+          date: today,
+          status: 'active',
+          startActorId: nextChallenge.startActorId,
+          startActorName: nextChallenge.startActorName,
+          startActorProfilePath: nextChallenge.startActorProfilePath,
+          endActorId: nextChallenge.endActorId,
+          endActorName: nextChallenge.endActorName,
+          endActorProfilePath: nextChallenge.endActorProfilePath,
+          hintsUsed: 0,
+        });
+      } else {
+        // Fallback: Generate if no 'next' exists
+        console.log("No next challenge found, generating new one for today");
+        const actors = await gameLogicService.generateDailyActors([]);
+        if (actors) {
+          await storage.createDailyChallenge({
+            date: today,
+            status: "active",
+            startActorId: actors.actor1.id,
+            startActorName: actors.actor1.name,
+            startActorProfilePath: actors.actor1.profile_path,
+            endActorId: actors.actor2.id,
+            endActorName: actors.actor2.name,
+            endActorProfilePath: actors.actor2.profile_path,
+            hintsUsed: 0,
+          });
+        }
+      }
+
+      // Generate new 'next' for tomorrow
+      const currentActive = await storage.getChallengeByStatus('active');
+      if (currentActive) {
+        const excludeIds = [currentActive.startActorId, currentActive.endActorId];
+        const nextActors = await gameLogicService.generateDailyActors(excludeIds);
+        if (nextActors) {
+          await storage.createDailyChallenge({
+            date: tomorrow,
+            status: "next",
+            startActorId: nextActors.actor1.id,
+            startActorName: nextActors.actor1.name,
+            startActorProfilePath: nextActors.actor1.profile_path,
+            endActorId: nextActors.actor2.id,
+            endActorName: nextActors.actor2.name,
+            endActorProfilePath: nextActors.actor2.profile_path,
+            hintsUsed: 0,
+          });
+        }
+      }
+
+      res.json({ message: "Daily challenge reset completed successfully", date: today });
+    } catch (error) {
+      console.error("Cron reset error:", error);
+      res.status(500).json({ message: "Failed to reset daily challenge", error: String(error) });
     }
   });
 

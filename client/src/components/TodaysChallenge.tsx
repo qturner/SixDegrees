@@ -39,13 +39,13 @@ interface ZoomedActor {
   profilePath: string;
 }
 
-export default function TodaysChallenge({ 
-  challenge, 
-  currentMoves, 
-  isFlipped, 
-  onFlip, 
+export default function TodaysChallenge({
+  challenge,
+  currentMoves,
+  isFlipped,
+  onFlip,
   canFlip = false,
-  gameResult 
+  gameResult
 }: TodaysChallengeProps) {
   const [zoomedActor, setZoomedActor] = useState<ZoomedActor | null>(null);
 
@@ -58,17 +58,17 @@ export default function TodaysChallenge({
   const handleCloseModal = () => {
     setZoomedActor(null);
   };
-  
-  const displayChallenge = isFlipped 
+
+  const displayChallenge = isFlipped
     ? {
-        ...challenge,
-        startActorId: challenge.endActorId,
-        startActorName: challenge.endActorName,
-        startActorProfilePath: challenge.endActorProfilePath,
-        endActorId: challenge.startActorId,
-        endActorName: challenge.startActorName,
-        endActorProfilePath: challenge.startActorProfilePath,
-      }
+      ...challenge,
+      startActorId: challenge.endActorId,
+      startActorName: challenge.endActorName,
+      startActorProfilePath: challenge.endActorProfilePath,
+      endActorId: challenge.startActorId,
+      endActorName: challenge.startActorName,
+      endActorProfilePath: challenge.startActorProfilePath,
+    }
     : challenge;
 
   const getGameStatus = () => {
@@ -90,23 +90,23 @@ export default function TodaysChallenge({
     <div className="deco-card deco-corners p-6 sm:p-8 mb-6 sm:mb-8 relative overflow-hidden">
       {/* Subtle pattern overlay */}
       <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
-      
+
       <div className="text-center mb-4 sm:mb-6 relative z-10">
         <h2 className="font-display text-xl sm:text-2xl text-deco-gold mb-2 tracking-wide">Today's Challenge</h2>
-        
+
         {/* Decorative divider */}
         <div className="flex items-center justify-center gap-3 mb-6">
           <div className="h-px w-12 bg-gradient-to-r from-transparent to-deco-gold/40" />
           <div className="w-1.5 h-1.5 rotate-45 bg-deco-gold/60" />
           <div className="h-px w-12 bg-gradient-to-l from-transparent to-deco-gold/40" />
         </div>
-        
+
         <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 mb-6">
           {/* Start Actor Card */}
           <div className="group relative w-full sm:w-auto sm:min-w-[280px]">
             {/* Spotlight/glow effect behind card */}
             <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-            
+
             {/* Main card */}
             <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-5 sm:py-4">
               {/* Corner accents */}
@@ -114,11 +114,11 @@ export default function TodaysChallenge({
               <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-deco-gold" />
               <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
-              
-              {/* Content - relative layout for true centering */}
-              <div className="relative flex items-center min-h-[56px] sm:min-h-[64px]">
-                {/* Photo with ring glow - absolute left */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2">
+
+              {/* Content - 3-column grid for perfect centering without overlap */}
+              <div className="relative grid grid-cols-[56px_1fr_56px] sm:grid-cols-[64px_1fr_64px] items-center min-h-[56px] sm:min-h-[64px] gap-2">
+                {/* Photo with ring glow - Column 1 */}
+                <div className="flex justify-center">
                   <div className="relative">
                     <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
                     {displayChallenge.startActorProfilePath ? (
@@ -137,25 +137,28 @@ export default function TodaysChallenge({
                     )}
                   </div>
                 </div>
-                
-                {/* Name - truly centered in full card width */}
-                <span className="w-full text-center font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+
+                {/* Name - Column 2 (Middle) */}
+                <span className="text-center font-display text-[clamp(0.875rem,2.5vw,1.125rem)] leading-tight text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                   {displayChallenge.startActorName}
                 </span>
+
+                {/* Spacer - Column 3 (Ensures symmetry for centering) */}
+                <div className="w-full h-full" aria-hidden="true" />
               </div>
             </div>
           </div>
-          
+
           {/* Arrow */}
           <div className="text-deco-gold rotate-90 sm:rotate-0 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(196,151,49,0.5)]">
             <ArrowRight className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
-          
+
           {/* End Actor Card */}
           <div className="group relative w-full sm:w-auto sm:min-w-[280px]">
             {/* Spotlight/glow effect behind card */}
             <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-            
+
             {/* Main card */}
             <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-5 sm:py-4">
               {/* Corner accents */}
@@ -163,11 +166,11 @@ export default function TodaysChallenge({
               <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-deco-gold" />
               <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
               <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
-              
-              {/* Content - relative layout for true centering */}
-              <div className="relative flex items-center min-h-[56px] sm:min-h-[64px]">
-                {/* Photo with ring glow - absolute left */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2">
+
+              {/* Content - 3-column grid for perfect centering without overlap */}
+              <div className="relative grid grid-cols-[56px_1fr_56px] sm:grid-cols-[64px_1fr_64px] items-center min-h-[56px] sm:min-h-[64px] gap-2">
+                {/* Photo with ring glow - Column 1 */}
+                <div className="flex justify-center">
                   <div className="relative">
                     <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
                     {displayChallenge.endActorProfilePath ? (
@@ -186,16 +189,19 @@ export default function TodaysChallenge({
                     )}
                   </div>
                 </div>
-                
-                {/* Name - truly centered in full card width */}
-                <span className="w-full text-center font-display text-base sm:text-lg text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+
+                {/* Name - Column 2 (Middle) */}
+                <span className="text-center font-display text-[clamp(0.875rem,2.5vw,1.125rem)] leading-tight text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                   {displayChallenge.endActorName}
                 </span>
+
+                {/* Spacer - Column 3 (Ensures symmetry for centering) */}
+                <div className="w-full h-full" aria-hidden="true" />
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 text-sm">
           <div className="flex items-center space-x-4">
             <span className={`font-medium ${getStatusColor()}`}>
@@ -205,7 +211,7 @@ export default function TodaysChallenge({
               Moves: <span className="text-deco-gold">{currentMoves}/6</span>
             </span>
           </div>
-          
+
           {onFlip && (
             <Button
               onClick={onFlip}
@@ -223,7 +229,7 @@ export default function TodaysChallenge({
 
       {/* Zoom Modal Overlay */}
       {zoomedActor && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-deco-black/90 cursor-pointer backdrop-blur-sm"
           onClick={handleCloseModal}
         >

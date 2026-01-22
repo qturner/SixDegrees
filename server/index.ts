@@ -1,3 +1,5 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 import express, { type Request, Response, NextFunction } from "express";
 import cron from "node-cron";
 import { registerRoutes } from "./routes";
@@ -6,7 +8,7 @@ import { gameLogicService } from "./services/gameLogic.ts";
 import { storage } from "./storage.ts";
 import { checkDatabaseHealth } from "./db";
 
-const app = express();
+export const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -40,7 +42,7 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+export const initServer = async () => {
   // Check database health but don't block startup
   let dbHealthy = false;
   try {
@@ -65,92 +67,84 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, async () => {
-    log(`serving on port ${port}`);
-    
-    // Always setup daily challenge reset at midnight EST after server is running
-    // The cron job will handle database connectivity issues internally
-    setupDailyChallengeReset(port);
-    
-    // Cleanup orphaned active challenges on startup (keep only today's)
-    if (dbHealthy) {
-      try {
-        const today = getESTDateString();
-        const allActive = await storage.getAllChallengesByStatus('active');
-        const orphaned = allActive.filter(c => c.date !== today);
-        
-        if (orphaned.length > 0) {
-          log(`🧹 Found ${orphaned.length} orphaned active challenge(s) from missed resets, cleaning up...`);
-          for (const challenge of orphaned) {
-            await storage.deleteDailyChallenge(challenge.date);
-            log(`   Removed orphaned: ${challenge.startActorName} to ${challenge.endActorName} (${challenge.date})`);
+  return { app, server, dbHealthy };
+};
+
+// Start the server if this file is run directly (not as a module)
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  (async () => {
+    const { server, dbHealthy } = await initServer();
+    const port = parseInt(process.env.PORT || '5001', 10);
+    server.listen({
+      port,
+      host: "0.0.0.0",
+    }, async () => {
+      log(`serving on port ${port}`);
+      setupDailyChallengeReset(port);
+
+      if (dbHealthy) {
+        try {
+          const today = getESTDateString();
+          const allActive = await storage.getAllChallengesByStatus('active');
+          const orphaned = allActive.filter(c => c.date !== today);
+
+          if (orphaned.length > 0) {
+            log(`🧹 Found ${orphaned.length} orphaned active challenge(s) from missed resets, cleaning up...`);
+            for (const challenge of orphaned) {
+              await storage.deleteDailyChallenge(challenge.date);
+              log(`   Removed orphaned: ${challenge.startActorName} to ${challenge.endActorName} (${challenge.date})`);
+            }
           }
+        } catch (cleanupError) {
+          log(`⚠️ Error during orphaned challenge cleanup: ${cleanupError}`);
         }
-      } catch (cleanupError) {
-        log(`⚠️ Error during orphaned challenge cleanup: ${cleanupError}`);
       }
-    }
-    
-    if (!dbHealthy) {
-      log('⚠️ Database initially unhealthy, but cron job will retry connections as needed');
-    }
-  });
-})();
+    });
+  })();
+}
 
 function setupDailyChallengeReset(port: number) {
   // Schedule for midnight EST/EDT - dual-challenge system
   cron.schedule('0 0 * * *', async () => {
     try {
       log('Daily challenge reset triggered - transitioning next to active and generating new next');
-      
+
       // Get today's and tomorrow's dates in EST/EDT timezone
       const today = getESTDateString();
       const tomorrow = getTomorrowDateString();
-      
+
       // Step 1: Try to promote next challenge to current with retry logic
       let storage;
       let retryCount = 0;
       const maxRetries = 5;
       let promotionSuccessful = false;
-      
+
       while (retryCount < maxRetries && !promotionSuccessful) {
         try {
           storage = (await import('./storage')).storage;
-          
+
           // Look for "next" status challenge for today
           const nextChallenge = await storage.getChallengeByStatus('next');
-          
+
           if (nextChallenge) {
             log(`Found next challenge to promote: ${nextChallenge.startActorName} to ${nextChallenge.endActorName}`);
-            
+
             // Archive old current challenge if it exists
             const currentChallenge = await storage.getChallengeByStatus('active');
             if (currentChallenge) {
               await storage.deleteDailyChallenge(currentChallenge.date);
               log(`Archived old current challenge: ${currentChallenge.startActorName} to ${currentChallenge.endActorName}`);
             }
-            
+
             // Delete the next challenge and recreate as active
             await storage.deleteDailyChallenge(nextChallenge.date);
-            
+
             const newCurrentChallenge = await storage.createDailyChallenge({
               date: today,
               status: 'active',
@@ -159,7 +153,7 @@ function setupDailyChallengeReset(port: number) {
               endActorId: nextChallenge.endActorId,
               endActorName: nextChallenge.endActorName,
             });
-            
+
             log(`Successfully promoted next challenge to current: ${newCurrentChallenge.startActorName} to ${newCurrentChallenge.endActorName}`);
             promotionSuccessful = true;
             break;
@@ -170,7 +164,7 @@ function setupDailyChallengeReset(port: number) {
         } catch (dbError) {
           retryCount++;
           log(`Database connection attempt ${retryCount}/${maxRetries} failed: ${dbError}`);
-          
+
           if (retryCount < maxRetries) {
             const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
             log(`Retrying in ${delay}ms...`);
@@ -180,7 +174,7 @@ function setupDailyChallengeReset(port: number) {
           }
         }
       }
-      
+
       // If promotion failed, generate new challenge via API
       if (!promotionSuccessful) {
         try {
@@ -189,7 +183,7 @@ function setupDailyChallengeReset(port: number) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ date: today, forceNew: true })
           });
-          
+
           if (response.ok) {
             const newChallenge = await response.json();
             log(`Generated new challenge for ${today}: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
@@ -198,23 +192,23 @@ function setupDailyChallengeReset(port: number) {
           log(`Error generating challenge via API: ${apiError}`);
         }
       }
-      
+
       // Step 2: Generate new Next Daily Challenge (24 hours in advance)
       if (storage) {
         try {
           const gameLogicService = (await import('./services/gameLogic')).gameLogicService;
-          
+
           // Get current active challenge (which becomes yesterday after promotion) to exclude those actors
           const previousChallenge = await storage.getChallengeByStatus('active');
           const excludeActorIds: number[] = [];
-          
+
           if (previousChallenge) {
             excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
             log(`Excluding actors from previous challenge: ${previousChallenge.startActorName} (${previousChallenge.startActorId}) and ${previousChallenge.endActorName} (${previousChallenge.endActorId})`);
           }
-          
+
           const actors = await gameLogicService.generateDailyActors(excludeActorIds);
-          
+
           if (actors) {
             const newNextChallenge = await storage.createDailyChallenge({
               date: tomorrow,
@@ -224,7 +218,7 @@ function setupDailyChallengeReset(port: number) {
               endActorId: actors.actor2.id,
               endActorName: actors.actor2.name,
             });
-            
+
             log(`Generated new Next Daily Challenge for ${tomorrow}: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
           } else {
             log(`Failed to generate actors for Next Daily Challenge`);
@@ -233,7 +227,7 @@ function setupDailyChallengeReset(port: number) {
           log(`Error generating Next Daily Challenge: ${nextError}`);
         }
       }
-      
+
     } catch (error) {
       console.error('Error during dual challenge reset:', error);
     }
@@ -251,10 +245,10 @@ function getTomorrowDateString(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
     year: 'numeric',
-    month: '2-digit', 
+    month: '2-digit',
     day: '2-digit'
   });
-  
+
   return formatter.format(tomorrow); // Returns YYYY-MM-DD format
 }
 
@@ -264,9 +258,9 @@ function getESTDateString(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
     year: 'numeric',
-    month: '2-digit', 
+    month: '2-digit',
     day: '2-digit'
   });
-  
+
   return formatter.format(now); // Returns YYYY-MM-DD format
 }

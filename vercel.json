@@ -1,0 +1,41 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "server/index.ts",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "client/index.html",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "server/index.ts"
+        },
+        {
+            "src": "/assets/(.*)",
+            "dest": "/assets/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "client/$1",
+            "continue": true
+        },
+        {
+            "handle": "filesystem"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "client/index.html"
+        }
+    ],
+    "crons": [
+        {
+            "path": "/api/cron/reset",
+            "schedule": "0 0 * * *"
+        }
+    ]
+}

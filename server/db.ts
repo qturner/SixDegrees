@@ -1,3 +1,5 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
@@ -15,7 +17,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Configure connection pool with enhanced retry and timeout settings
-export const pool = new Pool({ 
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   connectionTimeoutMillis: 30000, // Further increased timeout for slow networks
   idleTimeoutMillis: 300000, // 5 minutes idle timeout
@@ -41,31 +43,31 @@ export const db = drizzle({ client: pool, schema });
 // Enhanced connection retry wrapper with exponential backoff
 export async function withRetry<T>(operation: () => Promise<T>, maxRetries: number = 3): Promise<T> {
   let lastError: any;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error: any) {
       lastError = error;
-      
+
       // Check if it's a connection error that should trigger retry
-      const isRetryableError = 
-        error?.code === 'EAI_AGAIN' || 
+      const isRetryableError =
+        error?.code === 'EAI_AGAIN' ||
         error?.code === 'ENOTFOUND' ||
         error?.code === 'ECONNREFUSED' ||
         error?.code === 'ETIMEDOUT' ||
-        error?.message?.includes('getaddrinfo') || 
+        error?.message?.includes('getaddrinfo') ||
         error?.message?.includes('connection') ||
         error?.message?.includes('timeout') ||
         error?.message?.includes('WebSocket') ||
         error?.message?.includes('Cannot set property message') ||
         error?.name === 'ErrorEvent' ||
         error?.name === 'TypeError';
-      
+
       if (isRetryableError) {
         const delay = Math.min(2000 * Math.pow(1.5, attempt - 1), 15000); // Longer delays for better stability
         console.log(`Database connection attempt ${attempt}/${maxRetries} failed: ${error.message || error.toString()}`);
-        
+
         if (attempt < maxRetries) {
           console.log(`Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -74,12 +76,12 @@ export async function withRetry<T>(operation: () => Promise<T>, maxRetries: numb
           console.error(`All ${maxRetries} connection attempts failed. Last error:`, error.message || error.toString());
         }
       }
-      
+
       // If it's not a retryable error or we've exhausted retries, throw immediately
       throw error;
     }
   }
-  
+
   throw lastError;
 }
 
