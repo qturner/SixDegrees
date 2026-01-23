@@ -2,9 +2,9 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { pool } from "./db";
-import { storage } from "./storage";
-import { loginSchema, registerSchema } from "../../shared/schema";
+import { pool } from "./db.js";
+import { storage } from "./storage.js";
+import { loginSchema, registerSchema } from "../../shared/schema.js";
 import { ZodError } from "zod";
 
 // Session middleware setup

@@ -1,4 +1,4 @@
-import { Actor, Movie } from "../../../shared/schema";
+import { Actor, Movie } from "../../../shared/schema.js";
 
 interface TMDbConfig {
   apiKey: string;

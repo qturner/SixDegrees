@@ -1,14 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { tmdbService } from "./services/tmdb";
-import { gameLogicService } from "./services/gameLogic";
-import { withRetry } from "./db";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema } from "../../shared/schema";
-import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
-import { setupAuth, isAuthenticated } from "./auth";
-import { emailService } from "./services/email";
-import { registerTestEmailRoutes } from "./routes/testEmail";
+import { storage } from "./storage.js";
+import { tmdbService } from "./services/tmdb.js";
+import { gameLogicService } from "./services/gameLogic.js";
+import { withRetry } from "./db.js";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema } from "../../shared/schema.js";
+import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth.js";
+import { setupAuth, isAuthenticated } from "./auth.js";
+import { emailService } from "./services/email.js";
+import { registerTestEmailRoutes } from "./routes/testEmail.js";
 import cron from "node-cron";
 
 function getESTDateString(date: Date = new Date()): string {

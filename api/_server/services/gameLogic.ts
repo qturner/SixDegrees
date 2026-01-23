@@ -1,5 +1,5 @@
-import { tmdbService } from "./tmdb";
-import { Connection, ValidationResult } from "../../../shared/schema";
+import { tmdbService } from "./tmdb.js";
+import { Connection, ValidationResult } from "../../../shared/schema.js";
 
 interface GameValidationContext {
   startActorId: number;

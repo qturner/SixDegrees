@@ -2,11 +2,11 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import express, { type Request, Response, NextFunction } from "express";
 import cron from "node-cron";
-import { registerRoutes } from "./routes";
-import { log } from "./vite";
-import { gameLogicService } from "./services/gameLogic";
-import { storage } from "./storage";
-import { checkDatabaseHealth } from "./db";
+import { registerRoutes } from "./routes.js";
+import { log } from "./vite.js";
+import { gameLogicService } from "./services/gameLogic.js";
+import { storage } from "./storage.js";
+import { checkDatabaseHealth } from "./db.js";
 
 export const app = express();
 app.use(express.json());
