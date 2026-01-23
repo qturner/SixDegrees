@@ -77,10 +77,10 @@ export const initServer = async () => {
     });
 
     if (app.get("env") === "development") {
-      const { setupVite } = await import("./vite");
+      const { setupVite } = await import("./vite.js");
       await setupVite(app, server);
     } else if (!process.env.VERCEL) {
-      const { serveStatic } = await import("./vite");
+      const { serveStatic } = await import("./vite.js");
       serveStatic(app);
     }
 
@@ -129,7 +129,7 @@ function setupDailyChallengeReset(port: number) {
 
       while (retryCount < maxRetries && !promotionSuccessful) {
         try {
-          storage = (await import('./storage')).storage;
+          storage = (await import('./storage.js')).storage;
 
           // Look for "next" status challenge for today
           const nextChallenge = await storage.getChallengeByStatus('next');
@@ -198,7 +198,7 @@ function setupDailyChallengeReset(port: number) {
       // Step 2: Generate new Next Daily Challenge (24 hours in advance)
       if (storage) {
         try {
-          const gameLogicService = (await import('./services/gameLogic')).gameLogicService;
+          const gameLogicService = (await import('./services/gameLogic.js')).gameLogicService;
 
           // Get current active challenge (which becomes yesterday after promotion) to exclude those actors
           const previousChallenge = await storage.getChallengeByStatus('active');

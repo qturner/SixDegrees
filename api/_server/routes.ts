@@ -8,7 +8,7 @@ import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSche
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth.js";
 import { setupAuth, isAuthenticated } from "./auth.js";
 import { emailService } from "./services/email.js";
-import { registerTestEmailRoutes } from "./routes/testEmail.js";
+import { registerTestEmailRoutes } from "./internal_routes/testEmail.js";
 import cron from "node-cron";
 
 function getESTDateString(date: Date = new Date()): string {
