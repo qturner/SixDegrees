@@ -10,7 +10,7 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('[API] UNHANDLED REJECTION:', reason);
 });
 
-import { initServer } from './server-bundle.mjs';
+import { initServer } from './server/index.js';
 
 export default async (req: any, res: any) => {
     console.log(`[API] ${req.method} ${req.url} - starting`);
