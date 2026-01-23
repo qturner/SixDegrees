@@ -1,43 +1,35 @@
 // @ts-nocheck
 let cachedApp: any = null;
 
-import { initServer } from './server/index.js';
-
 export default async (req: any, res: any) => {
-    // Global error handlers to capture startup crashes in serverless
-    // Moved inside the handler to ensure they are set when the function is invoked
-    process.removeAllListeners('uncaughtException');
-    process.removeAllListeners('unhandledRejection');
+    console.log(`[API] ${req.method} ${req.url} - v2 debug`);
 
-    process.on('uncaughtException', (err) => {
-        console.error('[API] UNCAUGHT EXCEPTION:', err);
-    });
-
-    process.on('unhandledRejection', (reason, promise) => {
-        console.error('[API] UNHANDLED REJECTION:', reason);
-    });
-
-    console.log(`[API] ${req.method} ${req.url} - starting`);
+    // Direct response for health check to bypass server initialization
+    if (req.url === '/api/health' || req.url === '/api/health/') {
+        return res.status(200).json({
+            status: "debug",
+            message: "Barebones API handler reached",
+            timestamp: new Date().toISOString(),
+            vercel: !!process.env.VERCEL
+        });
+    }
 
     try {
+        const { initServer } = await import('./server/index.js');
         if (!cachedApp) {
-            console.log("[API] Calling initServer...");
+            console.log("[API] Calling initServer in debug mode...");
             const { app } = await initServer();
             cachedApp = app;
-            console.log("[API] Server initialized successfully");
         }
-
         return cachedApp(req, res);
     } catch (error: any) {
-        console.error("[API] CRITICAL FAILURE:", error);
-
-        // Return detailed error in JSON for debugging
+        console.error("[API] DEBUG BOOT FAILURE:", error);
         return res.status(500).json({
-            error: "FUNCTION_INVOCATION_FAILED",
-            message: error?.message || "Unknown error during initialization",
+            error: "DEBUG_BOOT_FAILURE",
+            message: error?.message,
             stack: error?.stack,
-            phase: cachedApp ? "execution" : "initialization",
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            phase: "debug_init"
         });
     }
 };
