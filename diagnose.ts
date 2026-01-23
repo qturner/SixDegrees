@@ -1,6 +1,6 @@
 
-import { storage } from "./server/storage";
-import { tmdbService } from "./server/services/tmdb";
+import { storage } from "./api/server/storage";
+import { tmdbService } from "./api/server/services/tmdb";
 
 async function diagnose() {
     console.log("--- Production Diagnostics ---");
@@ -31,7 +31,7 @@ async function diagnose() {
                 console.log(`  - ${c.date}: ${c.startActorName} to ${c.endActorName}`);
             });
         }
-    } catch (err) {
+    } catch (err: any) {
         console.error("❌ Database Error:", err.message);
     }
 
@@ -45,7 +45,7 @@ async function diagnose() {
             const actors = await tmdbService.getPopularActors();
             console.log(`✅ TMDB connection ok, found ${actors.length} popular actors`);
         }
-    } catch (err) {
+    } catch (err: any) {
         console.error("❌ TMDB Error:", err.message);
     }
 

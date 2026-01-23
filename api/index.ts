@@ -1,18 +1,22 @@
 // @ts-nocheck
 let cachedApp: any = null;
 
-// Global error handlers to capture startup crashes in serverless
-process.on('uncaughtException', (err) => {
-    console.error('[API] UNCAUGHT EXCEPTION:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('[API] UNHANDLED REJECTION:', reason);
-});
-
 import { initServer } from './server/index.js';
 
 export default async (req: any, res: any) => {
+    // Global error handlers to capture startup crashes in serverless
+    // Moved inside the handler to ensure they are set when the function is invoked
+    process.removeAllListeners('uncaughtException');
+    process.removeAllListeners('unhandledRejection');
+
+    process.on('uncaughtException', (err) => {
+        console.error('[API] UNCAUGHT EXCEPTION:', err);
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error('[API] UNHANDLED REJECTION:', reason);
+    });
+
     console.log(`[API] ${req.method} ${req.url} - starting`);
 
     try {

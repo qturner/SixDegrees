@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
 import { type Server } from "http";
+import { fileURLToPath } from "url";
 import { nanoid } from "nanoid";
 
 export function log(message: string, source = "express") {
@@ -46,8 +47,10 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
       const clientTemplate = path.resolve(
-        import.meta.dirname,
+        __dirname,
         "..",
         "client",
         "index.html",
@@ -69,8 +72,10 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const publicPath = path.resolve(import.meta.dirname);
-  const rootPublicPath = path.resolve(import.meta.dirname, "..", "dist");
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const publicPath = path.resolve(__dirname);
+  const rootPublicPath = path.resolve(__dirname, "..", "dist");
 
   let actualPublicPath = publicPath;
 

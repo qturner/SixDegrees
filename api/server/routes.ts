@@ -69,11 +69,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test email service on startup
-  setTimeout(async () => {
-    const { emailService } = await import("./services/email");
-    await emailService.testConnection();
-  }, 2000);
 
   // Theme samples route
   app.get("/theme-samples", (req, res) => {
