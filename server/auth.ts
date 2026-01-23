@@ -10,13 +10,28 @@ import { ZodError } from "zod";
 // Session middleware setup
 const PostgresSessionStore = connectPg(session);
 
-export function setupAuth(app: Express) {
-  // Setup session middleware
-  app.use(session({
-    store: new PostgresSessionStore({
+export async function setupAuth(app: Express) {
+  let sessionStore: any;
+
+  try {
+    console.log('[AUTH] Initializing Postgres session store...');
+    sessionStore = new PostgresSessionStore({
       pool,
       createTableIfMissing: true,
-    }),
+    });
+    console.log('[AUTH] Postgres session store initialized');
+  } catch (error) {
+    console.error('[AUTH] Failed to initialize Postgres session store, falling back to memory store:', error);
+    const MemoryStore = (await import('memorystore')).default(session as any);
+    sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+    console.log('[AUTH] Memory store initialized');
+  }
+
+  // Setup session middleware
+  app.use(session({
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
     resave: false,
     saveUninitialized: false,
@@ -31,7 +46,7 @@ export function setupAuth(app: Express) {
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       const validatedData = registerSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(validatedData.email);
       if (existingUser) {
@@ -66,9 +81,9 @@ export function setupAuth(app: Express) {
       res.status(201).json(userResponse);
     } catch (error) {
       if (error instanceof ZodError) {
-        return res.status(400).json({ 
-          message: "Validation error", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Validation error",
+          errors: error.errors
         });
       }
       console.error("Registration error:", error);
@@ -101,9 +116,9 @@ export function setupAuth(app: Express) {
       res.status(200).json(userResponse);
     } catch (error) {
       if (error instanceof ZodError) {
-        return res.status(400).json({ 
-          message: "Validation error", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Validation error",
+          errors: error.errors
         });
       }
       console.error("Login error:", error);
@@ -128,7 +143,7 @@ export function setupAuth(app: Express) {
     try {
       const userId = (req.session as any).userId;
       const user = await storage.getUserById(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -147,7 +162,7 @@ export function setupAuth(app: Express) {
     try {
       const userId = (req.session as any).userId;
       const stats = await storage.getUserStats(userId);
-      
+
       if (!stats) {
         // Create initial stats if they don't exist
         const newStats = await storage.createUserStats({ userId });
@@ -165,10 +180,10 @@ export function setupAuth(app: Express) {
 // Authentication middleware
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   const userId = (req.session as any)?.userId;
-  
+
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  
+
   next();
 };

@@ -17,7 +17,7 @@ class GameLogicService {
     try {
       // Validate that the actor appeared in the movie
       const actorInMovie = await tmdbService.validateActorInMovie(actorId, movieId);
-      
+
       if (!actorInMovie) {
         return {
           valid: false,
@@ -85,7 +85,7 @@ class GameLogicService {
       // Validate each connection in the chain
       for (let i = 0; i < connections.length; i++) {
         const connection = connections[i];
-        
+
         // Validate current actor is in current movie
         const currentValid = await tmdbService.validateActorInMovie(
           connection.actorId,
@@ -118,7 +118,7 @@ class GameLogicService {
           // Validate that current actor appears in next movie
           const nextConnection = connections[i + 1];
           // Validation logic for chain continuity
-          
+
           const actorInNextMovie = await tmdbService.validateActorInMovie(
             connection.actorId,
             nextConnection.movieId
@@ -149,7 +149,7 @@ class GameLogicService {
 
       // Check if we've successfully connected the actors
       const isComplete = true; // If we've reached here, the chain is valid
-      
+
       return {
         valid: true,
         completed: isComplete,
@@ -168,14 +168,14 @@ class GameLogicService {
   async generateDailyActors(excludeActorIds: number[] = []): Promise<{ actor1: any; actor2: any } | null> {
     try {
       const popularActors = await tmdbService.getPopularActors();
-      
+
       if (popularActors.length < 2) {
         console.error("Not enough popular actors found");
         return null;
       }
 
       // Filter out excluded actors (from current/previous challenges)
-      const availableActors = popularActors.filter(actor => 
+      const availableActors = popularActors.filter(actor =>
         !excludeActorIds.includes(actor.id)
       );
 

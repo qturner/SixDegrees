@@ -11,9 +11,8 @@ import { emailService } from "./services/email";
 import { registerTestEmailRoutes } from "./routes/testEmail";
 import cron from "node-cron";
 
-function getESTDateString(): string {
-  // Get current date in EST/EDT timezone using proper Intl formatting
-  const now = new Date();
+function getESTDateString(date: Date = new Date()): string {
+  // Use Intl.DateTimeFormat to ensure consistent YYYY-MM-DD format regardless of environment locale
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -21,21 +20,24 @@ function getESTDateString(): string {
     day: '2-digit'
   });
 
-  return formatter.format(now); // Returns YYYY-MM-DD format
+  // en-CA format is YYYY-MM-DD, but we'll normalize it to be 100% sure
+  const formatted = formatter.format(date);
+  return formatted.replace(/\//g, '-');
+}
+
+function getYesterdayDateString(): string {
+  // Get yesterday's date in EST/EDT timezone
+  const date = new Date();
+  date.setHours(date.getHours() - 12); // Move back half a day to ensure we drop into yesterday EST if we are early morning UTC
+  date.setDate(date.getDate() - 1);
+  return getESTDateString(date);
 }
 
 function getTomorrowDateString(): string {
   // Get tomorrow's date in EST/EDT timezone
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-
-  return formatter.format(tomorrow); // Returns YYYY-MM-DD format
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return getESTDateString(date);
 }
 
 // Prevent race conditions in challenge creation
@@ -44,7 +46,28 @@ let lastChallengeDate: string | null = null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup email/password authentication
-  setupAuth(app);
+  await setupAuth(app);
+
+  // Health check endpoint
+  app.get("/api/health", async (_req, res) => {
+    try {
+      const { checkDatabaseHealth } = await import("./db.js");
+      const dbHealthy = await checkDatabaseHealth();
+      const tmdbConfigured = !!process.env.TMDB_API_KEY || !!process.env.API_KEY;
+
+      res.json({
+        status: dbHealthy && tmdbConfigured ? "ok" : "degraded",
+        database: dbHealthy ? "connected" : "disconnected",
+        tmdb: tmdbConfigured ? "configured" : "missing_key",
+        time: new Date().toISOString(),
+        estDate: getESTDateString(),
+        nodeEnv: process.env.NODE_ENV,
+        isVercel: !!process.env.VERCEL
+      });
+    } catch (error: any) {
+      res.status(500).json({ status: "error", message: error?.message });
+    }
+  });
 
   // Test email service on startup
   setTimeout(async () => {
@@ -281,9 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get yesterday's challenge to exclude those actors
         let excludeActorIds: number[] = [];
         try {
-          const yesterdayDate = new Date();
-          yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-          const yesterday = yesterdayDate.toISOString().split('T')[0];
+          const yesterday = getYesterdayDateString();
           const previousChallenge = await storage.getDailyChallenge(yesterday);
           if (previousChallenge) {
             excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
@@ -320,9 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get yesterday's challenge to exclude those actors
         let excludeActorIds: number[] = [];
         try {
-          const yesterdayDate = new Date();
-          yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-          const yesterday = yesterdayDate.toISOString().split('T')[0];
+          const yesterday = getYesterdayDateString();
           const previousChallenge = await storage.getDailyChallenge(yesterday);
           if (previousChallenge) {
             excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
@@ -401,10 +420,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: 'active',
               startActorId: nextChallenge.startActorId,
               startActorName: nextChallenge.startActorName,
-              startActorProfilePath: nextChallenge.startActorProfilePath,
+              startActorProfilePath: nextChallenge.startActorProfilePath || null,
               endActorId: nextChallenge.endActorId,
               endActorName: nextChallenge.endActorName,
-              endActorProfilePath: nextChallenge.endActorProfilePath,
+              endActorProfilePath: nextChallenge.endActorProfilePath || null,
               hintsUsed: 0,
             });
 
@@ -422,10 +441,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   status: "next",
                   startActorId: actors.actor1.id,
                   startActorName: actors.actor1.name,
-                  startActorProfilePath: actors.actor1.profile_path,
+                  startActorProfilePath: actors.actor1.profile_path || null,
                   endActorId: actors.actor2.id,
                   endActorName: actors.actor2.name,
-                  endActorProfilePath: actors.actor2.profile_path,
+                  endActorProfilePath: actors.actor2.profile_path || null,
                   hintsUsed: 0,
                 });
                 console.log(`Generated new 'next' challenge for ${tomorrow}: ${actors.actor1.name} to ${actors.actor2.name}`);
@@ -435,8 +454,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Continue even if next challenge generation fails
             }
           }
-        } catch (promotionError) {
-          console.error("Error checking/promoting next challenge:", promotionError);
+        } catch (promotionError: any) {
+          console.error("Error checking/promoting next challenge:", promotionError?.message || promotionError);
+          if (promotionError?.stack) console.error(promotionError.stack);
           // Continue to fallback generation below
         }
       }
@@ -465,9 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Get yesterday's challenge to exclude those actors
               let excludeActorIds: number[] = [];
               try {
-                const yesterdayDate = new Date();
-                yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-                const yesterday = yesterdayDate.toISOString().split('T')[0];
+                const yesterday = getYesterdayDateString();
                 const previousChallenge = await storage.getDailyChallenge(yesterday);
                 if (previousChallenge) {
                   excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
@@ -487,10 +505,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 status: "active",
                 startActorId: actors.actor1.id,
                 startActorName: actors.actor1.name,
-                startActorProfilePath: actors.actor1.profile_path,
+                startActorProfilePath: actors.actor1.profile_path || null,
                 endActorId: actors.actor2.id,
                 endActorName: actors.actor2.name,
-                endActorProfilePath: actors.actor2.profile_path,
+                endActorProfilePath: actors.actor2.profile_path || null,
                 hintsUsed: 0,
               }), 5);
               console.log(`Created new challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
@@ -504,8 +522,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         try {
           challenge = await challengeCreationPromise;
-        } catch (creationError) {
-          console.error("Error creating new challenge:", creationError);
+        } catch (creationError: any) {
+          console.error("Error creating new challenge:", creationError?.message || creationError);
+          if (creationError?.stack) console.error(creationError.stack);
           return res.status(503).json({
             message: "Unable to generate daily challenge due to database issues. Please refresh in a moment.",
             retry: true
@@ -554,9 +573,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(challenge);
-    } catch (error) {
-      console.error("Error getting daily challenge:", error);
-      res.status(500).json({ message: "Internal server error" });
+    } catch (error: any) {
+      console.error("CRITICAL error getting daily challenge:", error?.message || error);
+      if (error?.stack) console.error(error.stack);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error?.message || "Unknown error",
+        path: "/api/daily-challenge"
+      });
     }
   });
 
@@ -659,7 +683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Force regenerate daily challenge (for development/admin)
   app.delete("/api/daily-challenge/regenerate", async (req, res) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getESTDateString();
       await storage.deleteDailyChallenge(today);
       console.log(`Challenge for ${today} deleted, hints will reset for new challenge`);
       res.json({ message: "Challenge cleared, next request will generate a new one" });
@@ -673,7 +697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get stored hints for daily challenge
   app.get("/api/daily-challenge/hints", async (req, res) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getESTDateString();
       const challenge = await storage.getDailyChallenge(today);
 
       if (!challenge) {
@@ -765,13 +789,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error getting hint:", error);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({
+        message: "Internal server error while fetching hint",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
   // Validate complete game chain
   app.post("/api/validate-game", async (req, res) => {
-    let validationResult = null;
+    let validationResult: any = {
+      valid: false,
+      completed: false,
+      message: "Initialization failed"
+    };
     let connections = [];
 
     try {
@@ -915,8 +946,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const challenges = [];
       for (let i = 1; i <= 5; i++) {
         const date = new Date();
+        date.setHours(date.getHours() - 12); // Offset to ensure we don't skip a day if running early morning UTC
         date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = getESTDateString(date);
 
         const challenge = await storage.getDailyChallenge(dateStr);
         if (challenge) {
@@ -1036,9 +1068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get yesterday's challenge to exclude those actors from new generation
       let excludeActorIds: number[] = [];
       try {
-        const yesterdayDate = new Date();
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-        const yesterday = yesterdayDate.toISOString().split('T')[0];
+        const yesterday = getYesterdayDateString();
         const previousChallenge = await storage.getDailyChallenge(yesterday);
         if (previousChallenge) {
           excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
@@ -1053,7 +1083,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Unable to generate challenge" });
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getESTDateString();
       const challenge = await storage.createDailyChallenge({
         date: today,
         status: "active",

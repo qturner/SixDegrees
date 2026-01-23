@@ -15,7 +15,7 @@ export interface IStorage {
   updateDailyChallengeHints(challengeId: string, hintsUsed: number, startActorHint?: string, endActorHint?: string): Promise<DailyChallenge>;
   updateChallengeStatus(challengeId: string, status: string): Promise<DailyChallenge>;
   deleteDailyChallenge(date: string): Promise<void>;
-  
+
   // Game Attempt methods
   createGameAttempt(attempt: InsertGameAttempt): Promise<GameAttempt>;
   getGameAttemptsByChallenge(challengeId: string): Promise<GameAttempt[]>;
@@ -28,18 +28,18 @@ export interface IStorage {
     mostUsedMovies: { id: string; title: string; count: number }[];
     mostUsedActors: { id: string; name: string; count: number }[];
   }>;
-  
+
   // User methods (email/password)
   getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // User stats methods
   getUserStats(userId: string): Promise<UserStats | undefined>;
   createUserStats(stats: InsertUserStats): Promise<UserStats>;
   updateUserStats(userId: string, stats: Partial<UserStats>): Promise<UserStats>;
-  
+
   // User Challenge Completion methods
   createUserChallengeCompletion(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion>;
   getUserChallengeCompletion(userId: string, challengeId: string): Promise<UserChallengeCompletion | undefined>;
@@ -50,7 +50,7 @@ export interface IStorage {
     completed: boolean;
     moves?: number;
   }[]>;
-  
+
   // Admin methods
   createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
   getAdminUserByEmail(email: string): Promise<AdminUser | undefined>;
@@ -58,12 +58,12 @@ export interface IStorage {
   getValidAdminSession(token: string): Promise<AdminSession | undefined>;
   deleteAdminSession(token: string): Promise<void>;
   updateAdminLastLogin(userId: string): Promise<void>;
-  
+
   // Contact methods
   createContactSubmission(submission: InsertContactSubmission): Promise<ContactSubmission>;
   getContactSubmissions(): Promise<ContactSubmission[]>;
   updateContactSubmissionStatus(id: string, status: string): Promise<void>;
-  
+
   // Visitor Analytics methods
   trackVisitor(analytics: InsertVisitorAnalytics): Promise<VisitorAnalytics>;
   updateVisitorSession(sessionId: string, updates: Partial<InsertVisitorAnalytics>): Promise<void>;
@@ -140,7 +140,7 @@ export class DatabaseStorage implements IStorage {
       const updateData: any = { hintsUsed };
       if (startActorHint !== undefined) updateData.startActorHint = startActorHint;
       if (endActorHint !== undefined) updateData.endActorHint = endActorHint;
-      
+
       const [challenge] = await db.update(dailyChallenges)
         .set(updateData)
         .where(eq(dailyChallenges.id, challengeId))
@@ -172,26 +172,26 @@ export class DatabaseStorage implements IStorage {
   async getChallengeAnalytics(challengeId: string) {
     return await withRetry(async () => {
       const attempts = await db.select().from(gameAttempts).where(eq(gameAttempts.challengeId, challengeId));
-      
+
       // Get the challenge to know which actors to exclude (start and end actors)
       const challenge = await db.select().from(dailyChallenges).where(eq(dailyChallenges.id, challengeId)).limit(1);
-      const excludedActorIds = challenge.length > 0 
+      const excludedActorIds = challenge.length > 0
         ? [challenge[0].startActorId.toString(), challenge[0].endActorId.toString()]
         : [];
-    
+
       const totalAttempts = attempts.length;
-      const completedAttempts = attempts.filter(a => a.completed).length;
+      const completedAttempts = attempts.filter((a: any) => a.completed).length;
       const completionRate = totalAttempts > 0 ? (completedAttempts / totalAttempts) * 100 : 0;
-      
-      const completedMoves = attempts.filter(a => a.completed).map(a => a.moves);
-      const avgMoves = completedMoves.length > 0 
-        ? completedMoves.reduce((sum, moves) => sum + moves, 0) / completedMoves.length 
+
+      const completedMoves = attempts.filter((a: any) => a.completed).map((a: any) => a.moves);
+      const avgMoves = completedMoves.length > 0
+        ? completedMoves.reduce((sum: number, moves: number) => sum + moves, 0) / completedMoves.length
         : 0;
-      
+
       // Create move distribution (1-6 moves)
       const moveDistribution = Array.from({ length: 6 }, (_, i) => {
         const moves = i + 1;
-        const count = completedMoves.filter(m => m === moves).length;
+        const count = completedMoves.filter((m: any) => m === moves).length;
         return { moves, count };
       });
 
@@ -199,15 +199,15 @@ export class DatabaseStorage implements IStorage {
       const movieUsage = new Map<string, { title: string; count: number }>();
       const actorUsage = new Map<string, { name: string; count: number }>();
 
-      for (const attempt of attempts.filter(a => a.completed)) {
+      for (const attempt of attempts.filter((a: any) => a.completed)) {
         if (attempt.connections) {
           try {
             const connections = JSON.parse(attempt.connections);
-            
+
             // Get unique actors and movies in THIS solution chain (excluding start/end actors)
             const uniqueMoviesInChain = new Set<string>();
             const uniqueActorsInChain = new Set<string>();
-            
+
             for (const connection of connections) {
               // Track unique movies in this chain
               if (connection.movieId && connection.movieTitle) {
@@ -219,7 +219,7 @@ export class DatabaseStorage implements IStorage {
                 uniqueActorsInChain.add(actorIdStr);
               }
             }
-            
+
             // Count each unique movie once per solution
             uniqueMoviesInChain.forEach(movieId => {
               const connection = connections.find((c: any) => c.movieId === movieId);
@@ -231,7 +231,7 @@ export class DatabaseStorage implements IStorage {
                 });
               }
             });
-            
+
             // Count each unique actor once per solution
             uniqueActorsInChain.forEach(actorId => {
               const connection = connections.find((c: any) => c.actorId.toString() === actorId);
@@ -326,7 +326,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(adminUsers.id, userId));
     });
   }
-  
+
   // Contact methods
   async createContactSubmission(insertSubmission: InsertContactSubmission): Promise<ContactSubmission> {
     return await withRetry(async () => {
@@ -348,7 +348,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(contactSubmissions.id, id));
     });
   }
-  
+
   // Visitor Analytics methods
   async trackVisitor(insertAnalytics: InsertVisitorAnalytics): Promise<VisitorAnalytics> {
     return await withRetry(async () => {
@@ -364,17 +364,17 @@ export class DatabaseStorage implements IStorage {
         .where(eq(visitorAnalytics.sessionId, sessionId));
     });
   }
-  
+
   async getReferralAnalytics(days: number = 30) {
     return await withRetry(async () => {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
-      
+
       const visitors = await db.select().from(visitorAnalytics)
         .where(gt(visitorAnalytics.createdAt, cutoffDate));
-      
+
       const totalVisitors = visitors.length;
-      
+
       // Group by referrer domain and type
       const referrerMap = new Map<string, { type: string; count: number }>();
       const topReferrersMap = new Map<string, number>();
@@ -382,31 +382,31 @@ export class DatabaseStorage implements IStorage {
       const utmSourcesMap = new Map<string, { medium: string; campaign: string; count: number }>();
       const geographicMap = new Map<string, number>();
       const deviceMap = new Map<string, number>();
-      
+
       let convertedVisitors = 0;
-      
+
       for (const visitor of visitors) {
         // Track conversions
         if (visitor.converted) convertedVisitors++;
-        
+
         // Track referrer breakdown
         const domain = visitor.referrerDomain || 'direct';
         const type = visitor.referrerType || 'direct';
-        
+
         if (referrerMap.has(domain)) {
           referrerMap.get(domain)!.count++;
         } else {
           referrerMap.set(domain, { type, count: 1 });
         }
-        
+
         // Track top referrers
         topReferrersMap.set(domain, (topReferrersMap.get(domain) || 0) + 1);
-        
+
         // Track search queries
         if (visitor.searchQuery) {
           searchQueriesMap.set(visitor.searchQuery, (searchQueriesMap.get(visitor.searchQuery) || 0) + 1);
         }
-        
+
         // Track UTM sources
         if (visitor.utmSource) {
           const key = visitor.utmSource;
@@ -421,12 +421,12 @@ export class DatabaseStorage implements IStorage {
             });
           }
         }
-        
+
         // Track geographic data
         if (visitor.country) {
           geographicMap.set(visitor.country, (geographicMap.get(visitor.country) || 0) + 1);
         }
-        
+
         // Track device data (simplified user agent)
         if (visitor.userAgent) {
           // Extract browser/device info from user agent
@@ -434,11 +434,11 @@ export class DatabaseStorage implements IStorage {
           if (visitor.userAgent.includes('Mobile')) deviceInfo = 'Mobile';
           else if (visitor.userAgent.includes('Tablet')) deviceInfo = 'Tablet';
           else deviceInfo = 'Desktop';
-          
+
           deviceMap.set(deviceInfo, (deviceMap.get(deviceInfo) || 0) + 1);
         }
       }
-      
+
       // Convert maps to sorted arrays
       const referralBreakdown = Array.from(referrerMap.entries())
         .map(([domain, data]) => ({
@@ -448,7 +448,7 @@ export class DatabaseStorage implements IStorage {
           percentage: Math.round((data.count / totalVisitors) * 100 * 100) / 100
         }))
         .sort((a, b) => b.count - a.count);
-      
+
       const topReferrers = Array.from(topReferrersMap.entries())
         .map(([domain, count]) => ({
           domain,
@@ -457,12 +457,12 @@ export class DatabaseStorage implements IStorage {
         }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 10);
-      
+
       const searchQueries = Array.from(searchQueriesMap.entries())
         .map(([query, count]) => ({ query, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 10);
-      
+
       const utmSources = Array.from(utmSourcesMap.entries())
         .map(([source, data]) => ({
           source,
@@ -471,16 +471,16 @@ export class DatabaseStorage implements IStorage {
           count: data.count
         }))
         .sort((a, b) => b.count - a.count);
-      
+
       const geographicData = Array.from(geographicMap.entries())
         .map(([country, count]) => ({ country, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 10);
-      
+
       const deviceData = Array.from(deviceMap.entries())
         .map(([userAgent, count]) => ({ userAgent, count }))
         .sort((a, b) => b.count - a.count);
-      
+
       return {
         totalVisitors,
         referralBreakdown,
@@ -590,8 +590,8 @@ export class DatabaseStorage implements IStorage {
         .where(eq(userChallengeCompletions.userId, userId))
         .groupBy(userChallengeCompletions.moves)
         .orderBy(userChallengeCompletions.moves);
-      
-      return results.map(row => ({ moves: row.moves, count: Number(row.count) }));
+
+      return results.map((row: any) => ({ moves: row.moves, count: Number(row.count) }));
     });
   }
 

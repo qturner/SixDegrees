@@ -4,8 +4,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import cron from "node-cron";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { gameLogicService } from "./services/gameLogic.ts";
-import { storage } from "./storage.ts";
+import { gameLogicService } from "./services/gameLogic";
+import { storage } from "./storage";
 import { checkDatabaseHealth } from "./db";
 
 export const app = express();
@@ -42,48 +42,58 @@ app.use((req, res, next) => {
   next();
 });
 
+let isInitialized = false;
+let initPromise: Promise<{ app: any; server: any; dbHealthy: boolean }> | null = null;
+
 export const initServer = async () => {
-  // Check database health but don't block startup
-  let dbHealthy = false;
-  try {
-    log('Checking database connection...');
-    dbHealthy = await checkDatabaseHealth();
-    if (dbHealthy) {
-      log('✅ Database connection verified successfully');
-    } else {
-      log('⚠️ Database connection failed, but starting server anyway');
+  if (isInitialized) return initPromise!;
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    // Check database health but don't block startup
+    let dbHealthy = false;
+    try {
+      log('Checking database connection...');
+      dbHealthy = await checkDatabaseHealth();
+      if (dbHealthy) {
+        log('✅ Database connection verified successfully');
+      } else {
+        log('⚠️ Database connection failed, but starting server anyway');
+      }
+    } catch (error: any) {
+      log(`⚠️ Database health check error: ${error?.message || 'Unknown error'}`);
     }
-  } catch (error: any) {
-    log(`⚠️ Database health check error: ${error?.message || 'Unknown error'}, but starting server anyway`);
-  }
 
-  const server = await registerRoutes(app);
+    const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
-  });
+      console.error(`Error ${status}: ${message}`);
+      if (err.stack) console.error(err.stack);
 
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+      res.status(status).json({ message });
+    });
 
-  return { app, server, dbHealthy };
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else if (!process.env.VERCEL) {
+      serveStatic(app);
+    }
+
+    isInitialized = true;
+    return { app, server, dbHealthy };
+  })();
+
+  return initPromise;
 };
 
-// Initialize the server
-const serverPromise = initServer();
-
-// Start the server if this file is run directly (not as a module) 
+// Start the server if this file is run directly (not as a module)
 // or if we are not on Vercel (where it acts as a serverless function)
-if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+if (!process.env.VERCEL && (process.env.NODE_ENV !== "production" || import.meta.url === `file://${process.argv[1]}`)) {
   (async () => {
-    const { server, dbHealthy } = await serverPromise;
+    const { server, dbHealthy } = await initServer();
     const port = parseInt(process.env.PORT || '5001', 10);
     server.listen({
       port,
@@ -91,24 +101,6 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     }, async () => {
       log(`serving on port ${port}`);
       setupDailyChallengeReset(port);
-
-      if (dbHealthy) {
-        try {
-          const today = getESTDateString();
-          const allActive = await storage.getAllChallengesByStatus('active');
-          const orphaned = allActive.filter(c => c.date !== today);
-
-          if (orphaned.length > 0) {
-            log(`🧹 Found ${orphaned.length} orphaned active challenge(s) from missed resets, cleaning up...`);
-            for (const challenge of orphaned) {
-              await storage.deleteDailyChallenge(challenge.date);
-              log(`   Removed orphaned: ${challenge.startActorName} to ${challenge.endActorName} (${challenge.date})`);
-            }
-          }
-        } catch (cleanupError) {
-          log(`⚠️ Error during orphaned challenge cleanup: ${cleanupError}`);
-        }
-      }
     });
   })();
 }
@@ -116,6 +108,8 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
 export default app;
 
 function setupDailyChallengeReset(port: number) {
+  if (process.env.VERCEL) return; // Don't run cron on Vercel
+
   // Schedule for midnight EST/EDT - dual-challenge system
   cron.schedule('0 0 * * *', async () => {
     try {
@@ -244,10 +238,8 @@ function setupDailyChallengeReset(port: number) {
   log('Dual challenge reset scheduler initialized - resets at midnight EST/EDT');
 }
 
-function getTomorrowDateString(): string {
-  // Get tomorrow's date in EST/EDT timezone
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+function getESTDateString(date: Date = new Date()): string {
+  // Use Intl.DateTimeFormat to ensure consistent YYYY-MM-DD format regardless of environment locale
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -255,18 +247,14 @@ function getTomorrowDateString(): string {
     day: '2-digit'
   });
 
-  return formatter.format(tomorrow); // Returns YYYY-MM-DD format
+  // en-CA format is YYYY-MM-DD, but we'll normalize it to be 100% sure
+  const formatted = formatter.format(date);
+  return formatted.replace(/\//g, '-');
 }
 
-function getESTDateString(): string {
-  // Get current date in EST/EDT timezone using proper Intl formatting
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-
-  return formatter.format(now); // Returns YYYY-MM-DD format
+function getTomorrowDateString(): string {
+  // Get tomorrow's date in EST/EDT timezone
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return getESTDateString(date);
 }

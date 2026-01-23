@@ -2,12 +2,20 @@
     "version": 2,
     "rewrites": [
         {
+            "source": "/api/test",
+            "destination": "/api/test.js"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/index.ts"
         },
         {
+            "source": "/assets/(.*)",
+            "destination": "/dist/assets/$1"
+        },
+        {
             "source": "/(.*)",
-            "destination": "/index.html"
+            "destination": "/dist/index.html"
         }
     ],
     "crons": [

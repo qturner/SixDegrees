@@ -38,8 +38,8 @@ const loadGameState = (currentChallengeDate?: string) => {
       const state = JSON.parse(saved);
       // Only load if saved within last 24 hours to avoid stale state
       // AND if it's for the same daily challenge date
-      if (Date.now() - state.savedAt < 24 * 60 * 60 * 1000 && 
-          state.challengeDate === currentChallengeDate) {
+      if (Date.now() - state.savedAt < 24 * 60 * 60 * 1000 &&
+        state.challengeDate === currentChallengeDate) {
         return state;
       }
     }
@@ -81,13 +81,13 @@ export default function Game() {
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const threshold = 100; // Show when within 100px of bottom
-      
+
       setIsAtBottom(scrollTop + windowHeight >= documentHeight - threshold);
     };
 
     window.addEventListener('scroll', handleScroll);
     handleScroll(); // Check initial state
-    
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -123,21 +123,21 @@ export default function Game() {
       const previousIdFromRef = previousChallengeIdRef.current;
       const previousIdFromStorage = localStorage.getItem('lastChallengeId');
       const previousId = previousIdFromRef || previousIdFromStorage;
-      
+
       // If we have a previous ID and it's different from the current one, clear caches
       if (previousId && previousId !== challenge.id) {
         console.log('Daily challenge changed - clearing analytics cache');
-        
+
         // Invalidate all analytics queries to force fresh data
         queryClient.invalidateQueries({ queryKey: ['/api/analytics'] });
-        
+
         // Also clear any search-related caches to ensure fresh actor/movie data
         queryClient.invalidateQueries({ queryKey: ['/api/search'] });
-        
+
         // Reset game state for new challenge
         setGameStateInitialized(false);
       }
-      
+
       // Update the ref and localStorage with current challenge ID
       previousChallengeIdRef.current = challenge.id;
       localStorage.setItem('lastChallengeId', challenge.id);
@@ -192,7 +192,7 @@ export default function Game() {
 
   const handleGameResult = async (result: ValidationResult) => {
     setGameResult(result);
-    
+
     // Record completion for logged-in users
     if (user && result.completed && challenge && result.moves) {
       try {
@@ -221,10 +221,16 @@ export default function Game() {
 
   const clearAllUserData = () => {
     // Clear all localStorage data for this user
-    const challengeDate = new Date().toISOString().split('T')[0];
+    // Get date in EST/EDT timezone using en-CA (YYYY-MM-DD)
+    const challengeDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date()).replace(/\//g, '-');
     localStorage.removeItem('gameState');
     localStorage.removeItem(`hints-${challengeDate}`);
-    
+
     // Reset all state
     resetGame();
     window.location.reload(); // Force full reset of component state
@@ -239,7 +245,7 @@ export default function Game() {
   // Get the effective start and end actors based on flip state
   const getEffectiveChallenge = () => {
     if (!challenge) return null;
-    
+
     if (isFlipped) {
       return {
         ...challenge,
@@ -265,7 +271,7 @@ export default function Game() {
 
   if (!challenge) {
     const isDatabaseError = error && (error as any)?.status === 503;
-    
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md mx-auto px-4">
@@ -282,8 +288,8 @@ export default function Game() {
               <p className="text-gray-600 mb-6">
                 We're experiencing connectivity issues. This usually resolves itself quickly.
               </p>
-              <button 
-                onClick={() => refetch()} 
+              <button
+                onClick={() => refetch()}
                 className="bg-game-blue text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
                 data-testid="button-retry"
               >
@@ -298,8 +304,8 @@ export default function Game() {
               <p className="text-gray-600 mb-6">
                 Something went wrong. Please try refreshing the page.
               </p>
-              <button 
-                onClick={() => refetch()} 
+              <button
+                onClick={() => refetch()}
                 className="bg-game-blue text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
                 data-testid="button-retry"
               >
@@ -323,9 +329,9 @@ export default function Game() {
             <UserMenu />
           ) : (
             <Link href="/admin-login">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="flex items-center gap-2 bg-deco-charcoal/90 backdrop-blur-sm border-deco-gold/30 shadow-lg hover:border-deco-gold text-deco-gold hover:text-deco-gold-light transition-all duration-200"
                 data-testid="button-admin"
               >
@@ -337,19 +343,19 @@ export default function Game() {
         </div>
       )}
 
-      <GameHeader 
-        challenge={challenge} 
+      <GameHeader
+        challenge={challenge}
         currentMoves={connections.filter(c => c.actorId && c.movieId).length}
         isFlipped={isFlipped}
         onFlip={handleFlipActors}
         canFlip={!connections.some(c => c.actorId || c.movieId)}
         gameResult={gameResult}
       />
-      
+
       <main className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        
+
         <div className="mb-6 sm:mb-8">
-          <TodaysChallenge 
+          <TodaysChallenge
             challenge={challenge}
             currentMoves={connections.filter(c => c.actorId && c.movieId).length}
             isFlipped={isFlipped}
@@ -358,12 +364,12 @@ export default function Game() {
             gameResult={gameResult}
           />
         </div>
-        
+
         <div className="mb-6 sm:mb-8">
           <HintsSection dailyChallenge={challenge} />
         </div>
-        
-        <GameGrid 
+
+        <GameGrid
           challenge={effectiveChallenge!}
           connections={connections}
           validationResults={validationResults}
@@ -372,33 +378,33 @@ export default function Game() {
           onGameResult={handleGameResult}
           onReset={resetGame}
         />
-        
-        <ValidationFeedback 
+
+        <ValidationFeedback
           validationResults={validationResults}
           gameResult={gameResult}
           connections={connections}
         />
-        
+
         {/* Show analytics after user validates their game */}
-        <GameAnalytics 
+        <GameAnalytics
           challengeId={challenge.id}
           show={gameResult !== null}
         />
-        
+
         <GameInstructions />
-        
+
         <footer className="text-center mt-16 mb-8 relative">
           {/* Decorative top border */}
           <div className="h-px w-full max-w-md mx-auto bg-gradient-to-r from-transparent via-deco-gold/40 to-transparent mb-8" />
-          
+
           <div className="mb-6">
             <div className="font-display text-xl text-deco-gold mb-2 tracking-wide">Six Degrees of Separation</div>
             <div className="text-deco-pewter text-sm">A new daily challenge connecting Hollywood's finest</div>
             <div className="text-xs mt-2 text-deco-pewter/60 tracking-wider uppercase">A Prologue LLC Project</div>
           </div>
-          
+
           <div className="flex justify-center space-x-8">
-            <button 
+            <button
               onClick={() => setIsAboutModalOpen(true)}
               className="text-deco-pewter hover:text-deco-gold transition-all duration-200 cursor-pointer text-sm uppercase tracking-wider"
               data-testid="button-about"
@@ -406,7 +412,7 @@ export default function Game() {
               About
             </button>
             <span className="text-deco-gold/30">|</span>
-            <button 
+            <button
               onClick={() => setIsContactModalOpen(true)}
               className="text-deco-pewter hover:text-deco-gold transition-all duration-200 cursor-pointer text-sm uppercase tracking-wider"
               data-testid="button-contact"
@@ -414,7 +420,7 @@ export default function Game() {
               Contact
             </button>
           </div>
-          
+
           {/* Decorative bottom element */}
           <div className="flex items-center justify-center gap-3 mt-8">
             <div className="h-px w-8 bg-deco-gold/30" />
@@ -424,14 +430,14 @@ export default function Game() {
         </footer>
       </main>
 
-      <AboutModal 
-        open={isAboutModalOpen} 
-        onOpenChange={setIsAboutModalOpen} 
+      <AboutModal
+        open={isAboutModalOpen}
+        onOpenChange={setIsAboutModalOpen}
       />
-      
-      <ContactModal 
-        open={isContactModalOpen} 
-        onOpenChange={setIsContactModalOpen} 
+
+      <ContactModal
+        open={isContactModalOpen}
+        onOpenChange={setIsContactModalOpen}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { Lightbulb, Film } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { trackGameEvent } from "@/lib/analytics";
+import { trackGameStart } from "@/hooks/useVisitorTracking";
 
 interface Movie {
   id: number;
@@ -63,15 +64,22 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   const [lastChallengeActors, setLastChallengeActors] = useState<string>('');
   const [loadingHintType, setLoadingHintType] = useState<'start' | 'end' | null>(null);
   const { toast } = useToast();
-  
+
   const hintsRemaining = 2 - userHintsUsed;
   const activeHint = activeHintType === 'start' ? startActorHint : endActorHint;
-  
+
   // Load/reset hint state when challenge changes
   useEffect(() => {
-    const challengeDate = new Date().toISOString().split('T')[0]; // Today's date
+    // Get date in EST/EDT timezone using en-CA (YYYY-MM-DD)
+    const challengeDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date()).replace(/\//g, '-');
+
     const currentChallengeActors = `${dailyChallenge.startActorName}-${dailyChallenge.endActorName}`;
-    
+
     if (lastChallengeActors && lastChallengeActors !== currentChallengeActors) {
       // Actors changed - reset all hint state for new challenge
       setStartActorHint(null);
@@ -82,26 +90,26 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
     } else {
       // Same challenge - load saved state but validate it matches current actors
       const savedState = loadHintState(challengeDate);
-      
+
       // Check if saved hints match current actors
       let validStartHint = null;
       let validEndHint = null;
-      
+
       if (savedState.startHint && savedState.startHint.actorName === dailyChallenge.startActorName) {
         validStartHint = savedState.startHint;
       }
-      
+
       if (savedState.endHint && savedState.endHint.actorName === dailyChallenge.endActorName) {
         validEndHint = savedState.endHint;
       }
-      
+
       // Only use hints that match current actors
       const validHintsCount = (validStartHint ? 1 : 0) + (validEndHint ? 1 : 0);
-      
+
       setUserHintsUsed(validHintsCount);
       setStartActorHint(validStartHint);
       setEndActorHint(validEndHint);
-      
+
       if (validStartHint && !validEndHint) {
         setActiveHintType('start');
       } else if (validEndHint) {
@@ -109,11 +117,11 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       } else {
         setActiveHintType(null);
       }
-      
+
       // Save the corrected state
-      if (validHintsCount !== savedState.hintsUsed || 
-          validStartHint !== savedState.startHint || 
-          validEndHint !== savedState.endHint) {
+      if (validHintsCount !== savedState.hintsUsed ||
+        validStartHint !== savedState.startHint ||
+        validEndHint !== savedState.endHint) {
         saveHintState(challengeDate, validHintsCount, validStartHint || undefined, validEndHint || undefined);
       }
     }
@@ -122,38 +130,45 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
 
   // Initialize hint state on component mount - validate against current actors
   useEffect(() => {
-    const challengeDate = new Date().toISOString().split('T')[0];
+    // Get date in EST/EDT timezone using en-CA (YYYY-MM-DD)
+    const challengeDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date()).replace(/\//g, '-');
+
     const savedState = loadHintState(challengeDate);
-    
+
     if (savedState.hintsUsed > 0) {
       // Validate saved hints against current actors
       let validStartHint = null;
       let validEndHint = null;
-      
+
       if (savedState.startHint && savedState.startHint.actorName === dailyChallenge.startActorName) {
         validStartHint = savedState.startHint;
       }
-      
+
       if (savedState.endHint && savedState.endHint.actorName === dailyChallenge.endActorName) {
         validEndHint = savedState.endHint;
       }
-      
+
       const validHintsCount = (validStartHint ? 1 : 0) + (validEndHint ? 1 : 0);
-      
+
       setUserHintsUsed(validHintsCount);
       setStartActorHint(validStartHint);
       setEndActorHint(validEndHint);
-      
+
       if (validStartHint && !validEndHint) {
         setActiveHintType('start');
       } else if (validEndHint) {
         setActiveHintType('end');
       }
-      
+
       // Update localStorage with corrected state if needed
-      if (validHintsCount !== savedState.hintsUsed || 
-          validStartHint !== savedState.startHint || 
-          validEndHint !== savedState.endHint) {
+      if (validHintsCount !== savedState.hintsUsed ||
+        validStartHint !== savedState.startHint ||
+        validEndHint !== savedState.endHint) {
         saveHintState(challengeDate, validHintsCount, validStartHint || undefined, validEndHint || undefined);
       }
     }
@@ -166,14 +181,24 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       return await response.json();
     },
     onSuccess: (data: HintResponse, actorType: 'start' | 'end') => {
-      const challengeDate = new Date().toISOString().split('T')[0];
+      // Get date in EST/EDT timezone using en-CA (YYYY-MM-DD)
+      const challengeDate = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date()).replace(/\//g, '-');
+
       const newHintsUsed = userHintsUsed + 1;
       setUserHintsUsed(newHintsUsed);
       setLoadingHintType(null);
-      
+
       // Track the hint usage
       trackGameEvent.useHint(actorType === 'start' ? 'actor' : 'actor');
-      
+
+      // Track conversion in visitor analytics
+      trackGameStart();
+
       if (actorType === 'start') {
         setStartActorHint(data);
         setActiveHintType('start');
@@ -183,7 +208,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
         setActiveHintType('end');
         saveHintState(challengeDate, newHintsUsed, startActorHint || undefined, data);
       }
-      
+
       toast({
         title: "Hint revealed!",
         description: `Here are 5 movies featuring ${data.actorName}`,
@@ -205,7 +230,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
       setActiveHintType(actorType);
       return;
     }
-    
+
     // Otherwise, request a new hint if we have hints remaining
     if (hintsRemaining <= 0) {
       toast({
@@ -221,7 +246,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
   return (
     <div className="deco-card p-6 relative overflow-hidden">
       <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
-      
+
       <div className="relative z-10">
         <div className="text-center mb-4">
           <h3 className="font-display text-lg sm:text-xl text-deco-gold mb-2 tracking-wide flex items-center justify-center gap-2">
@@ -233,19 +258,18 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
             <span className="inline-flex items-center px-2 py-0.5 bg-deco-gold text-deco-black text-xs font-bold">{hintsRemaining} hints</span> remaining today.
           </p>
         </div>
-        
+
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <Button 
+            <Button
               onClick={() => handleHintClick('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
-              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider shadow-[0_8px_32px_rgba(196,151,49,0.3)] hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] ${
-                startActorHint 
-                  ? activeHintType === 'start'
-                    ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2),0_8px_32px_rgba(196,151,49,0.3)]'
-                    : 'bg-deco-charcoal text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold'
-                  : 'bg-transparent text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold hover:bg-deco-gold/10'
-              }`}
+              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider shadow-[0_8px_32px_rgba(196,151,49,0.3)] hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] ${startActorHint
+                ? activeHintType === 'start'
+                  ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2),0_8px_32px_rgba(196,151,49,0.3)]'
+                  : 'bg-deco-charcoal text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold'
+                : 'bg-transparent text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold hover:bg-deco-gold/10'
+                }`}
               size="sm"
             >
               {loadingHintType === 'start' ? (
@@ -256,16 +280,15 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
                 </span>
               )}
             </Button>
-            <Button 
+            <Button
               onClick={() => handleHintClick('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
-              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider shadow-[0_8px_32px_rgba(196,151,49,0.3)] hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] ${
-                endActorHint 
-                  ? activeHintType === 'end'
-                    ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2),0_8px_32px_rgba(196,151,49,0.3)]'
-                    : 'bg-deco-charcoal text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold'
-                  : 'bg-transparent text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold hover:bg-deco-gold/10'
-              }`}
+              className={`flex-1 text-sm transition-all duration-200 uppercase tracking-wider shadow-[0_8px_32px_rgba(196,151,49,0.3)] hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] ${endActorHint
+                ? activeHintType === 'end'
+                  ? 'bg-deco-gold text-deco-black border-2 border-deco-gold shadow-[inset_0_2px_4px_rgba(0,0,0,0.2),0_8px_32px_rgba(196,151,49,0.3)]'
+                  : 'bg-deco-charcoal text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold'
+                : 'bg-transparent text-deco-gold border-2 border-deco-gold/50 hover:border-deco-gold hover:bg-deco-gold/10'
+                }`}
               size="sm"
             >
               {loadingHintType === 'end' ? (
@@ -286,7 +309,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {activeHint.movies.map((movie) => (
-                  <div 
+                  <div
                     key={movie.id}
                     className="p-3 border border-deco-gold/20 bg-deco-charcoal/50 transition-all duration-200 hover:border-deco-gold/50 hover:bg-deco-gold/5"
                   >

@@ -2,13 +2,18 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
 import * as schema from "@shared/schema";
 
-// Configure Neon with better error handling and retry settings
-neonConfig.webSocketConstructor = ws;
+const isProd = process.env.NODE_ENV === 'production';
+
+// Only use WebSockets in non-production/local environments
+if (!isProd) {
+  const ws = (await import("ws")).default;
+  neonConfig.webSocketConstructor = ws;
+}
+
 neonConfig.fetchConnectionCache = true;
-neonConfig.useSecureWebSocket = true;
+neonConfig.useSecureWebSocket = !isProd;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -16,35 +21,68 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Configure connection pool with enhanced retry and timeout settings
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  connectionTimeoutMillis: 30000, // Further increased timeout for slow networks
-  idleTimeoutMillis: 300000, // 5 minutes idle timeout
-  max: 5, // Further reduced max connections for stability
-  allowExitOnIdle: true,
-  // Add additional configuration for stability
-  application_name: 'movie-connection-game',
-  statement_timeout: 30000, // 30 second statement timeout
-  query_timeout: 30000, // 30 second query timeout
+// Lazy-initialized pool and db
+let internalPool: Pool | null = null;
+let internalDb: any = null;
+
+export const getPool = () => {
+  if (!internalPool) {
+    console.log('Initializing database pool...');
+    internalPool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: 30000,
+      idleTimeoutMillis: 300000,
+      max: 5,
+      allowExitOnIdle: true,
+      application_name: 'movie-connection-game',
+      statement_timeout: 30000,
+      query_timeout: 30000,
+    });
+
+    internalPool.on('error', (err) => {
+      console.error('Database pool error:', err);
+    });
+
+    internalPool.on('connect', () => {
+      console.log('Database pool connected successfully');
+    });
+  }
+  return internalPool;
+};
+
+export const getDb = () => {
+  if (!internalDb) {
+    internalDb = drizzle({ client: getPool(), schema });
+  }
+  return internalDb;
+};
+
+// Maintain backwards compatibility for external imports if possible,
+// but it's safer to use proxies or update callers.
+export const pool = new Proxy({} as Pool, {
+  get: (target, prop) => {
+    const p = getPool();
+    const val = (p as any)[prop];
+    return typeof val === 'function' ? val.bind(p) : val;
+  }
 });
 
-// Add connection event handlers
-pool.on('error', (err) => {
-  console.error('Database pool error:', err);
+export const db = new Proxy({} as any, {
+  get: (target, prop) => {
+    const d = getDb();
+    const val = (d as any)[prop];
+    return typeof val === 'function' ? val.bind(d) : val;
+  }
 });
-
-pool.on('connect', () => {
-  console.log('Database pool connected successfully');
-});
-
-export const db = drizzle({ client: pool, schema });
 
 // Enhanced connection retry wrapper with exponential backoff
 export async function withRetry<T>(operation: () => Promise<T>, maxRetries: number = 3): Promise<T> {
   let lastError: any;
+  const isProd = process.env.NODE_ENV === 'production';
+  // Reduce retries in production to avoid lambda timeouts
+  const actualMaxRetries = isProd ? Math.min(maxRetries, 3) : maxRetries;
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  for (let attempt = 1; attempt <= actualMaxRetries; attempt++) {
     try {
       return await operation();
     } catch (error: any) {
@@ -65,15 +103,15 @@ export async function withRetry<T>(operation: () => Promise<T>, maxRetries: numb
         error?.name === 'TypeError';
 
       if (isRetryableError) {
-        const delay = Math.min(2000 * Math.pow(1.5, attempt - 1), 15000); // Longer delays for better stability
-        console.log(`Database connection attempt ${attempt}/${maxRetries} failed: ${error.message || error.toString()}`);
+        // Shorter delays for production
+        const baseDelay = isProd ? 500 : 2000;
+        const delay = Math.min(baseDelay * Math.pow(1.5, attempt - 1), 10000);
+        console.log(`Database connection attempt ${attempt}/${actualMaxRetries} failed: ${error.message || error.toString()}`);
 
-        if (attempt < maxRetries) {
+        if (attempt < actualMaxRetries) {
           console.log(`Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
-        } else {
-          console.error(`All ${maxRetries} connection attempts failed. Last error:`, error.message || error.toString());
         }
       }
 
