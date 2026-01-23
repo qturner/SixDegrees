@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
-import * as schema from "../shared/schema";
+import * as schema from "../../shared/schema";
 
 const isProd = process.env.NODE_ENV === 'production';
 

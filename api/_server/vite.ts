@@ -19,7 +19,7 @@ export function log(message: string, source = "express") {
 export async function setupVite(app: Express, server: Server) {
   // Use dynamic imports for Vite to avoid production crashes
   const { createServer: createViteServer, createLogger } = await import("vite");
-  const viteConfig = (await import("../vite.config.js")).default;
+  const viteConfig = (await import("../../vite.config.js")).default;
   const viteLogger = createLogger();
 
   const serverOptions = {
@@ -52,6 +52,7 @@ export async function setupVite(app: Express, server: Server) {
       const clientTemplate = path.resolve(
         __dirname,
         "..",
+        "..",
         "client",
         "index.html",
       );
@@ -74,8 +75,8 @@ export async function setupVite(app: Express, server: Server) {
 export function serveStatic(app: Express) {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const publicPath = path.resolve(__dirname, "..", "client");
-  const rootPublicPath = path.resolve(__dirname, "..", "dist");
+  const publicPath = path.resolve(__dirname, "..", "..", "client");
+  const rootPublicPath = path.resolve(__dirname, "..", "..", "dist");
 
   let actualPublicPath = publicPath;
 
