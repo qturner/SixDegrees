@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { tmdbService } from "./services/tmdb";
 import { gameLogicService } from "./services/gameLogic";
 import { withRetry } from "./db";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema } from "../../shared/schema";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema } from "../shared/schema";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth";
 import { setupAuth, isAuthenticated } from "./auth";
 import { emailService } from "./services/email";

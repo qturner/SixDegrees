@@ -15,7 +15,7 @@ export default async (req: any, res: any) => {
     }
 
     try {
-        const { initServer } = await import('./server/index.js');
+        const { initServer } = await import('../server/index.js');
         if (!cachedApp) {
             console.log("[API] Calling initServer in debug mode...");
             const { app } = await initServer();

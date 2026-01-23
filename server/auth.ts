@@ -4,7 +4,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 import { storage } from "./storage";
-import { loginSchema, registerSchema } from "../../shared/schema";
+import { loginSchema, registerSchema } from "../shared/schema";
 import { ZodError } from "zod";
 
 // Session middleware setup

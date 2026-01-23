@@ -1,6 +1,6 @@
 
-import { storage } from "./api/server/storage";
-import { tmdbService } from "./api/server/services/tmdb";
+import { storage } from "./server/storage";
+import { tmdbService } from "./server/services/tmdb";
 
 async function diagnose() {
     console.log("--- Production Diagnostics ---");

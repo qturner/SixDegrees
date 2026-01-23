@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     let serverImportError = null;
 
     try {
-        const server = await import('./server/index.js');
+        const server = await import('../server/index.js');
         serverImportResult = "Success: " + Object.keys(server).join(', ');
     } catch (e) {
         serverImportResult = "Failed";
