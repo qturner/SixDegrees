@@ -10,26 +10,15 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('[API] UNHANDLED REJECTION:', reason);
 });
 
+import { initServer } from '../server/index';
+
 export default async (req: any, res: any) => {
     console.log(`[API] ${req.method} ${req.url} - starting`);
 
     try {
         if (!cachedApp) {
-            console.log("[API] Initializing server module...");
-            // Use dynamic import to catch errors during module loading
-            // Removing extensions to help Vercel resolution of TS files
-            const serverModule = await import('../server/index').catch(err => {
-                console.error("[API] Failed to import server module:", err);
-                throw new Error(`Server module import failed: ${err.message}`);
-            });
-
-            if (!serverModule.initServer) {
-                console.error("[API] initServer not found in server module");
-                throw new Error("initServer function missing");
-            }
-
             console.log("[API] Calling initServer...");
-            const { app } = await serverModule.initServer();
+            const { app } = await initServer();
             cachedApp = app;
             console.log("[API] Server initialized successfully");
         }
