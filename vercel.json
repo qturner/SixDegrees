@@ -23,10 +23,5 @@
             "path": "/api/cron/reset",
             "schedule": "0 0 * * *"
         }
-    ],
-    "functions": {
-        "api/index.ts": {
-            "includeFiles": "server/**"
-        }
-    }
+    ]
 }
