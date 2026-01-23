@@ -1768,6 +1768,96 @@ var init_vite_config = __esm({
   }
 });
 
+// server/vite.ts
+var vite_exports = {};
+__export(vite_exports, {
+  log: () => log,
+  serveStatic: () => serveStatic,
+  setupVite: () => setupVite
+});
+import express from "express";
+import fs from "fs";
+import path2 from "path";
+import { nanoid } from "nanoid";
+function log(message, source = "express") {
+  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+async function setupVite(app2, server) {
+  const { createServer: createViteServer, createLogger } = await import("vite");
+  const viteConfig = (await init_vite_config().then(() => vite_config_exports)).default;
+  const viteLogger = createLogger();
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const vite = await createViteServer({
+    ...viteConfig,
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+        process.exit(1);
+      }
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(vite.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path2.resolve(
+        import.meta.dirname,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic(app2) {
+  const publicPath = path2.resolve(import.meta.dirname);
+  const rootPublicPath = path2.resolve(import.meta.dirname, "..", "dist");
+  let actualPublicPath = publicPath;
+  if (!fs.existsSync(path2.resolve(actualPublicPath, "index.html"))) {
+    if (fs.existsSync(path2.resolve(rootPublicPath, "index.html"))) {
+      actualPublicPath = rootPublicPath;
+    } else {
+      throw new Error(
+        `Could not find index.html in: ${actualPublicPath} or ${rootPublicPath}, make sure to build the client first`
+      );
+    }
+  }
+  log(`Serving static files from: ${actualPublicPath}`);
+  app2.use(express.static(actualPublicPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path2.resolve(actualPublicPath, "index.html"));
+  });
+}
+var init_vite = __esm({
+  "server/vite.ts"() {
+    "use strict";
+  }
+});
+
 // server/index.ts
 import * as dotenv2 from "dotenv";
 import express2 from "express";
@@ -3396,86 +3486,8 @@ async function registerRoutes(app2) {
   return httpServer;
 }
 
-// server/vite.ts
-import express from "express";
-import fs from "fs";
-import path2 from "path";
-import { nanoid } from "nanoid";
-function log(message, source = "express") {
-  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
-async function setupVite(app2, server) {
-  const { createServer: createViteServer, createLogger } = await import("vite");
-  const viteConfig = (await init_vite_config().then(() => vite_config_exports)).default;
-  const viteLogger = createLogger();
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true
-  };
-  const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      }
-    },
-    server: serverOptions,
-    appType: "custom"
-  });
-  app2.use(vite.middlewares);
-  app2.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
-    try {
-      const clientTemplate = path2.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html"
-      );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e);
-      next(e);
-    }
-  });
-}
-function serveStatic(app2) {
-  const publicPath = path2.resolve(import.meta.dirname);
-  const rootPublicPath = path2.resolve(import.meta.dirname, "..", "dist");
-  let actualPublicPath = publicPath;
-  if (!fs.existsSync(path2.resolve(actualPublicPath, "index.html"))) {
-    if (fs.existsSync(path2.resolve(rootPublicPath, "index.html"))) {
-      actualPublicPath = rootPublicPath;
-    } else {
-      throw new Error(
-        `Could not find index.html in: ${actualPublicPath} or ${rootPublicPath}, make sure to build the client first`
-      );
-    }
-  }
-  log(`Serving static files from: ${actualPublicPath}`);
-  app2.use(express.static(actualPublicPath));
-  app2.use("*", (_req, res) => {
-    res.sendFile(path2.resolve(actualPublicPath, "index.html"));
-  });
-}
-
 // server/index.ts
+init_vite();
 await init_db();
 dotenv2.config();
 var app = express2();
@@ -3532,9 +3544,11 @@ var initServer = async () => {
       res.status(status).json({ message });
     });
     if (app.get("env") === "development") {
-      await setupVite(app, server);
+      const { setupVite: setupVite2 } = await Promise.resolve().then(() => (init_vite(), vite_exports));
+      await setupVite2(app, server);
     } else if (!process.env.VERCEL) {
-      serveStatic(app);
+      const { serveStatic: serveStatic2 } = await Promise.resolve().then(() => (init_vite(), vite_exports));
+      serveStatic2(app);
     }
     isInitialized = true;
     return { app, server, dbHealthy };

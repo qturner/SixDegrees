@@ -3,7 +3,7 @@ dotenv.config();
 import express, { type Request, Response, NextFunction } from "express";
 import cron from "node-cron";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { log } from "./vite";
 import { gameLogicService } from "./services/gameLogic";
 import { storage } from "./storage";
 import { checkDatabaseHealth } from "./db";
@@ -77,8 +77,10 @@ export const initServer = async () => {
     });
 
     if (app.get("env") === "development") {
+      const { setupVite } = await import("./vite");
       await setupVite(app, server);
     } else if (!process.env.VERCEL) {
+      const { serveStatic } = await import("./vite");
       serveStatic(app);
     }
 
