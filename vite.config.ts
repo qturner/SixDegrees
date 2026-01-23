@@ -27,6 +27,28 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes("node_modules")) {
+            if (id.includes("lucide-react")) {
+              return "ui-icons";
+            }
+            if (id.includes("@radix-ui")) {
+              return "ui-components";
+            }
+            if (id.includes("react") || id.includes("react-dom") || id.includes("wouter")) {
+              return "vendor-core";
+            }
+            if (id.includes("@tanstack") || id.includes("framer-motion")) {
+              return "vendor-libs";
+            }
+            return "vendor";
+          }
+        },
+      },
+    },
   },
   server: {
     fs: {
