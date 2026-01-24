@@ -487,232 +487,80 @@ class TMDbService {
   /**
    * Check if an actor has career activity after 1980 (includes deceased actors with modern careers)
    */
-  private async hasCareerActivityAfter1980(actorId: number): Promise<boolean> {
-    try {
-      // Get actor details and movie credits in parallel
-      const [actorDetails, movieCredits] = await Promise.all([
-        this.getActorDetails(actorId),
-        this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`)
-      ]);
 
-      // For deceased actors, include them if they had a modern career (1990+)
-      // This includes beloved actors like Robin Williams who had recent careers
-      if (actorDetails?.deathday) {
-        const recentMoviesForDeceased = movieCredits.cast.filter(movie => {
-          if (!movie.release_date) return false;
-          const releaseYear = new Date(movie.release_date).getFullYear();
-          return releaseYear >= 1990; // Must have movies from 1990 onwards
-        });
-
-        if (recentMoviesForDeceased.length >= 3) {
-          console.log(`Including deceased actor with modern career: ${actorDetails.name} (${recentMoviesForDeceased.length} movies from 1990+)`);
-          return true;
-        } else {
-          console.log(`Excluding deceased actor without modern career: ${actorDetails.name}`);
-          return false;
-        }
-      }
-
-      // Check if actor has any movies released after 1980
-      const recentMovies = movieCredits.cast.filter(movie => {
-        if (!movie.release_date) return false;
-        const releaseYear = new Date(movie.release_date).getFullYear();
-        return releaseYear > 1980;
-      });
-
-      // Actor must have at least 2 movies after 1980 to be considered "active"
-      return recentMovies.length >= 2;
-    } catch (error) {
-      console.error(`Error checking career activity for actor ${actorId}:`, error);
-      return false;
-    }
-  }
 
   /**
-   * Filter actors by career activity - includes living actors and deceased actors with modern careers (1990+)
-   */
-  private async filterActorsByCareerActivity(actors: Actor[]): Promise<Actor[]> {
-    console.log("Applying career activity filtering (post-1980) and living status to popular actors...");
-    const validActors: Actor[] = [];
-
-    // Process actors in smaller batches to avoid rate limits
-    for (let i = 0; i < actors.length; i += 5) {
-      const batch = actors.slice(i, i + 5);
-      const batchPromises = batch.map(async (actor) => {
-        try {
-          const hasRecentActivity = await this.hasCareerActivityAfter1980(actor.id);
-          return hasRecentActivity ? actor : null;
-        } catch (error) {
-          console.error(`Error checking career activity for ${actor.name}:`, error);
-          return null;
-        }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      validActors.push(...batchResults.filter((actor): actor is Actor => actor !== null));
-
-      // Add small delay between batches to respect API limits
-      if (i + 5 < actors.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-
-    console.log(`Filtered from ${actors.length} to ${validActors.length} actors with post-1980 career activity and living status`);
-    return validActors;
-  }
-
-  /**
-   * Filter out actors who primarily appear in documentaries or animated movies
+   * Consolidated filter: career activity, genre, and mainstream appeal
    */
   private async filterActorsByGenre(actors: Actor[]): Promise<Actor[]> {
     const validActors: Actor[] = [];
 
-    // Process actors in smaller batches to avoid rate limits
     for (let i = 0; i < actors.length; i += 5) {
       const batch = actors.slice(i, i + 5);
-      const batchPromises = batch.map(async (actor) => {
+      const results = await Promise.all(batch.map(async (actor) => {
         try {
-          // Skip excluded actors (primarily voice actors)
-          if (this.EXCLUDED_ACTORS.has(actor.name)) {
-            console.log(`Excluding known voice actor: ${actor.name}`);
-            return null;
-          }
+          if (this.EXCLUDED_ACTORS.has(actor.name)) return null;
 
-          // Check if actor is primarily a voice actor through their filmography
-          const isVoiceActor = await this.isPrimarilyVoiceActor(actor.id);
-          if (isVoiceActor) {
-            console.log(`Excluding detected voice actor: ${actor.name}`);
-            return null;
-          }
+          // Fetch details (for deathday) and movie credits in parallel
+          const [details, creditsRes] = await Promise.all([
+            this.getActorDetails(actor.id),
+            this.makeRequest<TMDbPersonMovies>(`/person/${actor.id}/movie_credits`)
+          ]);
 
-          const movies = await this.getActorMovies(actor.id);
+          const credits = creditsRes.cast || [];
+          if (credits.length === 0) return null;
 
-          if (movies.length === 0) {
-            return null; // Skip actors with no movies
-          }
+          let animatedCount = 0;
+          let liveActionCount = 0;
+          let englishLiveActionCount = 0;
+          let post1990EnglishLiveActionCount = 0;
 
-          // Check if actor has significant mainstream live-action work
-          const liveActionMovies = await this.getNonDocumentaryNonAnimatedMovies(actor.id);
+          const deathYear = details?.deathday ? new Date(details.deathday).getFullYear() : Infinity;
 
-          // NEW REQUIREMENT: Actor must have at least 5 English-language movies
-          // Get raw TMDB data with original_language field for filtering
-          const rawMovieCredits = await this.makeRequest<TMDbPersonMovies>(`/person/${actor.id}/movie_credits`);
-          const englishMovies = rawMovieCredits.cast.filter(movie =>
-            movie.original_language === 'en' &&
-            movie.release_date &&
-            new Date(movie.release_date).getFullYear() >= 1970 &&
-            // Exclude documentaries, animated movies, TV movies, and music films
-            (!movie.genre_ids || !movie.genre_ids.some(id =>
-              id === this.EXCLUDED_GENRES.ANIMATION ||
-              id === this.EXCLUDED_GENRES.DOCUMENTARY ||
-              id === this.EXCLUDED_GENRES.TV_MOVIE ||
-              id === this.EXCLUDED_GENRES.MUSIC
-            ))
-          );
+          for (const movie of credits) {
+            const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : 0;
+            if (releaseYear > deathYear) continue;
 
-          console.log(`${actor.name}: ${liveActionMovies.length} live-action movies, ${englishMovies.length} in English`);
+            const isAnimated = movie.genre_ids?.includes(this.EXCLUDED_GENRES.ANIMATION);
+            if (isAnimated) {
+              animatedCount++;
+            } else {
+              liveActionCount++;
+              const isDoc = movie.genre_ids?.includes(this.EXCLUDED_GENRES.DOCUMENTARY);
+              const isTV = movie.genre_ids?.includes(this.EXCLUDED_GENRES.TV_MOVIE);
 
-          // Actor must have at least 5 English movies for better game relevance
-          if (englishMovies.length >= 5) {
-            // Additional check: ensure they have movies with decent popularity/budget
-            const popularMovies = englishMovies.filter(movie => {
-              // Focus on movies from 1990+ for more mainstream appeal
-              if (!movie.release_date) return false;
-              const releaseYear = new Date(movie.release_date).getFullYear();
-              return releaseYear >= 1990;
-            });
-
-            // Must have at least 3 English movies from 1990+ to ensure mainstream relevance
-            if (popularMovies.length >= 3) {
-              return actor;
+              if (!isDoc && !isTV && movie.original_language === 'en') {
+                if (releaseYear >= 1970) {
+                  englishLiveActionCount++;
+                  if (releaseYear >= 1990) post1990EnglishLiveActionCount++;
+                }
+              }
             }
           }
 
+          if (animatedCount / (animatedCount + liveActionCount) > 0.6) return null;
+          if (englishLiveActionCount < 5) return null;
+          if (post1990EnglishLiveActionCount < 3) return null;
+
+          return actor;
+        } catch (e) {
           return null;
-        } catch (error) {
-          console.error(`Error checking actor ${actor.name}:`, error);
-          return null; // Skip on error to avoid blocking the search
         }
-      });
+      }));
 
-      const batchResults = await Promise.all(batchPromises);
-      validActors.push(...batchResults.filter((actor): actor is Actor => actor !== null));
-
-      // Add small delay between batches to respect API limits
-      if (i + 5 < actors.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      validActors.push(...results.filter((a): a is Actor => a !== null));
+      if (i + 5 < actors.length) await new Promise(r => setTimeout(r, 50));
     }
-
     return validActors;
   }
 
   /**
    * Get movies for an actor, excluding documentaries, animated movies, and focusing on mainstream releases
    */
-  private async getNonDocumentaryNonAnimatedMovies(actorId: number): Promise<Movie[]> {
-    try {
-      const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
-
-      return response.cast
-        .filter(movie => {
-          // Only include movies from 1970 onwards
-          if (!movie.release_date) return false;
-          const releaseYear = new Date(movie.release_date).getFullYear();
-          if (releaseYear < 1970) return false;
-
-          // Exclude documentaries, animated movies, TV movies, and music films if genre_ids are available
-          if (movie.genre_ids && movie.genre_ids.length > 0) {
-            return !movie.genre_ids.includes(this.EXCLUDED_GENRES.ANIMATION) &&
-              !movie.genre_ids.includes(this.EXCLUDED_GENRES.DOCUMENTARY) &&
-              !movie.genre_ids.includes(this.EXCLUDED_GENRES.TV_MOVIE) &&
-              !movie.genre_ids.includes(this.EXCLUDED_GENRES.MUSIC);
-          }
-
-          // If no genre_ids, include the movie (we'll filter by other means)
-          return true;
-        })
-        .map(movie => ({
-          id: movie.id,
-          title: movie.title,
-          release_date: movie.release_date,
-          poster_path: movie.poster_path,
-        }));
-    } catch (error) {
-      console.error("Error getting non-documentary/non-animated movies:", error);
-      return [];
-    }
-  }
 
   /**
    * Enhanced check to identify if an actor is primarily a voice actor
    */
-  private async isPrimarilyVoiceActor(actorId: number): Promise<boolean> {
-    try {
-      const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
-
-      if (response.cast.length === 0) return false;
-
-      // Count animated vs live-action movies
-      let animatedCount = 0;
-      let liveActionCount = 0;
-
-      for (const movie of response.cast) {
-        if (movie.genre_ids && movie.genre_ids.includes(this.EXCLUDED_GENRES.ANIMATION)) {
-          animatedCount++;
-        } else {
-          liveActionCount++;
-        }
-      }
-
-      // If more than 60% of their work is animated, consider them primarily a voice actor
-      const animatedPercentage = animatedCount / (animatedCount + liveActionCount);
-      return animatedPercentage > 0.6;
-    } catch (error) {
-      console.error(`Error checking voice actor status for ${actorId}:`, error);
-      return false;
-    }
-  }
 
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {
     try {
@@ -767,7 +615,7 @@ class TMDbService {
       const actorsToFilter = actors.slice(0, 20);
       const remainingActors = actors.slice(20);
 
-      const careerFilteredActors = await this.filterActorsByCareerActivity(actorsToFilter);
+      const careerFilteredActors = actorsToFilter; // Skipping redundant first pass
 
       console.log("Applying genre filtering and English movie requirement (5+ credits) to career-filtered actors...");
 

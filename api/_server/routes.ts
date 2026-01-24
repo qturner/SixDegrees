@@ -529,42 +529,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!challenge) {
           return res.status(500).json({ message: "Unable to generate daily challenge" });
         }
-      } else {
-        console.log(`Found existing challenge: ${challenge.startActorName} to ${challenge.endActorName} (hints: ${challenge.hintsUsed || 0})`);
-
-        // Automatic thumbnail verification for existing challenges
-        try {
-          const verification = await tmdbService.verifyChallengeThumbnails({
-            id: challenge.id,
-            startActorId: challenge.startActorId,
-            startActorName: challenge.startActorName,
-            startActorProfilePath: challenge.startActorProfilePath,
-            endActorId: challenge.endActorId,
-            endActorName: challenge.endActorName,
-            endActorProfilePath: challenge.endActorProfilePath
-          });
-
-          if (verification.needsUpdate) {
-            console.log(`Detected thumbnail issues for challenge ${challenge.id}: ${verification.issues.join(', ')}`);
-
-            // Auto-repair thumbnails
-            const updates: any = {};
-            if (verification.correctStartPath !== undefined) {
-              updates.startActorProfilePath = verification.correctStartPath;
-            }
-            if (verification.correctEndPath !== undefined) {
-              updates.endActorProfilePath = verification.correctEndPath;
-            }
-
-            if (Object.keys(updates).length > 0) {
-              challenge = await storage.updateDailyChallenge(challenge.id, updates);
-              console.log(`Auto-repaired thumbnails for challenge ${challenge.id}`);
-            }
-          }
-        } catch (verificationError) {
-          console.log(`Thumbnail verification failed (non-critical): ${verificationError}`);
-          // Don't fail the request if thumbnail verification fails
-        }
       }
 
       res.json(challenge);
