@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import { useEffect } from "react";
 
+console.log("[DEBUG] App.tsx file loaded");
 function Router() {
   return (
     <Switch>
@@ -29,7 +30,7 @@ function App() {
   // Initialize Google Analytics
   useEffect(() => {
     const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
-    
+
     if (measurementId) {
       // Add Google Analytics script to the head
       const script1 = document.createElement('script');
