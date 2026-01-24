@@ -67,7 +67,7 @@ interface TMDbPersonMovies {
 
 class TMDbService {
   private config: TMDbConfig;
-  
+
   // Genre IDs to filter out
   private readonly EXCLUDED_GENRES = {
     ANIMATION: 16,
@@ -131,13 +131,13 @@ class TMDbService {
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
     const url = new URL(`${this.config.baseUrl}${endpoint}`);
     url.searchParams.append("api_key", this.config.apiKey);
-    
+
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.append(key, value);
     });
 
     const response = await fetch(url.toString());
-    
+
     if (!response.ok) {
       throw new Error(`TMDb API error: ${response.status} ${response.statusText}`);
     }
@@ -198,7 +198,7 @@ class TMDbService {
             include_adult: "false",
             "primary_release_date.gte": "1970-01-01",
           });
-          
+
           // Add results that aren't already in the list
           const existingIds = new Set(allResults.map(m => m.id));
           for (const movie of plusResponse.results) {
@@ -241,7 +241,7 @@ class TMDbService {
   async getMovieCredits(movieId: number): Promise<Actor[]> {
     try {
       const response = await this.makeRequest<TMDbCredit>(`/movie/${movieId}/credits`);
-      
+
       return response.cast.map(actor => ({
         id: actor.id,
         name: actor.name,
@@ -257,7 +257,7 @@ class TMDbService {
   async getActorMovies(actorId: number): Promise<Movie[]> {
     try {
       const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
-      
+
       // Get movies with basic data first
       const movies = response.cast
         .filter(movie => {
@@ -276,7 +276,7 @@ class TMDbService {
           vote_average: movie.vote_average || 0,
           vote_count: movie.vote_count || 0,
         }));
-      
+
       // For hint selection, we need to enhance popular movies with full details
       // This method will be used by hint system to get accurate popularity data
       return movies;
@@ -289,7 +289,7 @@ class TMDbService {
   async getActorMoviesWithPopularity(actorId: number): Promise<Movie[]> {
     try {
       const basicMovies = await this.getActorMovies(actorId);
-      
+
       // For the most popular movies, fetch detailed data to get accurate popularity scores
       const enhancedMovies = await Promise.all(
         basicMovies.slice(0, 20).map(async (movie) => { // Only enhance top 20 to avoid rate limits
@@ -306,7 +306,7 @@ class TMDbService {
           }
         })
       );
-      
+
       // Add remaining movies without enhanced data
       return [...enhancedMovies, ...basicMovies.slice(20)];
     } catch (error) {
@@ -318,11 +318,11 @@ class TMDbService {
   async getActorHintMovies(actorId: number, count: number = 5): Promise<Movie[]> {
     // Use enhanced movie data with accurate popularity scores
     const movies = await this.getActorMoviesWithPopularity(actorId);
-    
+
     // Get actor details to check for death date
     const actorDetails = await this.getActorDetails(actorId);
     let filteredMovies = movies;
-    
+
     // If actor is deceased, filter out movies released after their death
     if (actorDetails?.deathday) {
       const deathYear = new Date(actorDetails.deathday).getFullYear();
@@ -331,10 +331,10 @@ class TMDbService {
         const releaseYear = new Date(movie.release_date).getFullYear();
         return releaseYear <= deathYear;
       });
-      
+
       console.log(`Actor ${actorDetails.name} died in ${deathYear}, filtered movies from ${movies.length} to ${filteredMovies.length}`);
     }
-    
+
     // Strategic hint selection - now with accurate TMDB popularity data
     const strategicMovies = this.selectStrategicHintMovies(filteredMovies, count);
     return strategicMovies;
@@ -346,14 +346,14 @@ class TMDbService {
    */
   private selectStrategicHintMovies(movies: Movie[], count: number): Movie[] {
     if (movies.length <= count) return movies;
-    
+
     // Get detailed movie info with popularity scores
     const moviesWithDetails = movies.map(movie => ({
       ...movie,
       // Calculate a composite score: popularity + recency + title distinctiveness
       score: this.calculateMovieHintScore(movie)
     }));
-    
+
     // Separate movies by decade for diversity
     const moviesByDecade = new Map<number, any[]>();
     moviesWithDetails.forEach(movie => {
@@ -365,31 +365,31 @@ class TMDbService {
         moviesByDecade.get(decade)!.push(movie);
       }
     });
-    
+
     // Sort movies within each decade by their hint score (popularity + other factors)
     moviesByDecade.forEach(decadeMovies => {
       decadeMovies.sort((a, b) => b.score - a.score);
     });
-    
+
     const selectedMovies: Movie[] = [];
     const decades = Array.from(moviesByDecade.keys()).sort((a, b) => b - a); // Start with most recent
-    
+
     // First pass: Get the most popular movie from each decade
     for (const decade of decades) {
       if (selectedMovies.length >= count) break;
-      
+
       const decadeMovies = moviesByDecade.get(decade)!;
       selectedMovies.push(decadeMovies[0]); // Highest scored movie from this decade
     }
-    
+
     // Second pass: If we still need more movies, get second-best from decades with multiple good movies
     if (selectedMovies.length < count) {
       for (const decade of decades) {
         if (selectedMovies.length >= count) break;
-        
+
         const decadeMovies = moviesByDecade.get(decade)!;
         if (decadeMovies.length > 1) {
-          const alreadySelected = selectedMovies.some(selected => 
+          const alreadySelected = selectedMovies.some(selected =>
             decadeMovies[0].id === selected.id
           );
           if (alreadySelected && decadeMovies[1]) {
@@ -398,16 +398,16 @@ class TMDbService {
         }
       }
     }
-    
+
     // Final pass: Fill remaining slots with highest-scoring movies overall
     if (selectedMovies.length < count) {
       const remainingMovies = moviesWithDetails
         .filter(movie => !selectedMovies.some(selected => selected.id === movie.id))
         .sort((a, b) => b.score - a.score);
-      
+
       selectedMovies.push(...remainingMovies.slice(0, count - selectedMovies.length));
     }
-    
+
     // Final shuffle to not reveal the selection strategy, but keep it light to preserve quality
     return selectedMovies.sort(() => Math.random() - 0.45).slice(0, count);
   }
@@ -417,22 +417,22 @@ class TMDbService {
    */
   private calculateMovieHintScore(movie: Movie): number {
     let score = 0;
-    
+
     // Primary factor: TMDB popularity score (most important)
     if (movie.popularity) {
       score += movie.popularity * 2; // Weight popularity heavily
     }
-    
+
     // Secondary factor: Vote count and rating (indicates mainstream recognition)
     if (movie.vote_count && movie.vote_average) {
       const popularityFromVotes = Math.log(movie.vote_count + 1) * movie.vote_average;
       score += popularityFromVotes;
     }
-    
+
     // Release date factor (more recent movies often more recognizable)
     if (movie.release_date) {
       const releaseYear = new Date(movie.release_date).getFullYear();
-      
+
       // Sweet spot: movies from 1980-2020 get highest scores
       if (releaseYear >= 1980 && releaseYear <= 2020) {
         score += 10;
@@ -444,7 +444,7 @@ class TMDbService {
         score += 3; // Very old movies
       }
     }
-    
+
     // Title length factor (distinctive titles often more memorable)
     const titleLength = movie.title.length;
     if (titleLength >= 8 && titleLength <= 25) {
@@ -454,10 +454,10 @@ class TMDbService {
     } else {
       score += 1; // Short titles
     }
-    
+
     // Add minimal randomness to prevent complete predictability
     score += Math.random() * 1;
-    
+
     return score;
   }
 
@@ -472,7 +472,7 @@ class TMDbService {
         birthday?: string;
         deathday?: string;
       }>(`/person/${actorId}`);
-      
+
       return {
         name: response.name,
         birthday: response.birthday,
@@ -494,7 +494,7 @@ class TMDbService {
         this.getActorDetails(actorId),
         this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`)
       ]);
-      
+
       // For deceased actors, include them if they had a modern career (1990+)
       // This includes beloved actors like Robin Williams who had recent careers
       if (actorDetails?.deathday) {
@@ -503,7 +503,7 @@ class TMDbService {
           const releaseYear = new Date(movie.release_date).getFullYear();
           return releaseYear >= 1990; // Must have movies from 1990 onwards
         });
-        
+
         if (recentMoviesForDeceased.length >= 3) {
           console.log(`Including deceased actor with modern career: ${actorDetails.name} (${recentMoviesForDeceased.length} movies from 1990+)`);
           return true;
@@ -512,14 +512,14 @@ class TMDbService {
           return false;
         }
       }
-      
+
       // Check if actor has any movies released after 1980
       const recentMovies = movieCredits.cast.filter(movie => {
         if (!movie.release_date) return false;
         const releaseYear = new Date(movie.release_date).getFullYear();
         return releaseYear > 1980;
       });
-      
+
       // Actor must have at least 2 movies after 1980 to be considered "active"
       return recentMovies.length >= 2;
     } catch (error) {
@@ -550,7 +550,7 @@ class TMDbService {
 
       const batchResults = await Promise.all(batchPromises);
       validActors.push(...batchResults.filter((actor): actor is Actor => actor !== null));
-      
+
       // Add small delay between batches to respect API limits
       if (i + 5 < actors.length) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -586,32 +586,32 @@ class TMDbService {
           }
 
           const movies = await this.getActorMovies(actor.id);
-          
+
           if (movies.length === 0) {
             return null; // Skip actors with no movies
           }
 
           // Check if actor has significant mainstream live-action work
           const liveActionMovies = await this.getNonDocumentaryNonAnimatedMovies(actor.id);
-          
+
           // NEW REQUIREMENT: Actor must have at least 5 English-language movies
           // Get raw TMDB data with original_language field for filtering
           const rawMovieCredits = await this.makeRequest<TMDbPersonMovies>(`/person/${actor.id}/movie_credits`);
-          const englishMovies = rawMovieCredits.cast.filter(movie => 
+          const englishMovies = rawMovieCredits.cast.filter(movie =>
             movie.original_language === 'en' &&
-            movie.release_date && 
+            movie.release_date &&
             new Date(movie.release_date).getFullYear() >= 1970 &&
             // Exclude documentaries, animated movies, TV movies, and music films
-            (!movie.genre_ids || !movie.genre_ids.some(id => 
+            (!movie.genre_ids || !movie.genre_ids.some(id =>
               id === this.EXCLUDED_GENRES.ANIMATION ||
               id === this.EXCLUDED_GENRES.DOCUMENTARY ||
               id === this.EXCLUDED_GENRES.TV_MOVIE ||
               id === this.EXCLUDED_GENRES.MUSIC
             ))
           );
-          
+
           console.log(`${actor.name}: ${liveActionMovies.length} live-action movies, ${englishMovies.length} in English`);
-          
+
           // Actor must have at least 5 English movies for better game relevance
           if (englishMovies.length >= 5) {
             // Additional check: ensure they have movies with decent popularity/budget
@@ -621,13 +621,13 @@ class TMDbService {
               const releaseYear = new Date(movie.release_date).getFullYear();
               return releaseYear >= 1990;
             });
-            
+
             // Must have at least 3 English movies from 1990+ to ensure mainstream relevance
             if (popularMovies.length >= 3) {
               return actor;
             }
           }
-          
+
           return null;
         } catch (error) {
           console.error(`Error checking actor ${actor.name}:`, error);
@@ -637,7 +637,7 @@ class TMDbService {
 
       const batchResults = await Promise.all(batchPromises);
       validActors.push(...batchResults.filter((actor): actor is Actor => actor !== null));
-      
+
       // Add small delay between batches to respect API limits
       if (i + 5 < actors.length) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -653,7 +653,7 @@ class TMDbService {
   private async getNonDocumentaryNonAnimatedMovies(actorId: number): Promise<Movie[]> {
     try {
       const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
-      
+
       return response.cast
         .filter(movie => {
           // Only include movies from 1970 onwards
@@ -664,9 +664,9 @@ class TMDbService {
           // Exclude documentaries, animated movies, TV movies, and music films if genre_ids are available
           if (movie.genre_ids && movie.genre_ids.length > 0) {
             return !movie.genre_ids.includes(this.EXCLUDED_GENRES.ANIMATION) &&
-                   !movie.genre_ids.includes(this.EXCLUDED_GENRES.DOCUMENTARY) &&
-                   !movie.genre_ids.includes(this.EXCLUDED_GENRES.TV_MOVIE) &&
-                   !movie.genre_ids.includes(this.EXCLUDED_GENRES.MUSIC);
+              !movie.genre_ids.includes(this.EXCLUDED_GENRES.DOCUMENTARY) &&
+              !movie.genre_ids.includes(this.EXCLUDED_GENRES.TV_MOVIE) &&
+              !movie.genre_ids.includes(this.EXCLUDED_GENRES.MUSIC);
           }
 
           // If no genre_ids, include the movie (we'll filter by other means)
@@ -690,13 +690,13 @@ class TMDbService {
   private async isPrimarilyVoiceActor(actorId: number): Promise<boolean> {
     try {
       const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
-      
+
       if (response.cast.length === 0) return false;
-      
+
       // Count animated vs live-action movies
       let animatedCount = 0;
       let liveActionCount = 0;
-      
+
       for (const movie of response.cast) {
         if (movie.genre_ids && movie.genre_ids.includes(this.EXCLUDED_GENRES.ANIMATION)) {
           animatedCount++;
@@ -704,7 +704,7 @@ class TMDbService {
           liveActionCount++;
         }
       }
-      
+
       // If more than 60% of their work is animated, consider them primarily a voice actor
       const animatedPercentage = animatedCount / (animatedCount + liveActionCount);
       return animatedPercentage > 0.6;
@@ -718,11 +718,11 @@ class TMDbService {
     try {
       const credits = await this.getMovieCredits(movieId);
       const isValid = credits.some(actor => actor.id === actorId);
-      
+
       if (!isValid) {
         console.log(`Validation failed: Actor ${actorId} not found in movie ${movieId} cast (${credits.length} cast members)`);
       }
-      
+
       return isValid;
     } catch (error) {
       console.error("Error validating actor in movie:", error);
@@ -735,22 +735,22 @@ class TMDbService {
       // Get popular actors from many more pages to have much larger pool
       // TMDB popular endpoint typically returns 20 actors per page
       const pages = [];
-      const totalPages = 10; // Get 200 actors instead of 60
-      
+      const totalPages = 3; // Reduced from 10 to fit in serverless timeout
+
       console.log(`Fetching ${totalPages} pages of popular actors (${totalPages * 20} total)...`);
-      
+
       for (let i = 1; i <= totalPages; i++) {
         const page = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: i.toString() });
         pages.push(page);
-        
+
         // Add small delay between API calls to be respectful
         if (i < totalPages) {
           await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
-      
+
       const allResults = pages.flatMap(page => page.results);
-      
+
       const actors = allResults
         .filter(person => person.known_for_department === "Acting")
         .map(person => ({
@@ -761,18 +761,24 @@ class TMDbService {
         }));
 
       console.log(`Found ${actors.length} actors from ${totalPages} pages, applying career activity filtering...`);
-      
+
       // First filter by career activity (post-1980) and living status
-      const careerFilteredActors = await this.filterActorsByCareerActivity(actors);
-      
+      // Only filter first 20 actors to speed up generation
+      const actorsToFilter = actors.slice(0, 20);
+      const remainingActors = actors.slice(20);
+
+      const careerFilteredActors = await this.filterActorsByCareerActivity(actorsToFilter);
+
       console.log("Applying genre filtering and English movie requirement (5+ credits) to career-filtered actors...");
-      
+
       // Then apply genre filtering to exclude documentary/animation-only actors  
       const finalFilteredActors = await this.filterActorsByGenre(careerFilteredActors);
       console.log(`Final filtered actors: ${finalFilteredActors.length}`);
-      console.log(`Actor pool diversity: ${finalFilteredActors.map(a => a.name).slice(0, 10).join(', ')}...`);
-      
-      return finalFilteredActors.length > 10 ? finalFilteredActors : careerFilteredActors; // Fallback to career-filtered if genre filtering is too restrictive
+
+      // Combine filtered with some original ones to ensure we have enough
+      const combinedPool = [...finalFilteredActors, ...remainingActors].slice(0, 50);
+
+      return combinedPool.length >= 2 ? combinedPool : actors;
     } catch (error) {
       console.error("Error getting popular actors:", error);
       return [];
@@ -782,7 +788,7 @@ class TMDbService {
   async getRandomTopActors(): Promise<{ actor1: Actor; actor2: Actor } | null> {
     try {
       const actors = await this.getPopularActors();
-      
+
       if (actors.length < 2) {
         return null;
       }
@@ -790,7 +796,7 @@ class TMDbService {
       // Pick two random actors from different parts of the pool for more diversity
       const shuffled = actors.sort(() => 0.5 - Math.random());
       console.log(`Selecting from pool of ${actors.length} qualified actors`);
-      
+
       return {
         actor1: shuffled[0],
         actor2: shuffled[1],
@@ -827,17 +833,17 @@ class TMDbService {
    * Verify and repair challenge thumbnails
    * Ensures actor names match their profile paths
    */
-  async verifyChallengeThumbnails(challenge: { 
-    id: string; 
-    startActorId: number; 
+  async verifyChallengeThumbnails(challenge: {
+    id: string;
+    startActorId: number;
     startActorName: string;
     startActorProfilePath: string | null;
-    endActorId: number; 
+    endActorId: number;
     endActorName: string;
     endActorProfilePath: string | null;
-  }): Promise<{ 
-    needsUpdate: boolean; 
-    correctStartPath?: string | null; 
+  }): Promise<{
+    needsUpdate: boolean;
+    correctStartPath?: string | null;
     correctEndPath?: string | null;
     issues: string[];
   }> {
