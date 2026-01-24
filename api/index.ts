@@ -14,6 +14,10 @@ export default async (req: any, res: any) => {
         });
     }
 
+    if (req.url === '/api/test' || req.url === '/api/test/') {
+        return res.status(200).json({ message: "Test endpoint working" });
+    }
+
     console.log(`[API] ${req.method} ${req.url} - v3 production`);
 
     try {

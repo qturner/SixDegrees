@@ -30,13 +30,13 @@ export const getPool = () => {
     console.log('Initializing database pool...');
     internalPool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
       idleTimeoutMillis: 300000,
       max: 5,
       allowExitOnIdle: true,
       application_name: 'movie-connection-game',
-      statement_timeout: 30000,
-      query_timeout: 30000,
+      statement_timeout: 5000,
+      query_timeout: 5000,
     });
 
     internalPool.on('error', (err) => {

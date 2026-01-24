@@ -52,17 +52,20 @@ export const initServer = async () => {
   initPromise = (async () => {
     // Check database health but don't block startup
     let dbHealthy = false;
-    try {
-      log('Checking database connection...');
-      dbHealthy = await checkDatabaseHealth();
-      if (dbHealthy) {
-        log('✅ Database connection verified successfully');
-      } else {
-        log('⚠️ Database connection failed, but starting server anyway');
+    // Run health check in background so we don't timeout the lambda
+    (async () => {
+      try {
+        log('Checking database connection in background...');
+        dbHealthy = await checkDatabaseHealth();
+        if (dbHealthy) {
+          log('✅ Database connection verified successfully');
+        } else {
+          log('⚠️ Database connection failed');
+        }
+      } catch (error: any) {
+        log(`⚠️ Database health check error: ${error?.message || 'Unknown error'}`);
       }
-    } catch (error: any) {
-      log(`⚠️ Database health check error: ${error?.message || 'Unknown error'}`);
-    }
+    })();
 
     const server = await registerRoutes(app);
 
