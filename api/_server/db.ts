@@ -80,7 +80,7 @@ export async function withRetry<T>(operation: () => Promise<T>, maxRetries: numb
   let lastError: any;
   const isProd = process.env.NODE_ENV === 'production';
   // Reduce retries in production to avoid lambda timeouts
-  const actualMaxRetries = isProd ? Math.min(maxRetries, 3) : maxRetries;
+  const actualMaxRetries = isProd ? 2 : maxRetries;
 
   for (let attempt = 1; attempt <= actualMaxRetries; attempt++) {
     try {

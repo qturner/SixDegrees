@@ -379,7 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try to get challenge with longer timeout for better resilience
       let challenge;
       try {
-        challenge = await withRetry(() => storage.getDailyChallenge(today), 5); // Increased retries for this critical endpoint
+        challenge = await storage.getDailyChallenge(today);
       } catch (dbError) {
         console.error("Database error when fetching challenge:", dbError);
         // Return a fallback error that doesn't block the UI completely

@@ -24,7 +24,9 @@ export default async (req: any, res: any) => {
         const { initServer } = await import('./_server/index.js');
         if (!cachedApp) {
             console.log("[API] Calling initServer from _server...");
-            const { app } = await initServer();
+            const initResult = await initServer();
+            console.log("[API] initServer completed successfully");
+            const { app } = initResult;
             cachedApp = app;
         }
         return cachedApp(req, res);
