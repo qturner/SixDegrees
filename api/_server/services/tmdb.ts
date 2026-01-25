@@ -140,13 +140,24 @@ class TMDbService {
       url.searchParams.append(key, value);
     });
 
-    const response = await fetch(url.toString());
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-    if (!response.ok) {
-      throw new Error(`TMDb API error: ${response.status} ${response.statusText}`);
+    try {
+      const response = await fetch(url.toString(), {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`TMDb API error: ${response.status} ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
     }
-
-    return response.json();
   }
 
   async searchActors(query: string): Promise<Actor[]> {
