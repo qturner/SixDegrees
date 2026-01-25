@@ -74,7 +74,7 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
             data-testid="button-signin"
           >
             <User className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Sign In</span>
+            <span className="font-medium">Sign In</span>
           </Button>
         )}
       </div>
