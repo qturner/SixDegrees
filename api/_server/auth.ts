@@ -1,6 +1,8 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import session from "express-session";
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db.js";
 import { storage } from "./storage.js";
@@ -41,6 +43,89 @@ export async function setupAuth(app: Express) {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     }
   }));
+
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID || "",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    callbackURL: process.env.NODE_ENV === "production"
+      ? "https://www.sixdegrees.app/api/auth/google/callback"
+      : "http://localhost:5001/api/auth/google/callback"
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      const googleId = profile.id;
+      const email = profile.emails?.[0].value;
+      const picture = profile.photos?.[0].value;
+      const firstName = profile.name?.givenName;
+      const lastName = profile.name?.familyName;
+
+      if (!email) {
+        return done(new Error("No email found from Google profile"), undefined);
+      }
+
+      // 1. Check if user exists by Google ID
+      let user = await storage.getUserByGoogleId(googleId);
+
+      if (!user) {
+        // 2. Check if user exists by email (link accounts)
+        user = await storage.getUserByEmail(email);
+
+        if (user) {
+          // Link existing email user to Google
+          // We can't update using storage interface yet easily without expanding it
+          // For now, we'll assume new user or strict google match
+          // TODO: Implement linking if separate update method exists
+        } else {
+          // 3. Create new user
+          const username = email.split('@')[0] + Math.floor(Math.random() * 1000); // Generate unique-ish username
+
+          user = await storage.createUser({
+            email,
+            username,
+            googleId,
+            firstName,
+            lastName,
+            picture,
+            password: "", // No password for Google users
+          });
+
+          // Create stats for new user
+          await storage.createUserStats({ userId: user.id });
+        }
+      }
+
+      return done(null, user);
+    } catch (error) {
+      return done(error as Error, undefined);
+    }
+  }));
+
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await storage.getUserById(id);
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
+  });
+
+  // Google Auth Routes
+  app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+  app.get("/api/auth/google/callback",
+    passport.authenticate("google", { failureRedirect: "/" }),
+    (req, res) => {
+      // Successful authentication, redirect to home with a flag to open stats or profile??
+      // Or just redirect home, frontend checks /api/user/me
+      res.redirect("/");
+    }
+  );
 
   // Registration endpoint
   app.post("/api/auth/register", async (req: Request, res: Response) => {
@@ -103,6 +188,10 @@ export async function setupAuth(app: Express) {
       }
 
       // Check password
+      if (!user.password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
       const passwordValid = await bcrypt.compare(validatedData.password, user.password);
       if (!passwordValid) {
         return res.status(401).json({ message: "Invalid credentials" });

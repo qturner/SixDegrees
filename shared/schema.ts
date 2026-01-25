@@ -128,11 +128,11 @@ export const contactSubmissions = pgTable("contact_submissions", {
 
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 export type InsertContactSubmission = typeof contactSubmissions.$inferInsert;
-export const insertContactSubmissionSchema = createInsertSchema(contactSubmissions).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true, 
-  status: true 
+export const insertContactSubmissionSchema = createInsertSchema(contactSubmissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true
 });
 
 // Visitor analytics table for tracking referrals and traffic sources
@@ -162,10 +162,10 @@ export const visitorAnalytics = pgTable("visitor_analytics", {
 });
 
 export type VisitorAnalytics = typeof visitorAnalytics.$inferSelect;
-export const insertVisitorAnalyticsSchema = createInsertSchema(visitorAnalytics).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
+export const insertVisitorAnalyticsSchema = createInsertSchema(visitorAnalytics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
 });
 export type InsertVisitorAnalytics = z.infer<typeof insertVisitorAnalyticsSchema>;
 
@@ -180,14 +180,16 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Users table for email/password authentication
+// Users table for email/password + Google authentication
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique().notNull(),
   username: varchar("username").unique().notNull(),
-  password: varchar("password").notNull(),
+  password: varchar("password"), // Nullable for Google auth users
+  googleId: varchar("google_id").unique(), // For Google auth
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
+  picture: text("picture"), // Google profile picture
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -211,6 +213,9 @@ export const userStats = pgTable("user_stats", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   totalCompletions: integer("total_completions").default(0),
   totalMoves: integer("total_moves").default(0),
+  currentStreak: integer("current_streak").default(0),
+  maxStreak: integer("max_streak").default(0),
+  lastPlayedDate: text("last_played_date"), // YYYY-MM-DD to track daily streaks
   completionsAt1Move: integer("completions_at_1_move").default(0),
   completionsAt2Moves: integer("completions_at_2_moves").default(0),
   completionsAt3Moves: integer("completions_at_3_moves").default(0),

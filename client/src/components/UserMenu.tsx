@@ -24,13 +24,13 @@ interface UserMenuProps {
 export function UserMenu({ onPlayChallenge }: UserMenuProps) {
   const [showStats, setShowStats] = useState(false);
   const [showIncomplete, setShowIncomplete] = useState(false);
-  const { 
-    user, 
-    userStats, 
-    recentChallenges, 
-    moveDistribution, 
-    logoutMutation, 
-    isStatsLoading 
+  const {
+    user,
+    userStats,
+    recentChallenges,
+    moveDistribution,
+    logoutMutation,
+    isStatsLoading
   } = useAuth();
 
   if (!user) return null;
@@ -58,9 +58,9 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover transition-all duration-200"
             data-testid="button-user-menu"
           >
@@ -81,14 +81,14 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => setShowStats(true)}
               data-testid="menu-user-stats"
             >
               <BarChart3 className="mr-2 h-4 w-4" />
               My Stats
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => setShowIncomplete(true)}
               data-testid="menu-incomplete-challenges"
             >
@@ -97,7 +97,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={handleLogout}
             disabled={logoutMutation.isPending}
             data-testid="menu-logout"
@@ -117,7 +117,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
               My Game Statistics
             </DialogTitle>
           </DialogHeader>
-          
+
           {isStatsLoading ? (
             <div className="py-8 text-center text-muted-foreground">
               Loading stats...
@@ -125,7 +125,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
           ) : userStats ? (
             <div className="grid gap-6 py-4">
               {/* Overall Stats Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="p-4 text-center">
                     <div className="text-2xl font-bold text-green-600">
@@ -136,7 +136,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardContent className="p-4 text-center">
                     <div className="text-2xl font-bold text-blue-600">
@@ -147,18 +147,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
                     </div>
                   </CardContent>
                 </Card>
-                
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {userStats.completionsAt1Move || 0}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Perfect Games
-                    </div>
-                  </CardContent>
-                </Card>
-                
+
                 <Card>
                   <CardContent className="p-4 text-center">
                     <div className="text-2xl font-bold text-orange-600">
@@ -166,6 +155,39 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Total Moves
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-amber-500">
+                      {userStats.currentStreak || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Current Streak
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-red-500">
+                      {userStats.maxStreak || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Max Streak
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {userStats.completionsAt1Move || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Perfect Games
                     </div>
                   </CardContent>
                 </Card>
@@ -184,14 +206,14 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
                     {[1, 2, 3, 4, 5, 6].map((moves) => {
                       const count = userStats[`completionsAt${moves}Move${moves > 1 ? 's' : ''}` as keyof typeof userStats] as number || 0;
                       const percentage = (userStats.totalCompletions || 0) > 0 ? Math.round((count / (userStats.totalCompletions || 1)) * 100) : 0;
-                      
+
                       return (
                         <div key={moves} className="flex items-center justify-between">
                           <span className="text-sm font-medium">{moves} move{moves > 1 ? 's' : ''}</span>
                           <div className="flex items-center gap-3">
                             <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                              <div
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
@@ -223,7 +245,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
               Recent Challenges
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="py-4">
             {recentChallenges && recentChallenges.length > 0 ? (
               <div className="space-y-3">
@@ -239,7 +261,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
                             {item.challenge.date}
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-3">
                           {item.completed ? (
                             <Badge variant="default" className="bg-green-100 text-green-800">
@@ -252,8 +274,8 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
                                 Not completed
                               </Badge>
                               {onPlayChallenge && (
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   onClick={() => onPlayChallenge(item.challenge)}
                                   data-testid={`button-play-challenge-${index}`}
                                 >

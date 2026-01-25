@@ -1554,9 +1554,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentStats = await storage.getUserStats(userId);
       if (currentStats) {
         const moves = parseResult.data.moves;
+        const today = getESTDateString();
+        const yesterday = getYesterdayDateString();
+
+        // Calculate streak
+        let currentStreak = currentStats.currentStreak || 0;
+        let maxStreak = currentStats.maxStreak || 0;
+        const lastPlayed = currentStats.lastPlayedDate;
+
+        if (lastPlayed === today) {
+          // Already played today, streak remains same
+        } else if (lastPlayed === yesterday) {
+          // Played yesterday, increment streak
+          currentStreak += 1;
+        } else {
+          // Missed a day or first time, reset streak
+          currentStreak = 1;
+        }
+
+        if (currentStreak > maxStreak) {
+          maxStreak = currentStreak;
+        }
+
         const statUpdates: Partial<typeof currentStats> = {
           totalCompletions: (currentStats.totalCompletions || 0) + 1,
           totalMoves: (currentStats.totalMoves || 0) + moves,
+          currentStreak,
+          maxStreak,
+          lastPlayedDate: today,
         };
 
         // Update move count stats

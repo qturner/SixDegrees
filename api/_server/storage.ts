@@ -33,6 +33,7 @@ export interface IStorage {
   getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
   // User stats methods
@@ -516,6 +517,13 @@ export class DatabaseStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     return await withRetry(async () => {
       const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user || undefined;
+    });
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    return await withRetry(async () => {
+      const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
       return user || undefined;
     });
   }

@@ -1,6 +1,10 @@
-import { HelpCircle } from "lucide-react";
+import { useState } from "react";
+import { HelpCircle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DailyChallenge, ValidationResult } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
+import { UserMenu } from "@/components/UserMenu";
+import { AuthModal } from "@/components/AuthModal";
 
 interface GameHeaderProps {
   challenge: DailyChallenge;
@@ -12,6 +16,9 @@ interface GameHeaderProps {
 }
 
 export default function GameHeader({ challenge, currentMoves, isFlipped = false, onFlip, canFlip = true, gameResult }: GameHeaderProps) {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { user, loginMutation } = useAuth();
+
   const displayChallenge = isFlipped ? {
     ...challenge,
     startActorName: challenge.endActorName,
@@ -54,6 +61,26 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
 
   return (
     <header className="bg-deco-charcoal border-b border-deco-gold/30 relative overflow-hidden" role="banner">
+      {/* Auth UI - Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        {user ? (
+          <UserMenu />
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-transparent border-deco-gold/50 text-deco-gold hover:bg-deco-gold/10 hover:text-deco-champagne transition-colors"
+            onClick={() => setIsAuthModalOpen(true)}
+            data-testid="button-signin"
+          >
+            <User className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Sign In</span>
+          </Button>
+        )}
+      </div>
+
+      <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
+
       {/* Subtle geometric pattern overlay */}
       <div className="absolute inset-0 art-deco-chevron opacity-30 pointer-events-none" />
 
