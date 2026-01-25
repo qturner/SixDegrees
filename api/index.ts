@@ -14,8 +14,22 @@ export default async (req: any, res: any) => {
         });
     }
 
-    if (req.url === '/api/test' || req.url === '/api/test/') {
-        return res.status(200).json({ message: "Test endpoint working" });
+    if (req.url.includes('/api/daily-challenge')) {
+        console.log("[API] Daily challenge fast-path hit");
+        try {
+            const { storage } = await import('./_server/storage.js');
+            const { getESTDateString } = await import('./_server/routes.js');
+            const today = getESTDateString();
+            const challenge = await storage.getDailyChallenge(today);
+            if (challenge) {
+                console.log("[API] Fast-path: Found challenge in DB");
+                return res.status(200).json(challenge);
+            }
+            console.log("[API] Fast-path: No challenge found, falling back to full server init");
+        } catch (error) {
+            console.error("[API] Fast-path error:", error);
+            // Fall through to full initialization
+        }
     }
 
     console.log(`[API] ${req.method} ${req.url} - v3 production`);
