@@ -109,7 +109,7 @@ export default function ActorSearch({ onSelect, placeholder = "Search for actor.
                       <div className="flex items-center space-x-3">
                         {actor.profile_path ? (
                           <img
-                            src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                            src={actor.profile_path.startsWith('http') ? actor.profile_path : `https://image.tmdb.org/t/p/w92${actor.profile_path}`}
                             alt={actor.name}
                             className="w-8 h-8 rounded-full object-cover border border-deco-gold/30"
                           />

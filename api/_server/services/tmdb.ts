@@ -128,6 +128,10 @@ class TMDbService {
     }
   }
 
+  // Simple in-memory cache for actor details to speed up filtering
+  private actorDetailsCache = new Map<number, any>();
+  private CACHE_TTL = 3600000; // 1 hour
+
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
     const url = new URL(`${this.config.baseUrl}${endpoint}`);
     url.searchParams.append("api_key", this.config.apiKey);
@@ -164,10 +168,24 @@ class TMDbService {
         }));
 
       // Filter out actors who only appear in documentaries or animated movies
-      const filteredActors = await this.filterActorsByGenre(actors);
+      // Limit to top 8 candidates for filtering to avoid timeouts in serverless
+      const candidatesToFilter = actors.slice(0, 8);
+      const filteredActors = await this.filterActorsByGenre(candidatesToFilter);
 
-      // Return top 20 results to keep it manageable
-      return filteredActors.slice(0, 20);
+      // Return results, favoring filtered then unfiltered if needed
+      const finalResults = [...filteredActors];
+      if (finalResults.length < 5) {
+        // Add back some unfiltered results if we don't have enough
+        const existingIds = new Set(finalResults.map(a => a.id));
+        for (const actor of actors) {
+          if (finalResults.length >= 10) break;
+          if (!existingIds.has(actor.id)) {
+            finalResults.push(actor);
+          }
+        }
+      }
+
+      return finalResults.slice(0, 20);
     } catch (error) {
       console.error("Error searching actors:", error);
       return [];
@@ -461,9 +479,14 @@ class TMDbService {
   }
 
   /**
-   * Get detailed actor information including birth/death dates
+   * Get detailed actor information including birth/death dates with caching
    */
   async getActorDetails(actorId: number): Promise<{ name: string; birthday?: string; deathday?: string } | null> {
+    const cached = this.actorDetailsCache.get(actorId);
+    if (cached && (Date.now() - cached.timestamp < this.CACHE_TTL)) {
+      return cached.data;
+    }
+
     try {
       const response = await this.makeRequest<{
         id: number;
@@ -472,11 +495,14 @@ class TMDbService {
         deathday?: string;
       }>(`/person/${actorId}`);
 
-      return {
+      const data = {
         name: response.name,
         birthday: response.birthday,
         deathday: response.deathday
       };
+
+      this.actorDetailsCache.set(actorId, { data, timestamp: Date.now() });
+      return data;
     } catch (error) {
       console.error(`Error getting actor details for ${actorId}:`, error);
       return null;

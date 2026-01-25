@@ -120,7 +120,7 @@ export default function MovieSearch({ onSelect, placeholder = "Search for movie.
                       <div className="flex items-center space-x-3">
                         {movie.poster_path ? (
                           <img
-                            src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+                            src={movie.poster_path.startsWith('http') ? movie.poster_path : `https://image.tmdb.org/t/p/w92${movie.poster_path}`}
                             alt={movie.title}
                             className="w-8 h-12 object-cover border border-deco-gold/30"
                           />

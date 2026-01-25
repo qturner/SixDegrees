@@ -123,7 +123,9 @@ export default function TodaysChallenge({
                     <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
                     {displayChallenge.startActorProfilePath ? (
                       <img
-                        src={`https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
+                        src={displayChallenge.startActorProfilePath.startsWith('http')
+                          ? displayChallenge.startActorProfilePath
+                          : `https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
                         alt={displayChallenge.startActorName}
                         className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
                         onClick={() => handleImageClick(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
@@ -175,7 +177,9 @@ export default function TodaysChallenge({
                     <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
                     {displayChallenge.endActorProfilePath ? (
                       <img
-                        src={`https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
+                        src={displayChallenge.endActorProfilePath.startsWith('http')
+                          ? displayChallenge.endActorProfilePath
+                          : `https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
                         alt={displayChallenge.endActorName}
                         className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
                         onClick={() => handleImageClick(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
@@ -235,7 +239,9 @@ export default function TodaysChallenge({
         >
           <div className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
             <img
-              src={`https://image.tmdb.org/t/p/w342${zoomedActor.profilePath}`}
+              src={zoomedActor.profilePath.startsWith('http')
+                ? zoomedActor.profilePath
+                : `https://image.tmdb.org/t/p/w342${zoomedActor.profilePath}`}
               alt={zoomedActor.name}
               className="w-64 h-64 sm:w-80 sm:h-80 rounded-full object-cover border-4 border-deco-gold shadow-2xl"
             />

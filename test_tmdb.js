@@ -1,4 +1,4 @@
-import { tmdbService } from "./api/_server/services/tmdb.js";
+import { tmdbService } from "./api/_server/services/tmdb.ts";
 
 async function test() {
     console.log("Testing Movie Search...");

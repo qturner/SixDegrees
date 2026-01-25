@@ -40,6 +40,22 @@ function getTomorrowDateString(): string {
   return getESTDateString(date);
 }
 
+// Helper to ensure image paths are relative and clean
+function sanitizeImagePath(path: string | null | undefined): string | null {
+  if (!path) return null;
+  // If it's a full URL, strip the base parts
+  let cleanPath = path;
+  if (path.startsWith('http')) {
+    const parts = path.split('/');
+    cleanPath = '/' + parts[parts.length - 1];
+  }
+  // Ensure it starts with /
+  if (!cleanPath.startsWith('/')) {
+    cleanPath = '/' + cleanPath;
+  }
+  return cleanPath;
+}
+
 // Prevent race conditions in challenge creation
 let challengeCreationPromise: Promise<any> | null = null;
 let lastChallengeDate: string | null = null;
@@ -319,10 +335,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "active",
           startActorId: actors.actor1.id,
           startActorName: actors.actor1.name,
-          startActorProfilePath: actors.actor1.profile_path,
+          startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
           endActorId: actors.actor2.id,
           endActorName: actors.actor2.name,
-          endActorProfilePath: actors.actor2.profile_path,
+          endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
           hintsUsed: 0,
         });
 
@@ -356,10 +372,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "active",
           startActorId: actors.actor1.id,
           startActorName: actors.actor1.name,
-          startActorProfilePath: actors.actor1.profile_path,
+          startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
           endActorId: actors.actor2.id,
           endActorName: actors.actor2.name,
-          endActorProfilePath: actors.actor2.profile_path,
+          endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
           hintsUsed: 0,
         });
       }
@@ -441,10 +457,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   status: "next",
                   startActorId: actors.actor1.id,
                   startActorName: actors.actor1.name,
-                  startActorProfilePath: actors.actor1.profile_path || null,
+                  startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
                   endActorId: actors.actor2.id,
                   endActorName: actors.actor2.name,
-                  endActorProfilePath: actors.actor2.profile_path || null,
+                  endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
                   hintsUsed: 0,
                 });
                 console.log(`Generated new 'next' challenge for ${tomorrow}: ${actors.actor1.name} to ${actors.actor2.name}`);
@@ -505,10 +521,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 status: "active",
                 startActorId: actors.actor1.id,
                 startActorName: actors.actor1.name,
-                startActorProfilePath: actors.actor1.profile_path || null,
+                startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
                 endActorId: actors.actor2.id,
                 endActorName: actors.actor2.name,
-                endActorProfilePath: actors.actor2.profile_path || null,
+                endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
                 hintsUsed: 0,
               }), 5);
               console.log(`Created new challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
@@ -557,7 +573,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const actors = await tmdbService.searchActors(query);
-      res.json(actors);
+      const sanitizedActors = actors.map(actor => ({
+        ...actor,
+        profile_path: sanitizeImagePath(actor.profile_path)
+      }));
+      res.json(sanitizedActors);
     } catch (error) {
       console.error("Error searching actors:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -614,7 +634,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Filmography search enhancement skipped:", filmographyError);
       }
 
-      res.json(movies);
+      const sanitizedMovies = movies.map(movie => ({
+        ...movie,
+        poster_path: sanitizeImagePath(movie.poster_path)
+      }));
+      res.json(sanitizedMovies);
     } catch (error) {
       console.error("Error searching movies:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -1053,10 +1077,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "active",
         startActorId: actors.actor1.id,
         startActorName: actors.actor1.name,
-        startActorProfilePath: actors.actor1.profile_path,
+        startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
         endActorId: actors.actor2.id,
         endActorName: actors.actor2.name,
-        endActorProfilePath: actors.actor2.profile_path,
+        endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
       });
 
       res.json(challenge);
@@ -1276,10 +1300,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "next",
         startActorId: actors.actor1.id,
         startActorName: actors.actor1.name,
-        startActorProfilePath: actors.actor1.profile_path,
+        startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
         endActorId: actors.actor2.id,
         endActorName: actors.actor2.name,
-        endActorProfilePath: actors.actor2.profile_path,
+        endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
         hintsUsed: 0,
       });
 

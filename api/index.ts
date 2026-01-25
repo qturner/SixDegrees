@@ -61,10 +61,14 @@ export default async (req: any, res: any) => {
                     status: c.status,
                     startActorId: c.start_actor_id,
                     startActorName: c.start_actor_name,
-                    startActorProfilePath: c.start_actor_profile_path,
+                    startActorProfilePath: c.start_actor_profile_path?.startsWith('http')
+                        ? '/' + c.start_actor_profile_path.split('/').pop()
+                        : (c.start_actor_profile_path?.startsWith('/') ? c.start_actor_profile_path : '/' + c.start_actor_profile_path),
                     endActorId: c.end_actor_id,
                     endActorName: c.end_actor_name,
-                    endActorProfilePath: c.end_actor_profile_path,
+                    endActorProfilePath: c.end_actor_profile_path?.startsWith('http')
+                        ? '/' + c.end_actor_profile_path.split('/').pop()
+                        : (c.end_actor_profile_path?.startsWith('/') ? c.end_actor_profile_path : '/' + c.end_actor_profile_path),
                     hintsUsed: c.hints_used
                 };
                 console.log("[API] Super-fast-path: Success");
