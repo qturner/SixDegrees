@@ -609,16 +609,18 @@ class TMDbService {
 
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {
     try {
-      const credits = await this.getMovieCredits(movieId);
-      const isValid = credits.some(actor => actor.id === actorId);
+      // Use actor's movie credits as it's typically a smaller dataset than a movie's full cast
+      // and checking if a movie ID exists in a list of ~50-100 items is much lighter/faster.
+      // This also avoids the issue of fetching massive cast lists for blockbuster movies.
 
-      if (!isValid) {
-        console.log(`Validation failed: Actor ${actorId} not found in movie ${movieId} cast (${credits.length} cast members)`);
-      }
+      // We perform a raw fetch here to avoid the filtering in getActorMovies 
+      // ensuring we don't falsely reject valid credits due to business logic filters (like release date)
+      const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
 
-      return isValid;
+      // Check if the movie ID exists in the cast list
+      return response.cast.some(movie => movie.id === movieId);
     } catch (error) {
-      console.error("Error validating actor in movie:", error);
+      console.error(`Error validating actor ${actorId} in movie ${movieId}:`, error);
       return false;
     }
   }

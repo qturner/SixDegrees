@@ -1,0 +1,154 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx api/_server/index.ts
+
+[dotenv@17.2.3] injecting env (5) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+Gmail credentials not provided - email notifications disabled
+GMAIL_USER: missing
+GMAIL_APP_PASSWORD: missing
+The `fetchConnectionCache` option is deprecated (now always `true`)
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+11:52:38 AM [express] Checking database connection in background...
+Initializing database pool...
+[AUTH] Initializing Postgres session store...
+[AUTH] Postgres session store initialized
+11:52:38 AM [express] serving on port 5001
+11:52:38 AM [express] Dual challenge reset scheduler initialized - resets at midnight EST/EDT
+Database pool connected successfully
+11:52:40 AM [express] ✅ Database connection verified successfully
+Validation failed: Actor 287 not found in movie 603 cast (37 cast members)
+Validation failed: Actor 11701 not found in movie 603 cast (37 cast members)
+Validation failed: Actor 287 not found in movie 603 cast (37 cast members)
+11:52:56 AM [express] POST /api/validate-game 200 in 449ms :: {"valid":false,"message":"The starting …
+Validation failed: Actor 287 not found in movie 603 cast (37 cast members)
+Validation failed: Actor 287 not found in movie 603 cast (37 cast members)
+Validation failed: Actor 789 not found in movie 624860 cast (58 cast members)
+Validation failed: Actor 456 not found in movie 624860 cast (58 cast members)
+Validation failed: Actor 287 not found in movie 604 cast (82 cast members)
+Validation failed: Actor 123 not found in movie 604 cast (82 cast members)
+Validation failed: Actor 11701 not found in movie 684431 cast (14 cast members)
+Validation failed: Actor 11701 not found in movie 684431 cast (14 cast members)
+Validation failed: Actor 101 not found in movie 684431 cast (14 cast members)
+Validation failed: Actor 789 not found in movie 14543 cast (20 cast members)
+Validation failed: Actor 101 not found in movie 14543 cast (20 cast members)
+Validation failed: Actor 456 not found in movie 605 cast (48 cast members)
+Validation failed: Actor 123 not found in movie 605 cast (48 cast members)
+11:53:19 AM [express] POST /api/validate-game 200 in 494ms :: {"valid":false,"message":"The starting …
+Database pool error: error: terminating connection due to administrator command
+    at cn.parseErrorMessage (file:///Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/@neondatabase/serverless/index.mjs:1182:6)
+    at cn.handlePacket (file:///Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/@neondatabase/serverless/index.mjs:1143:13)
+    at cn.parse (file:///Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/@neondatabase/serverless/index.mjs:1127:36)
+    at v.<anonymous> (file:///Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/@neondatabase/serverless/index.mjs:1190:16)
+    at v.emit (file:///Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/@neondatabase/serverless/index.mjs:397:12)
+    at WebSocket.<anonymous> (file:///Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/@neondatabase/serverless/index.mjs:987:80)
+    at callListener (/Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/ws/lib/event-target.js:290:14)
+    at WebSocket.onMessage (/Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/ws/lib/event-target.js:209:9)
+    at WebSocket.emit (node:events:508:28)
+    at Receiver.receiverOnMessage (/Users/quinlanturner/Desktop/Antigravity/six-degrees/node_modules/ws/lib/websocket.js:1220:20) {
+  length: 116,
+  severity: 'FATAL',
+  code: '57P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'postgres.c',
+  line: '3289',
+  routine: 'ProcessInterrupts',
+  client: NeonClient {
+    _events: [Object: null prototype] { error: [Function (anonymous)] },
+    _eventsCount: 1,
+    _maxListeners: undefined,
+    connectionParameters: ConnectionParameters {
+      user: 'neondb_owner',
+      database: 'neondb',
+      port: 5432,
+      host: 'ep-patient-haze-ae4xxnak.c-2.us-east-2.aws.neon.tech',
+      binary: false,
+      options: undefined,
+      ssl: {},
+      client_encoding: '',
+      replication: undefined,
+      isDomainSocket: false,
+      application_name: 'movie-connection-game',
+      fallback_application_name: undefined,
+      statement_timeout: 3000,
+      lock_timeout: false,
+      idle_in_transaction_session_timeout: false,
+      query_timeout: 3000,
+      connect_timeout: 3
+    },
+    user: 'neondb_owner',
+    database: 'neondb',
+    port: 5432,
+    host: 'ep-patient-haze-ae4xxnak.c-2.us-east-2.aws.neon.tech',
+    replication: undefined,
+    _Promise: [Function: Promise],
+    _types: TypeOverrides { _types: [Object], text: {}, binary: {} },
+    _ending: true,
+    _connecting: false,
+    _connected: true,
+    _connectionError: false,
+    _queryable: false,
+    connection: Connection {
+      _events: [Object: null prototype],
+      _eventsCount: 22,
+      _maxListeners: undefined,
+      stream: [Socket],
+      _keepAlive: false,
+      _keepAliveInitialDelayMillis: 0,
+      lastBuffer: false,
+      parsedStatements: {},
+      ssl: false,
+      _ending: true,
+      _emitMessage: false,
+      _connecting: true
+    },
+    queryQueue: [],
+    binary: false,
+    processID: 1200634776,
+    secretKey: -258706798,
+    ssl: false,
+    _connectionTimeoutMillis: 3000,
+    config: {
+      connectionString: 'postgresql://neondb_owner:npg_ZLH31GqRMgTh@ep-patient-haze-ae4xxnak.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require',
+      connectionTimeoutMillis: 3000,
+      idleTimeoutMillis: 300000,
+      max: 3,
+      allowExitOnIdle: true,
+      application_name: 'movie-connection-game',
+      statement_timeout: 3000,
+      query_timeout: 3000,
+      maxUses: Infinity,
+      maxLifetimeSeconds: 0
+    },
+    _connectionCallback: null,
+    connectionTimeoutHandle: Timeout {
+      _idleTimeout: -1,
+      _idlePrev: null,
+      _idleNext: null,
+      _idleStart: 506,
+      _onTimeout: null,
+      _timerArgs: undefined,
+      _repeat: null,
+      _destroyed: true,
+      Symbol(refed): true,
+      Symbol(kHasPrimitive): false,
+      Symbol(asyncId): 24,
+      Symbol(triggerId): 0,
+      Symbol(kAsyncContextFrame): undefined
+    },
+    release: [Function (anonymous)],
+    activeQuery: null,
+    readyForQuery: true,
+    hasExecuted: true,
+    _poolUseCount: 5
+  }
+}

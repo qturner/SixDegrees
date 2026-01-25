@@ -68,7 +68,7 @@ class GameLogicService {
     }
 
     try {
-      // Collect all validation promises
+      // Collect all validation promise factories (not promises yet)
       type ValidationCheckResult = {
         valid: boolean;
         message: string;
@@ -76,24 +76,24 @@ class GameLogicService {
         index?: number;
       };
 
-      const validations: Promise<ValidationCheckResult>[] = [];
+      const validationFactories: (() => Promise<ValidationCheckResult>)[] = [];
 
       // 1. Validate starting actor in first movie
-      validations.push(
-        tmdbService.validateActorInMovie(startActorId, connections[0].movieId)
+      validationFactories.push(
+        () => tmdbService.validateActorInMovie(startActorId, connections[0].movieId)
           .then(valid => ({ valid, message: "The starting actor did not appear in the first movie.", type: 'start' as const }))
       );
 
       // 2. Validate ending actor in last movie
-      validations.push(
-        tmdbService.validateActorInMovie(endActorId, connections[connections.length - 1].movieId)
+      validationFactories.push(
+        () => tmdbService.validateActorInMovie(endActorId, connections[connections.length - 1].movieId)
           .then(valid => ({ valid, message: "The ending actor did not appear in the final movie.", type: 'end' as const }))
       );
 
       // 3. Validate each connection's internal consistency (Actor X in Movie X)
       connections.forEach((connection, i) => {
-        validations.push(
-          tmdbService.validateActorInMovie(connection.actorId, connection.movieId)
+        validationFactories.push(
+          () => tmdbService.validateActorInMovie(connection.actorId, connection.movieId)
             .then(valid => ({
               valid,
               message: `Connection ${i + 1}: ${connection.actorName} did not appear in ${connection.movieTitle}.`,
@@ -110,8 +110,8 @@ class GameLogicService {
         const currentActorName = connections[i].actorName;
         const nextMovieTitle = connections[i + 1].movieTitle;
 
-        validations.push(
-          tmdbService.validateActorInMovie(currentActorId, nextMovieId)
+        validationFactories.push(
+          () => tmdbService.validateActorInMovie(currentActorId, nextMovieId)
             .then(valid => ({
               valid,
               message: `Connection ${i + 1}: ${currentActorName} did not appear in the next movie ${nextMovieTitle}.`,
@@ -121,8 +121,19 @@ class GameLogicService {
         );
       }
 
-      // Execute all validations in parallel
-      const results = await Promise.all(validations);
+      // Execute validations in batches to avoid rate limiting
+      const runBatched = async <T>(factories: (() => Promise<T>)[], limit: number): Promise<T[]> => {
+        const results: T[] = [];
+        for (let i = 0; i < factories.length; i += limit) {
+          const batch = factories.slice(i, i + limit);
+          const batchResults = await Promise.all(batch.map(f => f()));
+          results.push(...batchResults);
+        }
+        return results;
+      };
+
+      // Batch size of 3 means ~4 batches for a full game, preventing connection exhaustion
+      const results = await runBatched(validationFactories, 3);
 
       // Check results in logical order for user-friendly error messages
 
