@@ -8,12 +8,12 @@ async function testValidation() {
         startActorId: 287, // Brad Pitt
         endActorId: 11701, // Angelina Jolie
         connections: [
-            { actorId: 287, movieId: 603, movieTitle: "The Matrix" }, // Invalid but tests speed
-            { actorId: 123, movieId: 604, movieTitle: "The Matrix Reloaded" },
-            { actorId: 456, movieId: 605, movieTitle: "The Matrix Revolutions" },
-            { actorId: 789, movieId: 624860, movieTitle: "The Matrix Resurrections" },
-            { actorId: 101, movieId: 14543, movieTitle: "The Matrix Revisited" },
-            { actorId: 11701, movieId: 684431, movieTitle: "Making 'The Matrix'" }
+            { actorId: 287, actorName: "Brad Pitt", movieId: 603, movieTitle: "The Matrix" },
+            { actorId: 123, actorName: "Keanu Reeves", movieId: 604, movieTitle: "The Matrix Reloaded" },
+            { actorId: 456, actorName: "Carrie-Anne Moss", movieId: 605, movieTitle: "The Matrix Revolutions" },
+            { actorId: 789, actorName: "Laurence Fishburne", movieId: 624860, movieTitle: "The Matrix Resurrections" },
+            { actorId: 101, actorName: "Hugo Weaving", movieId: 14543, movieTitle: "The Matrix Revisited" },
+            { actorId: 11701, actorName: "Angelina Jolie", movieId: 684431, movieTitle: "Making 'The Matrix'" }
         ]
     };
 
@@ -34,6 +34,7 @@ async function testValidation() {
         console.error("Error:", error);
     }
     console.timeEnd("Validation");
+    process.exit(0);
 }
 
 testValidation();

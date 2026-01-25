@@ -14,7 +14,8 @@ export default async (req: any, res: any) => {
             tmdb: tmdbConfigured ? "configured" : "missing_key",
             database: dbConfigured ? "configured" : "missing_url",
             timestamp: new Date().toISOString(),
-            vercel: !!process.env.VERCEL
+            vercel: !!process.env.VERCEL,
+            version: "v4-parallel-validation"
         });
     }
 
