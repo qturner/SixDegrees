@@ -131,6 +131,7 @@ class TMDbService {
   // Simple in-memory cache for actor details to speed up filtering
   private actorDetailsCache = new Map<number, any>();
   private CACHE_TTL = 3600000; // 1 hour
+  private movieCreditsCache = new Map<number, { data: Actor[], timestamp: number }>();
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
     const url = new URL(`${this.config.baseUrl}${endpoint}`);
@@ -267,15 +268,23 @@ class TMDbService {
   }
 
   async getMovieCredits(movieId: number): Promise<Actor[]> {
+    const cached = this.movieCreditsCache.get(movieId);
+    if (cached && (Date.now() - cached.timestamp < this.CACHE_TTL)) {
+      return cached.data;
+    }
+
     try {
       const response = await this.makeRequest<TMDbCredit>(`/movie/${movieId}/credits`);
 
-      return response.cast.map(actor => ({
+      const data = response.cast.map(actor => ({
         id: actor.id,
         name: actor.name,
         profile_path: actor.profile_path,
         known_for_department: actor.known_for_department,
       }));
+
+      this.movieCreditsCache.set(movieId, { data, timestamp: Date.now() });
+      return data;
     } catch (error) {
       console.error("Error getting movie credits:", error);
       return [];

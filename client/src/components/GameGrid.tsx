@@ -41,6 +41,12 @@ export default function GameGrid({
       }
       onGameResult(result);
     },
+    onError: (error: any) => {
+      onGameResult({
+        valid: false,
+        message: error.message || "Failed to validate game. Please try again.",
+      });
+    },
   });
 
   const validateConnectionMutation = useMutation({
@@ -262,8 +268,8 @@ export default function GameGrid({
                   {/* Connection Status */}
                   {validationResult && connection.movieTitle && connection.actorName && (
                     <div className={`text-sm p-3 ${validationResult.valid
-                        ? 'bg-game-success/20 text-game-success border border-game-success/30'
-                        : 'bg-game-error/20 text-game-error border border-game-error/30'
+                      ? 'bg-game-success/20 text-game-success border border-game-success/30'
+                      : 'bg-game-error/20 text-game-error border border-game-error/30'
                       }`}>
                       {validationResult.valid ? (
                         <div className="flex items-center">
