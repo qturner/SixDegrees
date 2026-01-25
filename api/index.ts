@@ -15,7 +15,7 @@ export default async (req: any, res: any) => {
             database: dbConfigured ? "configured" : "missing_url",
             timestamp: new Date().toISOString(),
             vercel: !!process.env.VERCEL,
-            version: "v5-batch-validation"
+            version: "v6-async-stats"
         });
     }
 

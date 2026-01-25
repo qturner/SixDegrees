@@ -783,24 +783,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Save ALL attempts (both completed and failed) - ALWAYS save, even if validation had errors
+      // Send response immediately to avoid UI hanging
+      res.json(validationResult);
+
+      // Save attempt in background - use current request scope but don't await response
+      // In serverless, we must be careful. Vercel waits for async work in "Serverless Function" 
+      // but if we want to be safe we should await it OR use waitUntil if available (Next.js/Cloudflare)
+      // Since this is Express on Vercel, we should actually await it BUT with a timeout race
+      // so we don't block the user for more than 500ms for stats.
       try {
         const today = getESTDateString();
-        const challenge = await storage.getDailyChallenge(today);
+        const savePromise = (async () => {
+          const challenge = await storage.getDailyChallenge(today);
+          if (challenge) {
+            await storage.createGameAttempt({
+              challengeId: challenge.id,
+              moves: connections.length,
+              completed: validationResult.completed || false,
+              connections: JSON.stringify(connections),
+            });
+          }
+        })();
 
-        if (challenge) {
-          await storage.createGameAttempt({
-            challengeId: challenge.id,
-            moves: connections.length,
-            completed: validationResult.completed || false,
-            connections: JSON.stringify(connections),
-          });
-        }
+        // Race between save and 500ms timeout
+        // We log error but don't fail the request
+        await Promise.race([
+          savePromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Stats save timeout")), 500))
+        ]);
       } catch (dbError) {
-        console.error("Error saving game attempt:", dbError);
-        // Don't let database save errors affect the validation response
+        // Silently fail stats saving if it takes too long
+        console.error("Background stats save error/timeout:", dbError);
       }
-
-      res.json(validationResult);
     } catch (error) {
       console.error("Error validating game:", error);
       res.status(500).json({ message: "Internal server error" });
