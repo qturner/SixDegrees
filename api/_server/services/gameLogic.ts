@@ -68,84 +68,84 @@ class GameLogicService {
     }
 
     try {
-      // Validate the first connection starts with the start actor
-      const firstConnection = connections[0];
-      const startActorInFirstMovie = await tmdbService.validateActorInMovie(
-        startActorId,
-        firstConnection.movieId
+      // Collect all validation promises
+      type ValidationCheckResult = {
+        valid: boolean;
+        message: string;
+        type: 'start' | 'end' | 'internal' | 'continuity';
+        index?: number;
+      };
+
+      const validations: Promise<ValidationCheckResult>[] = [];
+
+      // 1. Validate starting actor in first movie
+      validations.push(
+        tmdbService.validateActorInMovie(startActorId, connections[0].movieId)
+          .then(valid => ({ valid, message: "The starting actor did not appear in the first movie.", type: 'start' as const }))
       );
 
-      if (!startActorInFirstMovie) {
-        return {
-          valid: false,
-          message: "The starting actor did not appear in the first movie.",
-        };
-      }
+      // 2. Validate ending actor in last movie
+      validations.push(
+        tmdbService.validateActorInMovie(endActorId, connections[connections.length - 1].movieId)
+          .then(valid => ({ valid, message: "The ending actor did not appear in the final movie.", type: 'end' as const }))
+      );
 
-      // Validate each connection in the chain
-      for (let i = 0; i < connections.length; i++) {
-        const connection = connections[i];
-
-        // Validate current actor is in current movie
-        const currentValid = await tmdbService.validateActorInMovie(
-          connection.actorId,
-          connection.movieId
+      // 3. Validate each connection's internal consistency (Actor X in Movie X)
+      connections.forEach((connection, i) => {
+        validations.push(
+          tmdbService.validateActorInMovie(connection.actorId, connection.movieId)
+            .then(valid => ({
+              valid,
+              message: `Connection ${i + 1}: ${connection.actorName} did not appear in ${connection.movieTitle}.`,
+              type: 'internal' as const,
+              index: i
+            }))
         );
+      });
 
-        if (!currentValid) {
-          return {
-            valid: false,
-            message: `Connection ${i + 1}: ${connection.actorName} did not appear in ${connection.movieTitle}.`,
-          };
-        }
+      // 4. Validate chain continuity (Actor X in Movie X+1)
+      for (let i = 0; i < connections.length - 1; i++) {
+        const currentActorId = connections[i].actorId;
+        const nextMovieId = connections[i + 1].movieId;
+        const currentActorName = connections[i].actorName;
+        const nextMovieTitle = connections[i + 1].movieTitle;
 
-        // Validate chain continuity
-        if (i === 0) {
-          // First connection should include the start actor
-          const startActorInMovie = await tmdbService.validateActorInMovie(
-            startActorId,
-            connection.movieId
-          );
-          if (!startActorInMovie) {
-            return {
-              valid: false,
-              message: "The chain doesn't start properly with the given starting actor.",
-            };
-          }
-        }
+        validations.push(
+          tmdbService.validateActorInMovie(currentActorId, nextMovieId)
+            .then(valid => ({
+              valid,
+              message: `Connection ${i + 1}: ${currentActorName} did not appear in the next movie ${nextMovieTitle}.`,
+              type: 'continuity' as const,
+              index: i
+            }))
+        );
+      }
 
+      // Execute all validations in parallel
+      const results = await Promise.all(validations);
+
+      // Check results in logical order for user-friendly error messages
+
+      // 1. Check start
+      const startResult = results.find(r => r.type === 'start');
+      if (!startResult?.valid) return { valid: false, message: startResult!.message };
+
+      // 2. Check internal consistency and continuity in order
+      for (let i = 0; i < connections.length; i++) {
+        // Check if actor is in their own movie
+        const internalResult = results.find(r => r.type === 'internal' && r.index === i);
+        if (!internalResult?.valid) return { valid: false, message: internalResult!.message };
+
+        // Check if actor connects to next movie
         if (i < connections.length - 1) {
-          // Validate that current actor appears in next movie
-          const nextConnection = connections[i + 1];
-          // Validation logic for chain continuity
-
-          const actorInNextMovie = await tmdbService.validateActorInMovie(
-            connection.actorId,
-            nextConnection.movieId
-          );
-
-          if (!actorInNextMovie) {
-            return {
-              valid: false,
-              message: `Connection ${i + 1}: ${connection.actorName} did not appear in the next movie ${nextConnection.movieTitle}.`,
-            };
-          }
+          const continuityResult = results.find(r => r.type === 'continuity' && r.index === i);
+          if (!continuityResult?.valid) return { valid: false, message: continuityResult!.message };
         }
       }
 
-      // Validate the last connection includes the end actor
-      const lastConnection = connections[connections.length - 1];
-      const endActorInLastMovie = await tmdbService.validateActorInMovie(
-        endActorId,
-        lastConnection.movieId
-      );
-
-      if (!endActorInLastMovie) {
-        return {
-          valid: false,
-          message: "The ending actor did not appear in the final movie.",
-        };
-      }
+      // 3. Check end
+      const endResult = results.find(r => r.type === 'end');
+      if (!endResult?.valid) return { valid: false, message: endResult!.message };
 
       // Check if we've successfully connected the actors
       const isComplete = true; // If we've reached here, the chain is valid
