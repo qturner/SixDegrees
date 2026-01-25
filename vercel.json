@@ -21,7 +21,7 @@
     "crons": [
         {
             "path": "/api/cron/reset",
-            "schedule": "0 0 * * *"
+            "schedule": "0 5 * * *"
         }
     ]
 }
