@@ -30,13 +30,13 @@ export const getPool = () => {
     console.log('Initializing database pool...');
     internalPool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 3000,
       idleTimeoutMillis: 300000,
-      max: 5,
+      max: 3,
       allowExitOnIdle: true,
       application_name: 'movie-connection-game',
-      statement_timeout: 5000,
-      query_timeout: 5000,
+      statement_timeout: 3000,
+      query_timeout: 3000,
     });
 
     internalPool.on('error', (err) => {
@@ -80,7 +80,7 @@ export async function withRetry<T>(operation: () => Promise<T>, maxRetries: numb
   let lastError: any;
   const isProd = process.env.NODE_ENV === 'production';
   // Reduce retries in production to avoid lambda timeouts
-  const actualMaxRetries = isProd ? 2 : maxRetries;
+  const actualMaxRetries = isProd ? 1 : maxRetries;
 
   for (let attempt = 1; attempt <= actualMaxRetries; attempt++) {
     try {
