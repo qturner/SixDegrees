@@ -308,7 +308,7 @@ export function HintsSection({ dailyChallenge }: HintsSectionProps) {
                 Movies featuring {activeHint.actorName}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {activeHint.movies.map((movie) => (
+                {(activeHint?.movies || []).map((movie) => (
                   <div
                     key={movie.id}
                     className="p-3 border border-deco-gold/20 bg-deco-charcoal/50 transition-all duration-200 hover:border-deco-gold/50 hover:bg-deco-gold/5"

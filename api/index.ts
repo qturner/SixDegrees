@@ -18,7 +18,7 @@ export default async (req: any, res: any) => {
         });
     }
 
-    if (req.url.includes('/api/daily-challenge')) {
+    if (req.method === 'GET' && req.url.includes('/api/daily-challenge')) {
         console.log("[API] Daily challenge super-fast-path hit");
         const fallbackChallenge = {
             id: "fallback-id",
