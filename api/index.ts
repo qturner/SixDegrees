@@ -6,9 +6,13 @@ export default async (req: any, res: any) => {
 
     // Direct response for health check to bypass server initialization
     if (req.url === '/api/health' || req.url === '/api/health/') {
+        const tmdbConfigured = !!(process.env.TMDB_API_KEY || process.env.API_KEY);
+        const dbConfigured = !!process.env.DATABASE_URL;
         return res.status(200).json({
-            status: "debug",
-            message: "Barebones API handler reached",
+            status: tmdbConfigured && dbConfigured ? "ok" : "degraded",
+            message: "Direct health check",
+            tmdb: tmdbConfigured ? "configured" : "missing_key",
+            database: dbConfigured ? "configured" : "missing_url",
             timestamp: new Date().toISOString(),
             vercel: !!process.env.VERCEL
         });
@@ -22,10 +26,10 @@ export default async (req: any, res: any) => {
             status: "active",
             startActorId: 287,
             startActorName: "Brad Pitt",
-            startActorProfilePath: "/ccB9v899mS87Vp9zY7pXpxH97S.jpg",
+            startActorProfilePath: "/cckcYc2v0yh1tc9QjRelptcOBko.jpg",
             endActorId: 11701,
             endActorName: "Angelina Jolie",
-            endActorProfilePath: "/tj6S4S6Leydf9S8p5LpS35zR6X.jpg",
+            endActorProfilePath: "/nXA9vMvskmIDB5NqHCkTQPmemep.jpg",
             hintsUsed: 0
         };
 

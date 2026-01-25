@@ -182,7 +182,6 @@ class TMDbService {
       const response = await this.makeRequest<TMDbResponse<TMDbMovie>>("/search/movie", {
         query: query.trim(),
         include_adult: "false",
-        "primary_release_date.gte": "1970-01-01",
       });
 
       let allResults = [...response.results];
