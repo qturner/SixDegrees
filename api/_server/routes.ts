@@ -371,6 +371,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Diagnostic ping route
+  app.get("/api/ping", (_req, res) => {
+    res.json({ status: "ok", message: "pong", timestamp: new Date().toISOString() });
+  });
+
   // Get today's daily challenge
   app.get("/api/daily-challenge", async (req, res) => {
     try {
