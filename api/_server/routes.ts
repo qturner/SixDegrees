@@ -1149,7 +1149,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Delete today's active challenge
       await storage.deleteDailyChallenge(today);
-      console.log(`Admin reset challenge for ${today}`);
+
+      // ALSO delete any challenge marked as 'active' regardless of date (to fix stale data)
+      const staleActive = await storage.getChallengeByStatus('active');
+      if (staleActive) {
+        console.log(`Deleting stale active challenge dated ${staleActive.date}`);
+        await storage.deleteDailyChallenge(staleActive.date);
+      }
 
       // Check if there's a "next" challenge that will be promoted
       const nextChallenge = await storage.getChallengeByStatus('next');
