@@ -4,7 +4,7 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import connectPg from "connect-pg-simple";
-import { pool } from "./db.js";
+import { pool, getPool } from "./db.js";
 import { storage } from "./storage.js";
 import { loginSchema, registerSchema } from "../../shared/schema.js";
 import { ZodError } from "zod";
@@ -17,8 +17,9 @@ export async function setupAuth(app: Express) {
 
   try {
     console.log('[AUTH] Initializing Postgres session store...');
+    const dbPool = getPool(); // Ensure pool is initialized and get real instance
     sessionStore = new PostgresSessionStore({
-      pool,
+      pool: dbPool,
       createTableIfMissing: true,
     });
     console.log('[AUTH] Postgres session store initialized');
