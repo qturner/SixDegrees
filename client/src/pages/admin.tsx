@@ -417,13 +417,13 @@ export default function AdminPanel() {
             ) : challenge ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">Start Actor</h3>
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{challenge.startActorName}</p>
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <h3 className="font-semibold text-blue-900">Start Actor</h3>
+                    <p className="text-lg font-medium text-black">{challenge.startActorName}</p>
                   </div>
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <h3 className="font-semibold text-green-900 dark:text-green-100">End Actor</h3>
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{challenge.endActorName}</p>
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                    <h3 className="font-semibold text-green-900">End Actor</h3>
+                    <p className="text-lg font-medium text-black">{challenge.endActorName}</p>
                   </div>
                 </div>
 
@@ -465,13 +465,13 @@ export default function AdminPanel() {
             ) : nextChallenge ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <h3 className="font-semibold text-purple-900 dark:text-purple-100">Start Actor</h3>
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{nextChallenge.startActorName}</p>
+                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
+                    <h3 className="font-semibold text-purple-900">Start Actor</h3>
+                    <p className="text-lg font-medium text-black">{nextChallenge.startActorName}</p>
                   </div>
-                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <h3 className="font-semibold text-orange-900 dark:text-orange-100">End Actor</h3>
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{nextChallenge.endActorName}</p>
+                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                    <h3 className="font-semibold text-orange-900">End Actor</h3>
+                    <p className="text-lg font-medium text-black">{nextChallenge.endActorName}</p>
                   </div>
                 </div>
 
