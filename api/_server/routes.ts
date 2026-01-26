@@ -480,12 +480,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!challenge) {
         console.log(`No challenge found for ${today}, generating new challenge...`);
 
-        // Prevent race conditions by using a shared promise
-        // Reset promise if date has changed (new day)
-        if (lastChallengeDate !== today) {
-          challengeCreationPromise = null;
-          lastChallengeDate = today;
-        }
+        // Use a shared promise only for GENERATION to prevent race conditions
+        // Do NOT cache the result permanently - allow subsequent requests to hit the DB
 
         if (!challengeCreationPromise) {
           challengeCreationPromise = (async () => {
@@ -505,7 +501,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const previousChallenge = await storage.getDailyChallenge(yesterday);
                 if (previousChallenge) {
                   excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
-                  console.log(`Excluding actors from yesterday's challenge: ${previousChallenge.startActorName} and ${previousChallenge.endActorName}`);
                 }
               } catch (exclusionError) {
                 console.log("Could not check for actors to exclude, proceeding with normal generation");
@@ -530,7 +525,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`Created new challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
               return newChallenge;
             } finally {
-              // Clear the promise so future requests can create new challenges if needed
+              // Vital: Clear the promise so future requests check the DB again
+              // This ensures that if the challenge is deleted (Reset), we don't serve a stale cached version
               challengeCreationPromise = null;
             }
           })();
@@ -1161,13 +1157,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 2. Ensure today's challenge is gone (redundant but safe)
       await storage.deleteDailyChallenge(today);
 
-      // Check if there's a "next" challenge that will be promoted
-      const nextChallenge = await storage.getChallengeByStatus('next');
+      // Check if there's a "next" challenge specifically for TOMORROW that will be promoted
+      // (Satisfies requirement: "Next Day's Challenge should replace the current day's challenge")
+      let nextChallenge = await storage.getDailyChallenge(tomorrow);
+
+      // If not specific tomorrow challenge, try just any 'next' (fallback)
+      if (!nextChallenge || nextChallenge.status !== 'next') {
+        nextChallenge = await storage.getChallengeByStatus('next');
+      }
 
       if (nextChallenge) {
         // The GET endpoint will promote this to active
         // But we need to generate a NEW next challenge so we don't have duplicates
-        console.log(`Next challenge (${nextChallenge.startActorName} to ${nextChallenge.endActorName}) will be promoted to active`);
+        console.log(`Next challenge [${nextChallenge.date}] (${nextChallenge.startActorName} to ${nextChallenge.endActorName}) will be promoted to active`);
 
         // Generate a brand new next challenge with different actors
         const excludeActorIds = [nextChallenge.startActorId, nextChallenge.endActorId];
