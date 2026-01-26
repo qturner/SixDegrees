@@ -11,6 +11,7 @@ import { checkDatabaseHealth } from "./db.js";
 export const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.set("trust proxy", 1); // Trust first proxy (Vercel) for secure cookies
 
 app.use((req, res, next) => {
   const start = Date.now();
