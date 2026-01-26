@@ -51,104 +51,70 @@
   --shadow-2xl: 0px 25px 50px -12px hsl(0 0% 0% / 0.6);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
-  
-  /* Art Deco Theme Colors */
-  --deco-black: #0B0B0D;
-  --deco-charcoal: #141417;
-  --deco-onyx: #1a1a1f;
+
+  /* Art Deco Theme Colors - Modern Noir Update */
+  --deco-black: #000000;
+  /* Pure Matte Black */
+  --deco-charcoal: #0a0a0a;
+  /* Almost Black */
+  --deco-onyx: #111111;
   --deco-gold: #C49731;
+  /* Keeping original gold */
   --deco-gold-light: #F4C979;
   --deco-gold-bright: #D4AF37;
   --deco-champagne: #FFF1D1;
   --deco-bronze: #5A4632;
-  --deco-pewter: #8A8F9D;
-  --deco-cream: #F8F5EA;
-  
+  --deco-pewter: #666666;
+  /* Darker grey for inputs */
+  --deco-cream: #FFFFFF;
+  /* High contrast white */
+
   /* Game specific colors - Art Deco Theme */
   --game-primary: hsl(43 76% 49%);
   --game-blue: hsl(43 76% 49%);
   --game-success: hsl(120 40% 45%);
   --game-error: hsl(0 62% 50%);
   --game-warning: hsl(43 90% 55%);
-  --game-background: hsl(0 0% 4%);
-  --game-surface: hsl(0 0% 8%);
-  --game-text: hsl(43 30% 95%);
+  --game-background: #000000;
+  --game-surface: #000000;
+  --game-text: #FFFFFF;
   --game-accent: hsl(43 76% 49%);
 }
 
 .dark {
-  --background: hsl(0 0% 3%);
-  --foreground: hsl(43 30% 95%);
-  --card: hsl(0 0% 6%);
-  --card-foreground: hsl(43 30% 95%);
-  --popover: hsl(0 0% 5%);
-  --popover-foreground: hsl(43 30% 95%);
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: #000000;
+  --card-foreground: #FFFFFF;
+  --popover: #000000;
+  --popover-foreground: #FFFFFF;
   --primary: hsl(43 76% 52%);
-  --primary-foreground: hsl(0 0% 4%);
-  --secondary: hsl(0 0% 10%);
-  --secondary-foreground: hsl(43 30% 95%);
-  --muted: hsl(0 0% 12%);
-  --muted-foreground: hsl(43 10% 55%);
+  --primary-foreground: #000000;
+  --secondary: #111111;
+  --secondary-foreground: #FFFFFF;
+  --muted: #1a1a1a;
+  --muted-foreground: #888888;
   --accent: hsl(43 76% 52%);
-  --accent-foreground: hsl(0 0% 4%);
+  --accent-foreground: #000000;
   --destructive: hsl(0 62% 50%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(43 25% 18%);
-  --input: hsl(0 0% 8%);
+  --destructive-foreground: #FFFFFF;
+  --border: #333333;
+  --input: #111111;
   --ring: hsl(43 76% 52%);
-  
+
   /* Game specific colors for dark mode */
   --game-primary: hsl(43 76% 52%);
   --game-blue: hsl(43 76% 52%);
   --game-success: hsl(120 45% 50%);
   --game-error: hsl(0 62% 55%);
   --game-warning: hsl(43 90% 58%);
-  --game-background: hsl(0 0% 3%);
-  --game-surface: hsl(0 0% 6%);
-  --game-text: hsl(43 30% 95%);
+  --game-background: #000000;
+  --game-surface: #000000;
+  --game-text: #FFFFFF;
   --game-accent: hsl(43 76% 52%);
 }
 
-/* Art Deco geometric pattern SVG */
-.art-deco-bg {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23C49731' stroke-width='0.5' opacity='0.08'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z'/%3E%3Cpath d='M30 10 L50 30 L30 50 L10 30 Z'/%3E%3Cpath d='M30 20 L40 30 L30 40 L20 30 Z'/%3E%3C/g%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 60px 60px;
-}
-
-/* Art Deco chevron pattern */
-.art-deco-chevron {
-  background-image: url("data:image/svg+xml,%3Csvg width='40' height='24' viewBox='0 0 40 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 12 L20 0 L40 12 L20 24 Z' fill='none' stroke='%23C49731' stroke-width='0.3' opacity='0.06'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 40px 24px;
-}
-
-/* Subtle film grain texture overlay */
-.film-grain::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.02;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-}
-
-/* Radial vignette effect */
-.vignette::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-  background: radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0,0,0,0.4) 100%);
-}
+/* Textures removed for Modern Noir style */
 
 @layer base {
   * {
@@ -156,207 +122,186 @@
   }
 
   body {
-    @apply font-sans antialiased art-deco-bg film-grain;
+    @apply font-sans antialiased;
     background-color: var(--deco-black);
     color: var(--game-text);
     line-height: 1.6;
   }
-  
-  h1, h2, h3, h4, h5, h6, .font-display {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-display {
     font-family: var(--font-display);
   }
-  
+
   /* Smooth transitions for all interactive elements */
-  button, [role="button"], input, select, textarea {
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
     @apply transition-all duration-200 ease-in-out;
   }
-  
+
   /* Consistent focus states with gold ring */
-  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
     @apply outline-none ring-2 ring-offset-2;
     --tw-ring-color: var(--deco-gold);
     --tw-ring-offset-color: var(--deco-black);
   }
-  
+
   /* Angular card style */
   .card-radius {
     border-radius: 4px;
   }
-  
+
   .button-radius {
     border-radius: 2px;
   }
-  
+
   .input-radius {
     border-radius: 2px;
   }
 }
 
 @layer components {
+
   /* Standardized spacing utilities */
-  .spacing-xs { @apply p-2; }
-  .spacing-sm { @apply p-3; }
-  .spacing-md { @apply p-4; }
-  .spacing-lg { @apply p-6; }
-  .spacing-xl { @apply p-8; }
-  
-  /* Art Deco card styling */
+  .spacing-xs {
+    @apply p-2;
+  }
+
+  .spacing-sm {
+    @apply p-3;
+  }
+
+  .spacing-md {
+    @apply p-4;
+  }
+
+  .spacing-lg {
+    @apply p-6;
+  }
+
+  .spacing-xl {
+    @apply p-8;
+  }
+
+  /* Modern Noir Card */
   .deco-card {
-    background: linear-gradient(135deg, var(--deco-charcoal) 0%, var(--deco-onyx) 100%);
+    background-color: #000000;
     border: 1px solid var(--deco-gold);
-    box-shadow: 
-      0 0 0 1px rgba(196, 151, 49, 0.1),
-      0 4px 20px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    box-shadow: none;
+    /* Removed heavy shadows/glows */
     position: relative;
+    border-radius: 0;
+    /* Sharp corners */
   }
-  
-  .deco-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--deco-gold-light), transparent);
-    opacity: 0.5;
-  }
-  
-  /* Gold metallic button */
+
+  /* Removed unused shimmer elements to strictly follow Noir style */
+
+  /* Modern Noir Button - Flat Gold or Outline */
   .deco-button {
-    background: linear-gradient(180deg, var(--deco-gold-light) 0%, var(--deco-gold) 50%, var(--deco-bronze) 100%);
-    color: var(--deco-black);
+    background: var(--deco-gold);
+    /* Solid Gold */
+    color: #000000;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    border: none;
-    box-shadow: 
-      0 2px 4px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    letter-spacing: 0.15em;
+    border: 1px solid var(--deco-gold);
+    border-radius: 0;
+    /* Sharp */
+    transition: all 0.2s ease;
   }
-  
+
   .deco-button:hover {
-    background: linear-gradient(180deg, var(--deco-champagne) 0%, var(--deco-gold-light) 50%, var(--deco-gold) 100%);
-    transform: translateY(-1px);
-    box-shadow: 
-      0 4px 8px rgba(0, 0, 0, 0.4),
-      0 0 20px rgba(196, 151, 49, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    background: #000000;
+    color: var(--deco-gold);
   }
-  
-  /* Gold bordered outline button */
+
+  /* Modern Noir Outline Button */
   .deco-button-outline {
     background: transparent;
     color: var(--deco-gold);
-    border: 2px solid var(--deco-gold);
+    border: 1px solid var(--deco-gold);
+    border-radius: 0;
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
   }
-  
+
   .deco-button-outline:hover {
-    background: rgba(196, 151, 49, 0.1);
-    box-shadow: 0 0 15px rgba(196, 151, 49, 0.2);
+    background: var(--deco-gold);
+    color: #000000;
   }
-  
-  /* Art Deco input styling */
+
+  /* Modern Noir Input */
   .deco-input {
-    background: var(--deco-onyx);
-    border: 1px solid rgba(196, 151, 49, 0.3);
-    color: var(--deco-cream);
+    background-color: #050505;
+    /* Near black */
+    border: 1px solid var(--deco-pewter);
+    color: #ffffff;
+    border-radius: 0;
     transition: all 0.2s ease;
   }
-  
+
   .deco-input:focus {
     border-color: var(--deco-gold);
-    box-shadow: 0 0 0 2px rgba(196, 151, 49, 0.15), 0 0 20px rgba(196, 151, 49, 0.1);
     outline: none;
+    background-color: #000000;
   }
-  
+
   .deco-input::placeholder {
     color: var(--deco-pewter);
   }
-  
-  /* Enhanced shadow system */
-  .shadow-card { 
-    box-shadow: 
-      0 0 0 1px rgba(196, 151, 49, 0.1),
-      0 4px 12px 0 rgba(0, 0, 0, 0.5),
-      0 8px 24px -4px rgba(0, 0, 0, 0.4);
-  }
-  
-  .shadow-card-hover {
-    box-shadow: 
-      0 0 0 1px rgba(196, 151, 49, 0.2),
-      0 6px 16px 0 rgba(0, 0, 0, 0.5),
-      0 12px 32px -4px rgba(0, 0, 0, 0.4),
-      0 0 30px -5px rgba(196, 151, 49, 0.15);
-  }
-  
+
+  /* Removed shadow system - Flat aesthetic */
+  .shadow-card,
+  .shadow-card-hover,
   .shadow-card-focus {
-    box-shadow: 
-      0 0 0 1px rgba(196, 151, 49, 0.3),
-      0 8px 20px 0 rgba(0, 0, 0, 0.5),
-      0 16px 40px -8px rgba(0, 0, 0, 0.4),
-      0 0 40px -5px rgba(196, 151, 49, 0.2);
+    box-shadow: none;
   }
-  
-  /* Gold shimmer effect */
-  .gold-shimmer {
-    position: relative;
-    overflow: hidden;
+
+  /* Minimalist Divider */
+  .deco-divider {
+    height: 1px;
+    background: var(--deco-gold);
+    opacity: 0.3;
   }
-  
-  .gold-shimmer::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(196, 151, 49, 0.1), transparent);
-    animation: shimmer 3s infinite;
-  }
-  
-  @keyframes shimmer {
-    0% { left: -100%; }
-    50%, 100% { left: 100%; }
-  }
-  
-  /* Geometric corner decoration */
+
+  /* Geometric corner decoration (Simplified) */
   .deco-corners {
     position: relative;
   }
-  
+
   .deco-corners::before,
   .deco-corners::after {
     content: '';
     position: absolute;
-    width: 20px;
-    height: 20px;
+    width: 8px;
+    height: 8px;
     border-color: var(--deco-gold);
     border-style: solid;
+    pointer-events: none;
   }
-  
+
   .deco-corners::before {
     top: -1px;
     left: -1px;
-    border-width: 2px 0 0 2px;
+    border-width: 1px 0 0 1px;
   }
-  
+
   .deco-corners::after {
     bottom: -1px;
     right: -1px;
-    border-width: 0 2px 2px 0;
-  }
-  
-  /* Decorative divider */
-  .deco-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--deco-gold), transparent);
-    opacity: 0.5;
+    border-width: 0 1px 1px 0;
   }
 }
 
@@ -434,36 +379,69 @@
 }
 
 /* Art Deco specific colors */
-.bg-deco-black { background-color: var(--deco-black); }
-.bg-deco-charcoal { background-color: var(--deco-charcoal); }
-.bg-deco-onyx { background-color: var(--deco-onyx); }
-.bg-deco-gold { background-color: var(--deco-gold); }
-.text-deco-gold { color: var(--deco-gold); }
-.text-deco-gold-light { color: var(--deco-gold-light); }
-.text-deco-champagne { color: var(--deco-champagne); }
-.text-deco-cream { color: var(--deco-cream); }
-.text-deco-pewter { color: var(--deco-pewter); }
-.border-deco-gold { border-color: var(--deco-gold); }
+.bg-deco-black {
+  background-color: var(--deco-black);
+}
+
+.bg-deco-charcoal {
+  background-color: var(--deco-charcoal);
+}
+
+.bg-deco-onyx {
+  background-color: var(--deco-onyx);
+}
+
+.bg-deco-gold {
+  background-color: var(--deco-gold);
+}
+
+.text-deco-gold {
+  color: var(--deco-gold);
+}
+
+.text-deco-gold-light {
+  color: var(--deco-gold-light);
+}
+
+.text-deco-champagne {
+  color: var(--deco-champagne);
+}
+
+.text-deco-cream {
+  color: var(--deco-cream);
+}
+
+.text-deco-pewter {
+  color: var(--deco-pewter);
+}
+
+.border-deco-gold {
+  border-color: var(--deco-gold);
+}
 
 /* Mobile-specific improvements */
 @media (max-width: 640px) {
   * {
     -webkit-tap-highlight-color: transparent;
   }
-  
-  input, button, select, textarea {
+
+  input,
+  button,
+  select,
+  textarea {
     font-size: 16px !important;
   }
-  
+
   .no-zoom {
     touch-action: manipulation;
   }
-  
-  button, [role="button"] {
+
+  button,
+  [role="button"] {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -488,14 +466,14 @@
 /* 3D pressed/active state for hint buttons */
 .btn-active-3d {
   transform: translateY(2px);
-  box-shadow: 
+  box-shadow:
     inset 0 2px 4px rgba(0, 0, 0, 0.3),
     0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-inactive-3d {
   transform: translateY(0);
-  box-shadow: 
+  box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.15),
     0 2px 4px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(196, 151, 49, 0.1);
@@ -503,7 +481,7 @@
 
 .btn-inactive-3d:hover {
   transform: translateY(-1px);
-  box-shadow: 
+  box-shadow:
     0 6px 10px rgba(0, 0, 0, 0.2),
     0 3px 6px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(196, 151, 49, 0.2);
@@ -557,10 +535,13 @@
 
 /* Blinking animation for Validate button - Art Deco gold style */
 @keyframes blink-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 5px var(--deco-gold), 0 0 10px var(--deco-gold), 0 0 15px var(--deco-gold);
     opacity: 1;
   }
+
   50% {
     box-shadow: 0 0 15px var(--deco-gold), 0 0 25px var(--deco-gold), 0 0 35px var(--deco-gold);
     opacity: 0.9;
@@ -587,8 +568,17 @@
 
 /* Sparkle animation for celebrations */
 @keyframes sparkle {
-  0%, 100% { opacity: 0; transform: scale(0); }
-  50% { opacity: 1; transform: scale(1); }
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .sparkle {
