@@ -1147,7 +1147,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = getESTDateString();
       const tomorrow = getTomorrowDateString();
 
-      // 1. Delete ALL 'active' challenges (duplicates, stale dates, etc.)
+      // 1. Clear the in-memory cache to ensure the next GET request hits the DB
+      challengeCreationPromise = null;
+      lastChallengeDate = null;
+
+      // 2. Delete ALL 'active' challenges (duplicates, stale dates, etc.)
       const activeChallenges = await storage.getAllChallengesByStatus('active');
       for (const challenge of activeChallenges) {
         console.log(`Deleting active challenge [${challenge.id}] dated ${challenge.date}`);

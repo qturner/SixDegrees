@@ -6,11 +6,11 @@ async function checkChallenges() {
         console.log("\n--- Checking Daily Challenges ---");
         const challenges = await storage.getAllChallengesByStatus('active');
         console.log(`Found ${challenges.length} ACTIVE challenges:`);
-        challenges.forEach(c => console.log(`- [${c.id}] ${c.date} | ${c.startActorName} -> ${c.endActorName}`));
+        challenges.forEach(c => console.log(`- [${c.id}] Date: ${c.date} | Created: ${c.createdAt} | ${c.startActorName} -> ${c.endActorName}`));
 
         const nextChallenges = await storage.getAllChallengesByStatus('next');
         console.log(`Found ${nextChallenges.length} NEXT challenges:`);
-        nextChallenges.forEach(c => console.log(`- [${c.id}] ${c.date} | ${c.startActorName} -> ${c.endActorName}`));
+        nextChallenges.forEach(c => console.log(`- [${c.id}] Date: ${c.date} | Created: ${c.createdAt} | ${c.startActorName} -> ${c.endActorName}`));
     } catch (e) {
         console.error("Error checking challenges:", e);
     }
