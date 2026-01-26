@@ -190,12 +190,23 @@ class GameLogicService {
         !excludeActorIds.includes(actor.id)
       );
 
+      // Use Fisher-Yates shuffle for unbiased random selection
+      const shuffle = <T>(array: T[]): T[] => {
+        const newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray;
+      };
+
       // Check if we have enough actors after filtering
       if (availableActors.length < 2) {
         console.warn(`Only ${availableActors.length} actors available after excluding ${excludeActorIds.length} actors`);
         // Fall back to using full list if not enough available (shouldn't happen with 200 actors)
         const fallbackActors = popularActors.length >= 2 ? popularActors : availableActors;
-        const shuffled = fallbackActors.sort(() => 0.5 - Math.random());
+
+        const shuffled = shuffle(fallbackActors);
         const actor1 = shuffled[0];
         const actor2 = shuffled[1];
         console.warn(`Using fallback selection: ${actor1.name} and ${actor2.name}`);
@@ -203,7 +214,7 @@ class GameLogicService {
       }
 
       // Select two random actors from the filtered list
-      const shuffled = availableActors.sort(() => 0.5 - Math.random());
+      const shuffled = shuffle(availableActors);
       const actor1 = shuffled[0];
       const actor2 = shuffled[1];
 

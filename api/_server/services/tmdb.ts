@@ -630,7 +630,7 @@ class TMDbService {
       // Get popular actors from many more pages to have much larger pool
       // TMDB popular endpoint typically returns 20 actors per page
       const pages = [];
-      const totalPages = 3; // Reduced from 10 to fit in serverless timeout
+      const totalPages = 5; // Increased from 3 to 5 for better variety
 
       console.log(`Fetching ${totalPages} pages of popular actors (${totalPages * 20} total)...`);
 
