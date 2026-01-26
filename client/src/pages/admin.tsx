@@ -178,7 +178,9 @@ export default function AdminPanel() {
     },
     onSuccess: () => {
       setIsResetDialogOpen(false);
+      // Invalidate both current and next challenge queries to force UI refresh
       queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/next-challenge"] });
       toast({
         title: "Challenge reset",
         description: "Daily challenge has been reset successfully",
