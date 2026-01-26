@@ -467,11 +467,11 @@ export default function AdminPanel() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                     <h3 className="font-semibold text-purple-900 dark:text-purple-100">Start Actor</h3>
-                    <p className="text-lg font-medium">{nextChallenge.startActorName}</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{nextChallenge.startActorName}</p>
                   </div>
                   <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                     <h3 className="font-semibold text-orange-900 dark:text-orange-100">End Actor</h3>
-                    <p className="text-lg font-medium">{nextChallenge.endActorName}</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{nextChallenge.endActorName}</p>
                   </div>
                 </div>
 
