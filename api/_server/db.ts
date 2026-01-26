@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool, neonConfig, neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from "../../shared/schema.js";
 
 const isProd = process.env.NODE_ENV === 'production';
 
-// Only use WebSockets in non-production/local environments
+// Only use WebSockets for the Pool (sessions)
 if (!isProd) {
   const ws = (await import("ws")).default;
   neonConfig.webSocketConstructor = ws;
@@ -21,22 +21,20 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Lazy-initialized pool and db
+// Lazy-initialized pool (for sessions/legacy) and db (stateless http)
 let internalPool: Pool | null = null;
 let internalDb: any = null;
 
 export const getPool = () => {
   if (!internalPool) {
-    console.log('Initializing database pool...');
+    console.log('Initializing database pool (WebSocket/TCP)...');
     internalPool = new Pool({
       connectionString: process.env.DATABASE_URL,
       connectionTimeoutMillis: 3000,
       idleTimeoutMillis: 300000,
-      max: 3,
+      max: 3, // Keep low for Vercel
       allowExitOnIdle: true,
-      application_name: 'movie-connection-game',
-      statement_timeout: 3000,
-      query_timeout: 3000,
+      application_name: 'movie-connection-game-pool',
     });
 
     internalPool.on('error', (err) => {
@@ -52,7 +50,9 @@ export const getPool = () => {
 
 export const getDb = () => {
   if (!internalDb) {
-    internalDb = drizzle({ client: getPool(), schema });
+    console.log('Initializing Drizzle via Neon HTTP...');
+    const sql = neon(process.env.DATABASE_URL!);
+    internalDb = drizzle(sql, { schema });
   }
   return internalDb;
 };

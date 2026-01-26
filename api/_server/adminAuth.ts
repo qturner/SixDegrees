@@ -15,19 +15,25 @@ export async function createAdminUser(email: string, password: string) {
 }
 
 export async function authenticateAdmin(email: string, password: string) {
+  console.log('[AdminAuth] Authenticating', email);
   const user = await storage.getAdminUserByEmail(email);
   if (!user) {
+    console.log('[AdminAuth] User not found');
     return null;
   }
 
+  console.log('[AdminAuth] User found, checking password');
   const isValid = await bcrypt.compare(password, user.passwordHash);
   if (!isValid) {
+    console.log('[AdminAuth] Invalid password');
     return null;
   }
 
   // Update last login
+  console.log('[AdminAuth] Updating last login');
   await storage.updateAdminLastLogin(user.id);
 
+  console.log('[AdminAuth] Authentication successful');
   return user;
 }
 
