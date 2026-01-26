@@ -219,6 +219,11 @@ class GameLogicService {
       const actor2 = shuffled[1];
 
       console.log(`Selected new actors (excluding ${excludeActorIds.length} previous): ${actor1.name} and ${actor2.name}`);
+
+      if (actor1.name === "Brad Pitt" || actor2.name === "Brad Pitt") {
+        throw new Error("BRAD PITT IS BANNED - REGENERATION REQUIRED");
+      }
+
       return { actor1, actor2 };
     } catch (error) {
       console.error("Error generating daily actors:", error);
