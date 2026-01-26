@@ -1147,15 +1147,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = getESTDateString();
       const tomorrow = getTomorrowDateString();
 
-      // Delete today's active challenge
-      await storage.deleteDailyChallenge(today);
-
-      // ALSO delete any challenge marked as 'active' regardless of date (to fix stale data)
-      const staleActive = await storage.getChallengeByStatus('active');
-      if (staleActive) {
-        console.log(`Deleting stale active challenge dated ${staleActive.date}`);
-        await storage.deleteDailyChallenge(staleActive.date);
+      // 1. Delete ALL 'active' challenges (duplicates, stale dates, etc.)
+      const activeChallenges = await storage.getAllChallengesByStatus('active');
+      for (const challenge of activeChallenges) {
+        console.log(`Deleting active challenge [${challenge.id}] dated ${challenge.date}`);
+        await storage.deleteDailyChallengeById(challenge.id);
       }
+
+      // 2. Ensure today's challenge is gone (redundant but safe)
+      await storage.deleteDailyChallenge(today);
 
       // Check if there's a "next" challenge that will be promoted
       const nextChallenge = await storage.getChallengeByStatus('next');
@@ -1190,6 +1190,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           console.log(`Generated new next challenge: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
+        }
+      } else {
+        // Fallback: If no "next" challenge, generate a NEW active challenge immediately
+        console.log("No next challenge found during reset, generating fresh active challenge for today");
+        const actors = await gameLogicService.generateDailyActors([]);
+        if (actors) {
+          await storage.createDailyChallenge({
+            date: today,
+            status: 'active',
+            startActorId: actors.actor1.id,
+            startActorName: actors.actor1.name,
+            startActorProfilePath: actors.actor1.profile_path,
+            endActorId: actors.actor2.id,
+            endActorName: actors.actor2.name,
+            endActorProfilePath: actors.actor2.profile_path,
+            hintsUsed: 0,
+          });
+          console.log(`Generated fresh active challenge: ${actors.actor1.name} to ${actors.actor2.name}`);
         }
       }
 

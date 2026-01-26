@@ -15,6 +15,7 @@ export interface IStorage {
   updateDailyChallengeHints(challengeId: string, hintsUsed: number, startActorHint?: string, endActorHint?: string): Promise<DailyChallenge>;
   updateChallengeStatus(challengeId: string, status: string): Promise<DailyChallenge>;
   deleteDailyChallenge(date: string): Promise<void>;
+  deleteDailyChallengeById(id: string): Promise<void>;
 
   // Game Attempt methods
   createGameAttempt(attempt: InsertGameAttempt): Promise<GameAttempt>;
@@ -153,6 +154,12 @@ export class DatabaseStorage implements IStorage {
   async deleteDailyChallenge(date: string): Promise<void> {
     await withRetry(async () => {
       await db.delete(dailyChallenges).where(eq(dailyChallenges.date, date));
+    });
+  }
+
+  async deleteDailyChallengeById(id: string): Promise<void> {
+    await withRetry(async () => {
+      await db.delete(dailyChallenges).where(eq(dailyChallenges.id, id));
     });
   }
 
