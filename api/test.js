@@ -1,29 +1,44 @@
 export default async function handler(req, res) {
-    let serverImportResult = "Not attempted";
-    let serverImportError = null;
-
     try {
-        const server = await import('./_server/index.js');
-        serverImportResult = "Success: " + Object.keys(server).join(', ');
-    } catch (e) {
-        serverImportResult = "Failed: " + e.message;
-        serverImportError = {
-            message: e.message,
-            stack: e.stack,
-            code: e.code
-        };
-    }
+        const { neon } = await import('@neondatabase/serverless');
+        const sql = neon(process.env.DATABASE_URL || "");
 
-    res.status(200).json({
-        status: "ok",
-        message: "Plain JS Test endpoint working",
-        serverImportResult,
-        serverImportError,
-        env: process.env.NODE_ENV,
-        nodeVersion: process.version,
-        platform: process.platform,
-        arch: process.arch,
-        importMetaDirnameSupported: !!(import.meta.dirname),
-        timestamp: new Date().toISOString()
-    });
+        let dbError = null;
+        let challenges = [];
+
+        try {
+            challenges = await sql`SELECT * FROM daily_challenges ORDER BY date DESC LIMIT 20`;
+        } catch (e) {
+            dbError = e.message;
+        }
+
+        res.status(200).json({
+            status: "ok",
+            timestamp: new Date().toISOString(),
+            env: {
+                hasTmdbKey: !!(process.env.TMDB_API_KEY || process.env.API_KEY),
+                hasDbUrl: !!process.env.DATABASE_URL,
+                nodeEnv: process.env.NODE_ENV,
+                vercel: !!process.env.VERCEL
+            },
+            db: {
+                error: dbError,
+                count: challenges.length,
+                challenges: challenges.map(c => ({
+                    id: c.id,
+                    date: c.date,
+                    status: c.status,
+                    start: c.start_actor_name,
+                    end: c.end_actor_name,
+                    createdAt: c.created_at
+                }))
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: "error",
+            message: error.message,
+            stack: error.stack
+        });
+    }
 }

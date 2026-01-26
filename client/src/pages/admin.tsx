@@ -72,6 +72,59 @@ function useAdminAuth() {
   return checkAuth();
 }
 
+function DiagnosticsCard() {
+  const { data: debugInfo, error, isLoading } = useQuery({
+    queryKey: ["/api/test"],
+    queryFn: async () => {
+      const res = await fetch("/api/test");
+      if (!res.ok) throw new Error("Failed to fetch diagnostics");
+      return res.json();
+    }
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          System Diagnostics (Debug)
+        </CardTitle>
+        <CardDescription>
+          Live view of database state and environment variables
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p>Loading diagnostics...</p>
+        ) : error ? (
+          <p className="text-red-500">Error loading diagnostics: {error.message}</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-gray-100 rounded">
+                <p className="text-sm font-bold">TMDB Key:</p>
+                <p className={debugInfo?.env?.hasTmdbKey ? "text-green-600" : "text-red-600"}>
+                  {debugInfo?.env?.hasTmdbKey ? "Configured" : "MISSING"}
+                </p>
+              </div>
+              <div className="p-3 bg-gray-100 rounded">
+                <p className="text-sm font-bold">Database:</p>
+                <p className={debugInfo?.env?.hasDbUrl ? "text-green-600" : "text-red-600"}>
+                  {debugInfo?.env?.hasDbUrl ? "Configured" : "MISSING"}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-900 text-slate-50 rounded overflow-auto max-h-60 text-xs font-mono">
+              <pre>{JSON.stringify(debugInfo?.db, null, 2)}</pre>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminPanel() {
   usePageMeta({
     title: "Admin Dashboard",
@@ -498,6 +551,9 @@ export default function AdminPanel() {
             )}
           </CardContent>
         </Card>
+
+        {/* System Diagnostics */}
+        <DiagnosticsCard />
 
         {/* Actions Card */}
         <Card>
