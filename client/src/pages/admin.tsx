@@ -404,7 +404,7 @@ export default function AdminPanel() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Current Daily Challenge
+              Current Daily Challenge (Active)
             </CardTitle>
             <CardDescription>
               Today's actor pairing and usage statistics
