@@ -44,21 +44,21 @@ interface DailyChallenge {
 
 function useAdminAuth() {
   const [_, setLocation] = useLocation();
-  
+
   const checkAuth = () => {
     const token = localStorage.getItem('adminToken');
     const expiry = localStorage.getItem('adminTokenExpiry');
-    
+
     if (!token || !expiry) {
       return false;
     }
-    
+
     if (new Date() > new Date(expiry)) {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('adminTokenExpiry');
       return false;
     }
-    
+
     return token;
   };
 
@@ -91,14 +91,14 @@ export default function AdminPanel() {
   const [isResetTomorrowDialogOpen, setIsResetTomorrowDialogOpen] = useState(false);
   const [startActorSearch, setStartActorSearch] = useState("");
   const [endActorSearch, setEndActorSearch] = useState("");
-  const [selectedStartActor, setSelectedStartActor] = useState<{id: string, name: string, profile_path?: string | null} | null>(null);
-  const [selectedEndActor, setSelectedEndActor] = useState<{id: string, name: string, profile_path?: string | null} | null>(null);
+  const [selectedStartActor, setSelectedStartActor] = useState<{ id: string, name: string, profile_path?: string | null } | null>(null);
+  const [selectedEndActor, setSelectedEndActor] = useState<{ id: string, name: string, profile_path?: string | null } | null>(null);
   interface ActorResult {
     id: number;
     name: string;
     profile_path: string | null;
   }
-  
+
   const [startActorResults, setStartActorResults] = useState<ActorResult[]>([]);
   const [endActorResults, setEndActorResults] = useState<ActorResult[]>([]);
 
@@ -117,16 +117,16 @@ export default function AdminPanel() {
     queryFn: async () => {
       const token = localStorage.getItem('adminToken');
       if (!token) throw new Error('No admin token');
-      
+
       const response = await fetch("/api/admin/next-challenge", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (!response.ok) {
         if (response.status === 404) return null; // No next challenge exists
         throw new Error('Failed to fetch next challenge');
       }
-      
+
       return response.json();
     },
   });
@@ -137,9 +137,9 @@ export default function AdminPanel() {
       if (token) {
         const response = await fetch("/api/admin/logout", {
           method: "POST",
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}` 
+            Authorization: `Bearer ${token}`
           }
         });
         if (!response.ok) {
@@ -160,20 +160,20 @@ export default function AdminPanel() {
       if (!token) {
         throw new Error('No admin token found');
       }
-      
+
       const response = await fetch("/api/admin/reset-challenge", {
         method: "DELETE",
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         }
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Reset failed');
       }
-      
+
       return await response.json();
     },
     onSuccess: () => {
@@ -197,7 +197,7 @@ export default function AdminPanel() {
   const setChallengeActorsMutation = useMutation({
     mutationFn: async ({ startActorId, startActorName, endActorId, endActorName }: {
       startActorId: string;
-      startActorName: string; 
+      startActorName: string;
       endActorId: string;
       endActorName: string;
     }) => {
@@ -205,12 +205,12 @@ export default function AdminPanel() {
       if (!token) {
         throw new Error('No admin token found');
       }
-      
+
       const response = await fetch("/api/admin/set-challenge", {
         method: "POST",
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           startActorId,
@@ -219,12 +219,12 @@ export default function AdminPanel() {
           endActorName
         })
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to set challenge');
       }
-      
+
       return await response.json();
     },
     onSuccess: () => {
@@ -252,20 +252,20 @@ export default function AdminPanel() {
       if (!token) {
         throw new Error('No admin token found');
       }
-      
+
       const response = await fetch("/api/admin/reset-next-challenge", {
         method: "POST",
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         }
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Reset tomorrow failed');
       }
-      
+
       return await response.json();
     },
     onSuccess: () => {
@@ -419,14 +419,14 @@ export default function AdminPanel() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <h3 className="font-semibold text-blue-900 dark:text-blue-100">Start Actor</h3>
-                    <p className="text-lg font-medium">{challenge.startActorName}</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{challenge.startActorName}</p>
                   </div>
                   <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                     <h3 className="font-semibold text-green-900 dark:text-green-100">End Actor</h3>
-                    <p className="text-lg font-medium">{challenge.endActorName}</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{challenge.endActorName}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <Badge variant="secondary">
                     Hints Used: {challenge.hintsUsed}/2
@@ -474,7 +474,7 @@ export default function AdminPanel() {
                     <p className="text-lg font-medium">{nextChallenge.endActorName}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <Badge variant="secondary" className="bg-purple-100 text-purple-800">
                     Status: Next
@@ -518,7 +518,7 @@ export default function AdminPanel() {
                 </p>
                 <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button 
+                    <Button
                       disabled={resetChallengeMutation.isPending}
                       variant="destructive"
                       className="flex items-center gap-2"
@@ -536,7 +536,7 @@ export default function AdminPanel() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
+                      <AlertDialogAction
                         onClick={handleResetChallenge}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
@@ -554,7 +554,7 @@ export default function AdminPanel() {
                 </p>
                 <AlertDialog open={isResetTomorrowDialogOpen} onOpenChange={setIsResetTomorrowDialogOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button 
+                    <Button
                       disabled={resetNextChallengeMutation.isPending}
                       variant="secondary"
                       className="flex items-center gap-2"
@@ -572,7 +572,7 @@ export default function AdminPanel() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
+                      <AlertDialogAction
                         onClick={() => resetNextChallengeMutation.mutate()}
                         className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
                       >
@@ -589,7 +589,7 @@ export default function AdminPanel() {
                   Manually select two specific actors for tomorrow's challenge.
                   This will override the automatic generation and become active at midnight.
                 </p>
-                
+
                 <div className="space-y-4 mb-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Start Actor Search */}
@@ -629,7 +629,7 @@ export default function AdminPanel() {
                             <button
                               key={actor.id}
                               onClick={() => {
-                                setSelectedStartActor({id: actor.id.toString(), name: actor.name, profile_path: actor.profile_path});
+                                setSelectedStartActor({ id: actor.id.toString(), name: actor.name, profile_path: actor.profile_path });
                                 setStartActorSearch("");
                                 setStartActorResults([]);
                               }}
@@ -692,7 +692,7 @@ export default function AdminPanel() {
                             <button
                               key={actor.id}
                               onClick={() => {
-                                setSelectedEndActor({id: actor.id.toString(), name: actor.name, profile_path: actor.profile_path});
+                                setSelectedEndActor({ id: actor.id.toString(), name: actor.name, profile_path: actor.profile_path });
                                 setEndActorSearch("");
                                 setEndActorResults([]);
                               }}
@@ -731,7 +731,7 @@ export default function AdminPanel() {
                   }
                 }}>
                   <AlertDialogTrigger asChild>
-                    <Button 
+                    <Button
                       disabled={setChallengeActorsMutation.isPending || !selectedStartActor || !selectedEndActor}
                       className="flex items-center gap-2"
                     >
@@ -761,8 +761,8 @@ export default function AdminPanel() {
 
         {/* Analytics Dashboard */}
         {challenge && (
-          <AnalyticsDashboard 
-            challengeId={challenge.id} 
+          <AnalyticsDashboard
+            challengeId={challenge.id}
             challengeName={`${challenge.startActorName} → ${challenge.endActorName}`}
           />
         )}

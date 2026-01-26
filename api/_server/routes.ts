@@ -1246,8 +1246,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const challenge = await storage.getDailyChallenge(tomorrow);
 
       if (!challenge || challenge.status !== 'next') {
-        console.log(`No next challenge found for ${tomorrow}, current status: ${challenge?.status || 'not found'}`);
-        return res.status(404).json({ message: "No challenge scheduled for tomorrow" });
+        console.log(`No next challenge found for ${tomorrow}, generating one now...`);
+
+        // Auto-generate logic
+        const currentActive = await storage.getChallengeByStatus('active');
+        const excludeIds = currentActive ? [currentActive.startActorId, currentActive.endActorId] : [];
+
+        const actors = await gameLogicService.generateDailyActors(excludeIds);
+
+        if (actors) {
+          const newNextChallenge = await storage.createDailyChallenge({
+            date: tomorrow,
+            status: "next",
+            startActorId: actors.actor1.id,
+            startActorName: actors.actor1.name,
+            startActorProfilePath: actors.actor1.profile_path,
+            endActorId: actors.actor2.id,
+            endActorName: actors.actor2.name,
+            endActorProfilePath: actors.actor2.profile_path,
+            hintsUsed: 0,
+          });
+
+          console.log(`Generated new next challenge: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
+          return res.json(newNextChallenge);
+        } else {
+          return res.status(500).json({ message: "Failed to generate next challenge" });
+        }
       }
 
       console.log(`Found next challenge: ${challenge.startActorName} to ${challenge.endActorName}`);
