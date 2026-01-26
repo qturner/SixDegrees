@@ -395,6 +395,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get today's daily challenge
   app.get("/api/daily-challenge", async (req, res) => {
     try {
+      // Prevent caching of this endpoint to ensure fresh data and prevent "Brad Pitt" persistence
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+
       const today = getESTDateString(); // Use EST date, not UTC
 
       // Try to get challenge with longer timeout for better resilience
