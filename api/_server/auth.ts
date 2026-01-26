@@ -55,6 +55,8 @@ export async function setupAuth(app: Express) {
       : "http://localhost:5001/api/auth/google/callback"
   }, async (accessToken, refreshToken, profile, done) => {
     try {
+      console.log('AUTH: Google callback received', { id: profile.id, email: profile.emails?.[0]?.value });
+
       const googleId = profile.id;
       const email = profile.emails?.[0].value;
       const picture = profile.photos?.[0].value;
@@ -62,9 +64,11 @@ export async function setupAuth(app: Express) {
       const lastName = profile.name?.familyName;
 
       if (!email) {
+        console.error('AUTH: No email in Google profile');
         return done(new Error("No email found from Google profile"), undefined);
       }
 
+      console.log('AUTH: Checking for existing user by Google ID...');
       // 1. Check if user exists by Google ID
       let user = await storage.getUserByGoogleId(googleId);
 
