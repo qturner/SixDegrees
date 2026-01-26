@@ -1163,32 +1163,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 2. Ensure today's challenge is gone (redundant but safe)
       await storage.deleteDailyChallenge(today);
 
-      // Check if there's a "next" challenge specifically for TOMORROW that will be promoted
-      // (Satisfies requirement: "Next Day's Challenge should replace the current day's challenge")
+      // 3. Promote Next to Active (if exists)
+      // Check if there's a "next" challenge specifically for TOMORROW
       let nextChallenge = await storage.getDailyChallenge(tomorrow);
 
-      // If not specific tomorrow challenge, try just any 'next' (fallback)
+      // If not specific tomorrow challenge, try just any 'next' regardless of date
       if (!nextChallenge || nextChallenge.status !== 'next') {
         nextChallenge = await storage.getChallengeByStatus('next');
       }
 
       if (nextChallenge) {
-        // The GET endpoint will promote this to active
-        // But we need to generate a NEW next challenge so we don't have duplicates
-        console.log(`Next challenge [${nextChallenge.date}] (${nextChallenge.startActorName} to ${nextChallenge.endActorName}) will be promoted to active`);
+        console.log(`Promoting Next challenge [${nextChallenge.id}] to Active/Today`);
 
-        // Generate a brand new next challenge with different actors
+        // UPDATE existing next challenge to be today's active challenge
+        await storage.updateDailyChallenge(nextChallenge.id, {
+          date: today,
+          status: 'active'
+        });
+
+        // NOW generate a NEW Next challenge for tomorrow
         const excludeActorIds = [nextChallenge.startActorId, nextChallenge.endActorId];
         const actors = await gameLogicService.generateDailyActors(excludeActorIds);
 
         if (actors) {
-          // Delete the old next challenge date entry if it exists for tomorrow
-          const existingTomorrow = await storage.getDailyChallenge(tomorrow);
-          if (existingTomorrow) {
-            await storage.deleteDailyChallenge(tomorrow);
-          }
-
-          // Create new next challenge for tomorrow
           const newNextChallenge = await storage.createDailyChallenge({
             date: tomorrow,
             status: "next",
@@ -1200,30 +1197,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
             endActorProfilePath: actors.actor2.profile_path,
             hintsUsed: 0,
           });
-
-          console.log(`Generated new next challenge: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
+          console.log(`Backfilled new Next challenge: ${newNextChallenge.startActorName} -> ${newNextChallenge.endActorName}`);
         }
       } else {
-        // Fallback: If no "next" challenge, generate a NEW active challenge immediately
-        console.log("No next challenge found during reset, generating fresh active challenge for today");
-        const actors = await gameLogicService.generateDailyActors([]);
-        if (actors) {
+        // Fallback: If no "next" challenge exists at all, generate fresh active AND fresh next
+        console.log("No next challenge found. Generating entirely fresh pipeline.");
+
+        // 1. Generate Active
+        const activeActors = await gameLogicService.generateDailyActors([]);
+        if (activeActors) {
           await storage.createDailyChallenge({
             date: today,
             status: 'active',
-            startActorId: actors.actor1.id,
-            startActorName: actors.actor1.name,
-            startActorProfilePath: actors.actor1.profile_path,
-            endActorId: actors.actor2.id,
-            endActorName: actors.actor2.name,
-            endActorProfilePath: actors.actor2.profile_path,
+            startActorId: activeActors.actor1.id,
+            startActorName: activeActors.actor1.name,
+            startActorProfilePath: activeActors.actor1.profile_path,
+            endActorId: activeActors.actor2.id,
+            endActorName: activeActors.actor2.name,
+            endActorProfilePath: activeActors.actor2.profile_path,
             hintsUsed: 0,
           });
-          console.log(`Generated fresh active challenge: ${actors.actor1.name} to ${actors.actor2.name}`);
+        }
+
+        // 2. Generate Next
+        const exclude = activeActors ? [activeActors.actor1.id, activeActors.actor2.id] : [];
+        const nextActors = await gameLogicService.generateDailyActors(exclude);
+        if (nextActors) {
+          await storage.createDailyChallenge({
+            date: tomorrow,
+            status: 'next',
+            startActorId: nextActors.actor1.id,
+            startActorName: nextActors.actor1.name,
+            startActorProfilePath: nextActors.actor1.profile_path,
+            endActorId: nextActors.actor2.id,
+            endActorName: nextActors.actor2.name,
+            endActorProfilePath: nextActors.actor2.profile_path,
+            hintsUsed: 0,
+          });
         }
       }
 
-      res.json({ message: "Daily challenge reset successfully, new next challenge generated" });
+      res.json({ message: "Challenge reset and pipeline updated successfully" });
     } catch (error) {
       console.error("Admin challenge reset error:", error);
       res.status(500).json({ message: "Internal server error" });
