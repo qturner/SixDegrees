@@ -62,14 +62,13 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
   return (
     <header className="bg-deco-charcoal border-b border-deco-gold/30 relative overflow-hidden" role="banner">
       {/* Auth UI - Top Right */}
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 right-4 z-50">
         {user ? (
           <UserMenu />
         ) : (
           <Button
-            variant="outline"
             size="sm"
-            className="bg-transparent border-deco-gold/50 text-deco-gold hover:bg-deco-gold/10 hover:text-deco-champagne transition-colors"
+            className="bg-deco-gold text-deco-charcoal hover:bg-deco-gold/80 hover:text-black transition-colors font-bold shadow-md border border-transparent"
             onClick={() => setIsAuthModalOpen(true)}
             data-testid="button-signin"
           >
