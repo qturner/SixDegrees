@@ -37,7 +37,8 @@
   --sidebar-border: hsl(43 20% 15%);
   --sidebar-ring: hsl(43 76% 49%);
   --font-sans: 'Raleway', system-ui, sans-serif;
-  --font-display: 'Playfair Display', Georgia, serif;
+  --font-display: 'Raleway', system-ui, sans-serif;
+  /* Switched to Sans for Modern Noir */
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: 0.5rem;
