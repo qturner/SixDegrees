@@ -1,44 +1,37 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcryptjs";
-import session from "express-session";
-import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import connectPg from "connect-pg-simple";
 import { pool, getPool } from "./db.js";
 import { storage } from "./storage.js";
 import { loginSchema, registerSchema } from "../../shared/schema.js";
 import { ZodError } from "zod";
 
-// Session middleware setup
-const PostgresSessionStore = connectPg(session);
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 
 export async function setupAuth(app: Express) {
-  // Initialize Postgres session store
-  // CRITICAL: Must match the table name in shared/schema.ts ("sessions")
-  // and MUST NOT fall back to MemoryStore in production (Vercel),
-  // otherwise auth will loop silently.
-  console.log('[AUTH] Initializing Postgres session store...');
-  const dbPool = getPool();
-  const sessionStore = new PostgresSessionStore({
-    pool: dbPool,
-    tableName: 'sessions', // Explicitly match Drizzle schema
-    createTableIfMissing: true,
-  });
-  console.log('[AUTH] Postgres session store initialized');
-
-  // Setup session middleware
-  app.use(session({
-    store: sessionStore,
-    secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: "lax", // Essential for OAuth redirects to work
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    }
+  // Use cookie-session instead of express-session for Vercel/Serverless
+  // This stores the session data in the cookie itself (encrypted),
+  // avoiding database lookups and connection issues for auth.
+  const cookieSession = (await import("cookie-session")).default;
+  app.use(cookieSession({
+    name: 'session',
+    keys: [process.env.SESSION_SECRET || 'fallback-secret-for-development'],
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    httpOnly: true
   }));
+
+  // Helper to ensure session exists for TS compatibility
+  app.use((req, res, next) => {
+    if (req.session && !req.session.regenerate) {
+      (req.session as any).regenerate = (cb: any) => cb();
+    }
+    if (req.session && !req.session.save) {
+      (req.session as any).save = (cb: any) => cb();
+    }
+    next();
+  });
 
   app.use(passport.initialize());
   app.use(passport.session());
@@ -127,15 +120,9 @@ export async function setupAuth(app: Express) {
         (req.session as any).userId = (req.user as any).id;
       }
 
-      console.log('AUTH: Google login successful. Saving session...');
-      req.session.save((err) => {
-        if (err) {
-          console.error("AUTH: Session save error:", err);
-          return res.redirect("/");
-        }
-        console.log('AUTH: Session saved. Redirecting to home.');
-        res.redirect("/");
-      });
+      console.log('AUTH: Google login successful. Session set.');
+      // cookie-session saves automatically when response ends
+      res.redirect("/");
     }
   );
 
@@ -228,15 +215,13 @@ export async function setupAuth(app: Express) {
   });
 
   // Logout endpoint
+  // Logout endpoint
   app.post("/api/auth/logout", (req: Request, res: Response) => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error("Logout error:", err);
-        return res.status(500).json({ message: "Logout failed" });
-      }
-      res.clearCookie('connect.sid');
-      res.status(200).json({ message: "Logged out successfully" });
-    });
+    // cookie-session way to destroy session
+    req.session = null as any;
+    res.clearCookie('session');
+    res.clearCookie('session.sig');
+    res.status(200).json({ message: "Logged out successfully" });
   });
 
   // Get current user endpoint
