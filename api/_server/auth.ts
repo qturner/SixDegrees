@@ -295,23 +295,6 @@ export async function setupAuth(app: Express) {
   });
 }
 
-// Debug session endpoint - TEMPORARY
-app.get("/api/auth/debug-session", (req, res) => {
-  res.json({
-    timestamp: new Date().toISOString(),
-    sessionID: req.sessionID,
-    hasSession: !!req.session,
-    userId: (req.session as any)?.userId,
-    passportUser: req.user,
-    cookieConfig: (req.session?.cookie) || 'No cookie config',
-    headers: {
-      host: req.headers.host,
-      referer: req.headers.referer,
-      cookiePresent: !!req.headers.cookie
-    }
-  });
-});
-}
 
 // Authentication middleware
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
