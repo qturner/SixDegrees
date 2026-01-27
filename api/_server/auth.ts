@@ -13,24 +13,18 @@ import { ZodError } from "zod";
 const PostgresSessionStore = connectPg(session);
 
 export async function setupAuth(app: Express) {
-  let sessionStore: any;
-
-  try {
-    console.log('[AUTH] Initializing Postgres session store...');
-    const dbPool = getPool(); // Ensure pool is initialized and get real instance
-    sessionStore = new PostgresSessionStore({
-      pool: dbPool,
-      createTableIfMissing: true,
-    });
-    console.log('[AUTH] Postgres session store initialized');
-  } catch (error) {
-    console.error('[AUTH] Failed to initialize Postgres session store, falling back to memory store:', error);
-    const MemoryStore = (await import('memorystore')).default(session as any);
-    sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
-    });
-    console.log('[AUTH] Memory store initialized');
-  }
+  // Initialize Postgres session store
+  // CRITICAL: Must match the table name in shared/schema.ts ("sessions")
+  // and MUST NOT fall back to MemoryStore in production (Vercel),
+  // otherwise auth will loop silently.
+  console.log('[AUTH] Initializing Postgres session store...');
+  const dbPool = getPool();
+  const sessionStore = new PostgresSessionStore({
+    pool: dbPool,
+    tableName: 'sessions', // Explicitly match Drizzle schema
+    createTableIfMissing: true,
+  });
+  console.log('[AUTH] Postgres session store initialized');
 
   // Setup session middleware
   app.use(session({
