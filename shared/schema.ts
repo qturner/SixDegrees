@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, index, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -174,8 +174,8 @@ export const sessions = pgTable(
   "sessions",
   {
     sid: varchar("sid").primaryKey(),
-    sess: text("sess").notNull(),
-    expire: timestamp("expire").notNull(),
+    sess: json("sess").notNull(), // connect-pg-simple expects JSON/JSONB
+    expire: timestamp("expire", { precision: 6 }).notNull(),
   },
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
