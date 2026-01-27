@@ -55,29 +55,26 @@
 
   /* Art Deco Theme Colors - Modern Noir Update */
   --deco-black: #000000;
-  /* Pure Matte Black */
   --deco-charcoal: #0a0a0a;
-  /* Almost Black */
   --deco-onyx: #111111;
   --deco-gold: #C49731;
-  /* Keeping original gold */
   --deco-gold-light: #F4C979;
   --deco-gold-bright: #D4AF37;
   --deco-champagne: #FFF1D1;
   --deco-bronze: #5A4632;
   --deco-pewter: #666666;
-  /* Darker grey for inputs */
   --deco-cream: #FFFFFF;
-  /* High contrast white */
 
-  /* Game specific colors - Art Deco Theme */
+  /* Game specific colors */
   --game-primary: hsl(43 76% 49%);
   --game-blue: hsl(43 76% 49%);
   --game-success: hsl(120 40% 45%);
   --game-error: hsl(0 62% 50%);
   --game-warning: hsl(43 90% 55%);
   --game-background: #000000;
-  --game-surface: #000000;
+  /* Fallback */
+  --game-surface: rgba(10, 10, 10, 0.85);
+  /* Glass surface */
   --game-text: #FFFFFF;
   --game-accent: hsl(43 76% 49%);
 }
@@ -85,9 +82,9 @@
 .dark {
   --background: #000000;
   --foreground: #FFFFFF;
-  --card: #000000;
+  --card: rgba(10, 10, 10, 0.85);
   --card-foreground: #FFFFFF;
-  --popover: #000000;
+  --popover: rgba(10, 10, 10, 0.95);
   --popover-foreground: #FFFFFF;
   --primary: hsl(43 76% 52%);
   --primary-foreground: #000000;
@@ -110,13 +107,12 @@
   --game-error: hsl(0 62% 55%);
   --game-warning: hsl(43 90% 58%);
   --game-background: #000000;
-  --game-surface: #000000;
+  --game-surface: rgba(10, 10, 10, 0.85);
   --game-text: #FFFFFF;
   --game-accent: hsl(43 76% 52%);
 }
 
-/* Textures removed for Modern Noir style */
-
+/* Base styles with Spotlight Lighting */
 @layer base {
   * {
     @apply border-border;
@@ -125,6 +121,10 @@
   body {
     @apply font-sans antialiased;
     background-color: var(--deco-black);
+    /* Spotlight Effect: Lighter top center fading to deep black */
+    background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 70%);
+    background-attachment: fixed;
+    min-height: 100vh;
     color: var(--game-text);
     line-height: 1.6;
   }
@@ -195,36 +195,41 @@
     @apply p-8;
   }
 
-  /* Modern Noir Card */
+  /* Modern Noir Card - With Depth */
   .deco-card {
-    background-color: #000000;
-    border: 1px solid var(--deco-gold);
-    box-shadow: none;
-    /* Removed heavy shadows/glows */
+    background-color: rgba(10, 10, 10, 0.85);
+    /* Semi-transparent */
+    backdrop-filter: blur(12px);
+    /* Glass effect */
+    border: 1px solid rgba(196, 151, 49, 0.3);
+    /* Subtle Gold border */
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.5),
+      0 2px 4px -1px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    /* Highlight */
     position: relative;
-    border-radius: 0;
-    /* Sharp corners */
+    border-radius: 4px;
+    /* Slight rounding for friendly glass */
   }
 
-  /* Removed unused shimmer elements to strictly follow Noir style */
-
-  /* Modern Noir Button - Flat Gold or Outline */
+  /* Modern Noir Button - With Dimensionality */
   .deco-button {
-    background: var(--deco-gold);
-    /* Solid Gold */
+    background: linear-gradient(180deg, var(--deco-gold-light) 0%, var(--deco-gold) 100%);
     color: #000000;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    border: 1px solid var(--deco-gold);
-    border-radius: 0;
-    /* Sharp */
-    transition: all 0.2s ease;
+    border: none;
+    border-radius: 2px;
+    box-shadow: 0 4px 10px rgba(196, 151, 49, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .deco-button:hover {
-    background: #000000;
-    color: var(--deco-gold);
+    background: linear-gradient(180deg, #FFFFFF 0%, var(--deco-gold-light) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(196, 151, 49, 0.3);
   }
 
   /* Modern Noir Outline Button */
@@ -232,15 +237,18 @@
     background: transparent;
     color: var(--deco-gold);
     border: 1px solid var(--deco-gold);
-    border-radius: 0;
-    font-weight: 500;
+    border-radius: 2px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
+    backdrop-filter: blur(4px);
   }
 
   .deco-button-outline:hover {
-    background: var(--deco-gold);
-    color: #000000;
+    background: rgba(196, 151, 49, 0.1);
+    color: var(--deco-gold-light);
+    border-color: var(--deco-gold-light);
+    box-shadow: 0 0 15px rgba(196, 151, 49, 0.1);
   }
 
   /* Modern Noir Input */
