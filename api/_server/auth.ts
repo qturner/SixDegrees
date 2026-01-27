@@ -41,6 +41,7 @@ export async function setupAuth(app: Express) {
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
+      sameSite: "lax", // Essential for OAuth redirects to work
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     }
   }));
