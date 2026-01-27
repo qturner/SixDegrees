@@ -126,9 +126,21 @@ export async function setupAuth(app: Express) {
   app.get("/api/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/" }),
     (req, res) => {
-      // Successful authentication, redirect to home with a flag to open stats or profile??
-      // Or just redirect home, frontend checks /api/user/me
-      res.redirect("/");
+      // Manually set userId for our custom isAuthenticated middleware
+      // (Passport sets req.user, but our app uses req.session.userId elsewhere)
+      if (req.user) {
+        (req.session as any).userId = (req.user as any).id;
+      }
+
+      console.log('AUTH: Google login successful. Saving session...');
+      req.session.save((err) => {
+        if (err) {
+          console.error("AUTH: Session save error:", err);
+          return res.redirect("/");
+        }
+        console.log('AUTH: Session saved. Redirecting to home.');
+        res.redirect("/");
+      });
     }
   );
 
