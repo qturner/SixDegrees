@@ -59,9 +59,8 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
             size="sm"
-            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-card hover:shadow-card-hover transition-all duration-200"
+            className="flex items-center gap-2 bg-deco-gold text-deco-charcoal hover:bg-deco-gold/80 hover:text-black transition-colors font-bold shadow-md border border-transparent"
             data-testid="button-user-menu"
           >
             <Avatar className="w-5 h-5">
@@ -234,7 +233,7 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
             </div>
           )}
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       {/* Recent Challenges Modal */}
       <Dialog open={showIncomplete} onOpenChange={setShowIncomplete}>

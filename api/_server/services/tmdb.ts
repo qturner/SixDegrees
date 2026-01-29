@@ -179,25 +179,11 @@ class TMDbService {
           known_for_department: person.known_for_department,
         }));
 
-      // Filter out actors who only appear in documentaries or animated movies
-      // Limit to top 8 candidates for filtering to avoid timeouts in serverless
-      const candidatesToFilter = actors.slice(0, 8);
-      const filteredActors = await this.filterActorsByGenre(candidatesToFilter);
+      // Filter out actors who don't meet the criteria (at least 5 valid English live-action movies)
+      const filteredActors = await this.filterActorsByGenre(actors);
 
-      // Return results, favoring filtered then unfiltered if needed
-      const finalResults = [...filteredActors];
-      if (finalResults.length < 5) {
-        // Add back some unfiltered results if we don't have enough
-        const existingIds = new Set(finalResults.map(a => a.id));
-        for (const actor of actors) {
-          if (finalResults.length >= 10) break;
-          if (!existingIds.has(actor.id)) {
-            finalResults.push(actor);
-          }
-        }
-      }
-
-      return finalResults.slice(0, 20);
+      // Return filtered results
+      return filteredActors.slice(0, 20);
     } catch (error) {
       console.error("Error searching actors:", error);
       return [];
@@ -630,7 +616,7 @@ class TMDbService {
       // Get popular actors from many more pages to have much larger pool
       // TMDB popular endpoint typically returns 20 actors per page
       const pages = [];
-      const totalPages = 5; // Increased from 3 to 5 for better variety
+      const totalPages = 5; // Fetch 100 actors to ensure enough valid ones remain
 
       console.log(`Fetching ${totalPages} pages of popular actors (${totalPages * 20} total)...`);
 
@@ -657,23 +643,13 @@ class TMDbService {
 
       console.log(`Found ${actors.length} actors from ${totalPages} pages, applying career activity filtering...`);
 
-      // First filter by career activity (post-1980) and living status
-      // Only filter first 20 actors to speed up generation
-      const actorsToFilter = actors.slice(0, 20);
-      const remainingActors = actors.slice(20);
+      // Apply strict filtering to ALL fetched actors
+      // We process in batches of 5 within filterActorsByGenre
+      const finalFilteredActors = await this.filterActorsByGenre(actors);
+      console.log(`Final filtered actors: ${finalFilteredActors.length} (out of ${actors.length} candidates)`);
 
-      const careerFilteredActors = actorsToFilter; // Skipping redundant first pass
-
-      console.log("Applying genre filtering and English movie requirement (5+ credits) to career-filtered actors...");
-
-      // Then apply genre filtering to exclude documentary/animation-only actors  
-      const finalFilteredActors = await this.filterActorsByGenre(careerFilteredActors);
-      console.log(`Final filtered actors: ${finalFilteredActors.length}`);
-
-      // Combine filtered with some original ones to ensure we have enough
-      const combinedPool = [...finalFilteredActors, ...remainingActors].slice(0, 50);
-
-      return combinedPool.length >= 2 ? combinedPool : actors;
+      // Ensure we have at least 2 actors
+      return finalFilteredActors.length >= 2 ? finalFilteredActors : [];
     } catch (error) {
       console.error("Error getting popular actors:", error);
       return [];
