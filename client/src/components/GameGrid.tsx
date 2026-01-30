@@ -202,7 +202,11 @@ export default function GameGrid({
             }
 
             return (
-              <div key={`connection-${index}`} className="group relative">
+              <div
+                key={`connection-${index}`}
+                className={`group relative md:w-1/3 transition-all duration-300 ${index % 2 === 0 ? 'md:mr-auto md:ml-0' : 'md:ml-auto md:mr-0'
+                  }`}
+              >
                 {/* Glow effect behind card */}
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-70 transition-opacity duration-300" />
 
