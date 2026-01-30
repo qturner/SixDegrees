@@ -208,6 +208,7 @@ export default function GameGrid({
                   ${index % 2 === 0 ? 'md:mr-auto md:ml-0' : 'md:ml-auto md:mr-0'}
                   ${index > 0 ? 'md:-mt-24' : ''}
                 `}
+                style={{ zIndex: 50 - index }}
               >
                 {/* Cosmic Connector Line (Desktop Only) */}
                 {/* Cosmic Connector Line (Desktop Only) */}
