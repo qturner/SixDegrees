@@ -120,15 +120,12 @@
 
   body {
     @apply font-sans antialiased;
-    /* Cinematic Infinite Space Background */
+    /* Cinematic Infinite Space Background - Image Driven */
     background-color: #0A0E14;
-    background:
-      radial-gradient(circle at 50% 50%, rgba(26, 42, 45, 0.4) 0%, transparent 70%),
-      /* Teal Haze */
-      radial-gradient(circle at 80% 20%, rgba(45, 27, 51, 0.4) 0%, transparent 60%),
-      /* Purple Haze */
-      linear-gradient(180deg, #0A0E14 0%, #121212 100%);
-    /* Deep Base */
+    background-image: url('/cosmic-bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     background-attachment: fixed;
     min-height: 100vh;
     color: var(--game-text);
@@ -137,7 +134,7 @@
     overflow-x: hidden;
   }
 
-  /* Film Grain / Noise Overlay */
+  /* Optional: Light overlay to blend if needed, but image should carry the weight */
   body::before {
     content: "";
     position: fixed;
@@ -147,11 +144,10 @@
     height: 100%;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background: rgba(0, 0, 0, 0.2);
   }
 
-  /* Vignette / Depth of Field */
+  /* Vignette / Depth of Field - preserved */
   body::after {
     content: "";
     position: fixed;
