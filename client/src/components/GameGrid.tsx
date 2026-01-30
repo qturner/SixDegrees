@@ -326,7 +326,7 @@ export default function GameGrid({
                   </div>
                 </div>
 
-                {/* Cosmic Connector Line (Desktop Only) - Moved here for ultimate stacking */}
+                {/* Cosmic Connector Line (Desktop Only) - Soft Cosmic Style */}
                 {!isLastConnection && (
                   <div className={`hidden md:block absolute top-[50%] w-[100%] pointer-events-none z-40 ${index % 2 === 0
                     ? 'left-[100%]' // From Left card rightward
@@ -340,39 +340,42 @@ export default function GameGrid({
                       preserveAspectRatio="none"
                     >
                       <defs>
-                        <filter id={`neon-glow-${index}`} x="-100%" y="-100%" width="300%" height="300%">
-                          <feGaussianBlur stdDeviation="5" result="blur" />
+                        <linearGradient id={`cosmic-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#22d3ee" />
+                          <stop offset="100%" stopColor="#a855f7" />
+                        </linearGradient>
+                        <filter id={`cosmic-glow-${index}`} x="-100%" y="-100%" width="300%" height="300%">
+                          <feGaussianBlur stdDeviation="2" result="blur" />
                           <feComposite in="SourceGraphic" in2="blur" operator="over" />
                         </filter>
                       </defs>
 
-                      {/* Diagonal Line */}
+                      {/* elegant narrowed diagonal line */}
                       <line
                         x1={index % 2 === 0 ? "0" : "100"}
                         y1="0"
                         x2={index % 2 === 0 ? "100" : "0"}
                         y2="200"
-                        stroke="#00ffff"
-                        strokeWidth="4"
-                        strokeDasharray="6 4"
-                        className="animate-pulse-slow"
-                        style={{ filter: `url(#neon-glow-${index})` }}
+                        stroke={`url(#cosmic-gradient-${index})`}
+                        strokeWidth="1.5"
+                        className="opacity-80"
+                        style={{ filter: `url(#cosmic-glow-${index})` }}
                       />
 
-                      {/* Connection Nodes (Dots) */}
+                      {/* Connection Nodes (Small subtle dots) */}
                       <circle
                         cx={index % 2 === 0 ? "0" : "100"}
                         cy="0"
-                        r="6"
-                        fill="#00ffff"
-                        style={{ filter: `url(#neon-glow-${index})` }}
+                        r="3"
+                        fill="#22d3ee"
+                        style={{ filter: `url(#cosmic-glow-${index})` }}
                       />
                       <circle
                         cx={index % 2 === 0 ? "100" : "0"}
                         cy="200"
-                        r="6"
-                        fill="#00ffff"
-                        style={{ filter: `url(#neon-glow-${index})` }}
+                        r="3"
+                        fill="#a855f7"
+                        style={{ filter: `url(#cosmic-glow-${index})` }}
                       />
                     </svg>
                   </div>
