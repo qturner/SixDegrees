@@ -61,26 +61,6 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
 
   return (
     <header className="bg-transparent border-b border-deco-gold/10 relative overflow-hidden z-10" role="banner">
-      {/* Auth UI - Top Right */}
-      <div className="absolute top-4 right-4 z-50">
-        {user ? (
-          <UserMenu />
-        ) : (
-          <Button
-            size="sm"
-            className="bg-deco-gold text-deco-charcoal hover:bg-deco-gold/80 hover:text-black transition-colors font-bold shadow-md border border-transparent"
-            onClick={() => setIsAuthModalOpen(true)}
-            data-testid="button-signin"
-          >
-            <User className="w-4 h-4 mr-2" />
-            <span className="font-medium">Sign In</span>
-          </Button>
-        )}
-      </div>
-
-      <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
-
-      {/* Subtle geometric pattern overlay */}
       <div className="absolute inset-0 art-deco-chevron opacity-30 pointer-events-none" />
 
       {/* Gold accent line at top */}

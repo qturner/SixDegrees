@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Shield } from "lucide-react";
+import { Shield, User } from "lucide-react";
 import GameHeader from "@/components/GameHeader";
 import GameGrid from "@/components/GameGrid";
 import GameInstructions from "@/components/GameInstructions";
@@ -13,6 +13,7 @@ import TodaysChallenge from "@/components/TodaysChallenge";
 import { AboutModal } from "@/components/AboutModal";
 import { ContactModal } from "@/components/ContactModal";
 import { UserMenu } from "@/components/UserMenu";
+import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
@@ -71,6 +72,7 @@ export default function Game() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { user, recordCompletion } = useAuth();
   const [gameStateInitialized, setGameStateInitialized] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(false);
@@ -340,6 +342,25 @@ export default function Game() {
 
   return (
     <div className="min-h-screen text-game-text font-sans">
+      {/* Auth UI - Bottom Left */}
+      <div className="fixed bottom-4 left-4 z-50 transition-opacity duration-300">
+        {user ? (
+          <UserMenu />
+        ) : (
+          <Button
+            size="sm"
+            className="flex items-center gap-2 bg-deco-gold text-deco-charcoal hover:bg-deco-gold/80 hover:text-black transition-colors font-bold shadow-lg border border-transparent"
+            onClick={() => setIsAuthModalOpen(true)}
+            data-testid="button-signin"
+          >
+            <User className="w-4 h-4 mr-2" />
+            <span className="font-medium">Sign In</span>
+          </Button>
+        )}
+      </div>
+
+      <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
+
       {/* Admin Login - Bottom right, only visible when scrolled to bottom */}
       {isAtBottom && (
         <div className="fixed bottom-4 right-4 z-50 transition-opacity duration-300">
