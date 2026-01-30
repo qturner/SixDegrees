@@ -216,8 +216,21 @@ export default function GameGrid({
 
 
                 {/* Main card - Updated border to gradient ring style */}
-                <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black p-[2px] rounded-lg shadow-[0_4px_16px_rgba(196,151,49,0.15)] hover:shadow-[0_6px_24px_rgba(196,151,49,0.25)] transition-all duration-200">
-                  <div className="absolute inset-0 bg-gradient-to-br from-deco-gold via-deco-bronze to-transparent rounded-lg opacity-40 group-hover:opacity-60 transition-opacity" />
+                <div className={`relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black p-[2px] rounded-lg transition-all duration-300 
+                  ${validationResult?.valid
+                    ? 'ring-2 ring-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.3)]'
+                    : 'shadow-[0_4px_16px_rgba(196,151,49,0.15)] hover:shadow-[0_6px_24px_rgba(196,151,49,0.25)]'}
+                `}>
+                  {/* Validation Checkmark */}
+                  {validationResult?.valid && (
+                    <div className="absolute -top-3 -right-3 z-50 bg-emerald-500 rounded-full p-1 shadow-[0_0_15px_rgba(16,185,129,0.6)] animate-in zoom-in duration-300 scale-110">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+
+                  <div className={`absolute inset-0 bg-gradient-to-br from-deco-gold via-deco-bronze to-transparent rounded-lg transition-opacity duration-300 
+                    ${validationResult?.valid ? 'opacity-20' : 'opacity-40 group-hover:opacity-60'}
+                  `} />
 
                   <div className="relative bg-black rounded-lg p-4 space-y-4">
 
@@ -288,8 +301,8 @@ export default function GameGrid({
                       </div>
                     )}
 
-                    {/* Special note for last connection */}
-                    {isLastConnection && connection.movieTitle && (
+                    {/* Special note for last connection - Hide on success to keep card compact */}
+                    {isLastConnection && connection.movieTitle && !validationResult?.valid && (
                       <div className="space-y-2 ml-4 border-l-2 border-deco-gold pl-4 bg-deco-charcoal/50 p-3">
                         <div className="text-sm font-medium text-deco-gold flex items-center">
                           <User className="w-4 h-4 mr-2" />
@@ -301,26 +314,13 @@ export default function GameGrid({
                       </div>
                     )}
 
-                    {/* Connection Status */}
-                    {validationResult && connection.movieTitle && connection.actorName && (
-                      <div className={`text-sm p-3 ${validationResult.valid
-                        ? 'bg-game-success/20 text-game-success border border-game-success/30'
-                        : 'bg-game-error/20 text-game-error border border-game-error/30'
-                        }`}>
-                        {validationResult.valid ? (
-                          <div className="flex items-center">
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            {isLastConnection
-                              ? `Valid! ${previousActorName} and ${challenge.endActorName} both appear in ${connection.movieTitle}`
-                              : `Valid! ${previousActorName} and ${connection.actorName} both appear in ${connection.movieTitle}`
-                            }
-                          </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <XCircle className="w-4 h-4 mr-2" />
-                            {validationResult.message}
-                          </div>
-                        )}
+                    {/* Connection Status - Only show errors here to keep success cards fixed size */}
+                    {validationResult && !validationResult.valid && connection.movieTitle && connection.actorName && (
+                      <div className="text-sm p-3 bg-game-error/20 text-game-error border border-game-error/30 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="flex items-center">
+                          <XCircle className="w-4 h-4 mr-2" />
+                          <span className="leading-snug">{validationResult.message}</span>
+                        </div>
                       </div>
                     )}
                   </div>
