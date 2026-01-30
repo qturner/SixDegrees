@@ -79,7 +79,8 @@ export default function TodaysChallenge({
       <div className="relative z-10 flex flex-col items-center">
 
         {/* Actors Row */}
-        <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] items-center gap-8 w-full mb-8 max-w-2xl mx-auto">
+        {/* Actors Row */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-8 w-full mb-8 max-w-2xl mx-auto">
 
           {/* Start Actor (Left - Blue/Cyan Theme) */}
           <div className="justify-self-center">
@@ -103,7 +104,7 @@ export default function TodaysChallenge({
           </div>
 
           {/* Infinity Icon (Center) */}
-          <div className="flex justify-center items-center py-4 sm:py-0 text-deco-gold drop-shadow-[0_4px_3px_rgba(0,0,0,0.6)] filter backdrop-blur-sm transform scale-150 sm:scale-[2.0] animate-pulse-slow">
+          <div className="flex justify-center items-center text-deco-gold drop-shadow-[0_4px_3px_rgba(0,0,0,0.6)] filter backdrop-blur-sm transform scale-150 sm:scale-[2.0] animate-pulse-slow">
             <Infinity strokeWidth={2} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]" />
           </div>
 
