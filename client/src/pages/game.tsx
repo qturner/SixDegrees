@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 import { trackGameEvent, trackPageView } from "@/lib/analytics";
+import { useHints } from "@/hooks/useHints";
 
 // Helper functions for localStorage persistence
 const saveGameState = (connections: Connection[], validationResults: ValidationResult[], gameResult: ValidationResult | null, isFlipped: boolean, challengeDate?: string) => {
@@ -318,6 +319,19 @@ export default function Game() {
     );
   }
 
+
+  const {
+    startActorHint,
+    endActorHint,
+    activeHint,
+    hintsRemaining,
+    loadingHintType,
+    handleHintClick
+  } = useHints({
+    startActorName: challenge?.startActorName || '',
+    endActorName: challenge?.endActorName || ''
+  });
+
   const effectiveChallenge = getEffectiveChallenge();
 
   return (
@@ -362,11 +376,19 @@ export default function Game() {
             onFlip={handleFlipActors}
             canFlip={!connections.some(c => c.actorId || c.movieId)}
             gameResult={gameResult}
+            onHint={handleHintClick}
+            hintsRemaining={hintsRemaining}
+            loadingHintType={loadingHintType}
+            startActorHint={startActorHint}
+            endActorHint={endActorHint}
           />
         </div>
 
         <div className="mb-6 sm:mb-8">
-          <HintsSection dailyChallenge={challenge} />
+          <HintsSection
+            activeHint={activeHint}
+            hintsRemaining={hintsRemaining}
+          />
         </div>
 
         <GameGrid

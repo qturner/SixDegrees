@@ -1,12 +1,7 @@
 import { useState } from "react";
-import { ArrowRight, ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Infinity } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface Actor {
-  id: number;
-  name: string;
-  profilePath?: string;
-}
+import { HintResponse } from "@/hooks/useHints";
 
 interface Challenge {
   id: string;
@@ -32,6 +27,12 @@ interface TodaysChallengeProps {
   onFlip?: () => void;
   canFlip?: boolean;
   gameResult?: GameResult | null;
+  // Hint props
+  onHint: (type: 'start' | 'end') => void;
+  hintsRemaining: number;
+  loadingHintType: 'start' | 'end' | null;
+  startActorHint: HintResponse | null;
+  endActorHint: HintResponse | null;
 }
 
 interface ZoomedActor {
@@ -45,7 +46,12 @@ export default function TodaysChallenge({
   isFlipped,
   onFlip,
   canFlip = false,
-  gameResult
+  gameResult,
+  onHint,
+  hintsRemaining,
+  loadingHintType,
+  startActorHint,
+  endActorHint
 }: TodaysChallengeProps) {
   const [zoomedActor, setZoomedActor] = useState<ZoomedActor | null>(null);
 
@@ -78,174 +84,158 @@ export default function TodaysChallenge({
     return "In Progress";
   };
 
-  const getStatusColor = () => {
-    const status = getGameStatus();
-    if (status === "Ready to Start") return "text-deco-gold";
-    if (status === "Complete") return "text-game-success";
-    if (status === "Game Over") return "text-game-error";
-    return "text-deco-gold-light";
-  };
+  const status = getGameStatus();
 
   return (
-    <div className="deco-card deco-corners p-6 sm:p-8 mb-6 sm:mb-8 relative overflow-hidden">
-      {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
+    <div className="deco-card deco-corners p-6 sm:p-10 mb-6 sm:mb-8 relative overflow-hidden backdrop-blur-md bg-deco-black/40 border border-white/10">
+      {/* Subtle background effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-transparent to-amber-900/20 pointer-events-none" />
 
-      <div className="text-center mb-4 sm:mb-6 relative z-10">
-        <h2 className="font-display text-xl sm:text-2xl text-deco-gold mb-2 tracking-wide">Today's Challenge</h2>
+      {/* Main Content Container */}
+      <div className="relative z-10 flex flex-col items-center">
 
-        {/* Decorative divider */}
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-deco-gold/40" />
-          <div className="w-1.5 h-1.5 rotate-45 bg-deco-gold/60" />
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-deco-gold/40" />
-        </div>
+        {/* Actors Row */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 w-full mb-8">
 
-        <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 mb-6">
-          {/* Start Actor Card */}
-          <div className="group relative w-full sm:w-auto sm:min-w-[280px]">
-            {/* Spotlight/glow effect behind card */}
-            <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Start Actor (Left - Blue/Cyan Theme) */}
+          <div className="flex flex-col items-center group">
+            <div className="relative mb-3">
+              {/* Glow Effect */}
+              <div className="absolute -inset-2 rounded-full bg-cyan-500/30 blur-md group-hover:bg-cyan-400/50 transition-all duration-500 opacity-60" />
 
-            {/* Main card */}
-            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-5 sm:py-4">
-              {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-deco-gold" />
-              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-deco-gold" />
-              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
-              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
-
-              {/* Content - 3-column grid for perfect centering without overlap */}
-              <div className="relative grid grid-cols-[56px_1fr_56px] sm:grid-cols-[64px_1fr_64px] items-center min-h-[56px] sm:min-h-[64px] gap-2">
-                {/* Photo with ring glow - Column 1 */}
-                <div className="flex justify-center">
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
-                    {displayChallenge.startActorProfilePath ? (
-                      <img
-                        src={displayChallenge.startActorProfilePath.startsWith('http')
-                          ? displayChallenge.startActorProfilePath
-                          : `https://image.tmdb.org/t/p/w154${displayChallenge.startActorProfilePath}`}
-                        alt={displayChallenge.startActorName}
-                        className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
-                        onClick={() => handleImageClick(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
-                      />
-                    ) : (
-                      <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-2 border-deco-gold">
-                        <span className="text-lg font-display font-bold text-deco-gold">
-                          {displayChallenge.startActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+              {/* Image Container with Ring */}
+              <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full p-1 bg-gradient-to-b from-cyan-300 to-cyan-600 shadow-[0_0_20px_rgba(34,211,238,0.4)]">
+                <div className="w-full h-full rounded-full border-4 border-black overflow-hidden bg-black relative">
+                  {displayChallenge.startActorProfilePath ? (
+                    <img
+                      src={displayChallenge.startActorProfilePath.startsWith('http')
+                        ? displayChallenge.startActorProfilePath
+                        : `https://image.tmdb.org/t/p/w185${displayChallenge.startActorProfilePath}`}
+                      alt={displayChallenge.startActorName}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer"
+                      onClick={() => handleImageClick(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-cyan-400 font-bold text-2xl">
+                      {displayChallenge.startActorName.charAt(0)}
+                    </div>
+                  )}
                 </div>
-
-                {/* Name - Column 2 (Middle) */}
-                <span className="text-center font-display text-[clamp(0.875rem,2.5vw,1.125rem)] leading-tight text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                  {displayChallenge.startActorName}
-                </span>
-
-                {/* Spacer - Column 3 (Ensures symmetry for centering) */}
-                <div className="w-full h-full" aria-hidden="true" />
               </div>
             </div>
+
+            {/* Name */}
+            <h3 className="text-xl sm:text-2xl font-display font-bold text-white tracking-wide mb-2 text-center drop-shadow-md">
+              {displayChallenge.startActorName}
+            </h3>
+
+            {/* Hint Button */}
+            <button
+              onClick={() => onHint('start')}
+              disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
+              className={`text-sm tracking-widest uppercase py-1 px-3 rounded transition-all duration-300 ${startActorHint
+                  ? 'text-cyan-300 font-semibold drop-shadow-[0_0_5px_rgba(103,232,249,0.8)]'
+                  : 'text-white/60 hover:text-cyan-300 hover:drop-shadow-[0_0_5px_rgba(103,232,249,0.5)]'
+                }`}
+            >
+              {loadingHintType === 'start' ? 'Loading...' : (startActorHint ? 'View Hint' : 'Show Hint')}
+            </button>
           </div>
 
-          {/* Arrow */}
-          <div className="text-deco-gold rotate-90 sm:rotate-0 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(196,151,49,0.5)]">
-            <ArrowRight className="w-6 h-6 sm:w-8 sm:h-8" />
+          {/* Infinity Icon (Center) */}
+          <div className="text-deco-cream/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] transform scale-150 sm:scale-[2.0] opacity-80 animate-pulse-slow">
+            <Infinity strokeWidth={1.5} />
           </div>
 
-          {/* End Actor Card */}
-          <div className="group relative w-full sm:w-auto sm:min-w-[280px]">
-            {/* Spotlight/glow effect behind card */}
-            <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded-lg blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* End Actor (Right - Gold/Yellow Theme) */}
+          <div className="flex flex-col items-center group">
+            <div className="relative mb-3">
+              {/* Glow Effect */}
+              <div className="absolute -inset-2 rounded-full bg-amber-500/30 blur-md group-hover:bg-amber-400/50 transition-all duration-500 opacity-60" />
 
-            {/* Main card */}
-            <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 border-deco-gold/80 overflow-hidden shadow-[0_8px_32px_rgba(196,151,49,0.3)] group-hover:shadow-[0_12px_40px_rgba(196,151,49,0.5)] transition-all duration-300 group-hover:border-deco-gold px-4 py-3 sm:px-5 sm:py-4">
-              {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-deco-gold" />
-              <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-deco-gold" />
-              <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-deco-gold" />
-              <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-deco-gold" />
-
-              {/* Content - 3-column grid for perfect centering without overlap */}
-              <div className="relative grid grid-cols-[56px_1fr_56px] sm:grid-cols-[64px_1fr_64px] items-center min-h-[56px] sm:min-h-[64px] gap-2">
-                {/* Photo with ring glow - Column 1 */}
-                <div className="flex justify-center">
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold via-deco-bronze to-deco-gold rounded-full opacity-70 blur-sm" />
-                    {displayChallenge.endActorProfilePath ? (
-                      <img
-                        src={displayChallenge.endActorProfilePath.startsWith('http')
-                          ? displayChallenge.endActorProfilePath
-                          : `https://image.tmdb.org/t/p/w154${displayChallenge.endActorProfilePath}`}
-                        alt={displayChallenge.endActorName}
-                        className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-deco-gold shadow-lg cursor-pointer select-none transition-transform duration-200 hover:scale-105"
-                        onClick={() => handleImageClick(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
-                      />
-                    ) : (
-                      <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-deco-gold/30 to-deco-bronze/30 flex items-center justify-center border-2 border-deco-gold">
-                        <span className="text-lg font-display font-bold text-deco-gold">
-                          {displayChallenge.endActorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+              {/* Image Container with Ring */}
+              <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full p-1 bg-gradient-to-b from-amber-300 to-amber-600 shadow-[0_0_20px_rgba(251,191,36,0.4)]">
+                <div className="w-full h-full rounded-full border-4 border-black overflow-hidden bg-black relative">
+                  {displayChallenge.endActorProfilePath ? (
+                    <img
+                      src={displayChallenge.endActorProfilePath.startsWith('http')
+                        ? displayChallenge.endActorProfilePath
+                        : `https://image.tmdb.org/t/p/w185${displayChallenge.endActorProfilePath}`}
+                      alt={displayChallenge.endActorName}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer"
+                      onClick={() => handleImageClick(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-amber-400 font-bold text-2xl">
+                      {displayChallenge.endActorName.charAt(0)}
+                    </div>
+                  )}
                 </div>
-
-                {/* Name - Column 2 (Middle) */}
-                <span className="text-center font-display text-[clamp(0.875rem,2.5vw,1.125rem)] leading-tight text-deco-cream tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                  {displayChallenge.endActorName}
-                </span>
-
-                {/* Spacer - Column 3 (Ensures symmetry for centering) */}
-                <div className="w-full h-full" aria-hidden="true" />
               </div>
             </div>
+
+            {/* Name */}
+            <h3 className="text-xl sm:text-2xl font-display font-bold text-white tracking-wide mb-2 text-center drop-shadow-md">
+              {displayChallenge.endActorName}
+            </h3>
+
+            {/* Hint Button */}
+            <button
+              onClick={() => onHint('end')}
+              disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
+              className={`text-sm tracking-widest uppercase py-1 px-3 rounded transition-all duration-300 ${endActorHint
+                  ? 'text-amber-300 font-semibold drop-shadow-[0_0_5px_rgba(252,211,77,0.8)]'
+                  : 'text-white/60 hover:text-amber-300 hover:drop-shadow-[0_0_5px_rgba(252,211,77,0.5)]'
+                }`}
+            >
+              {loadingHintType === 'end' ? 'Loading...' : (endActorHint ? 'View Hint' : 'Show Hint')}
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-6 text-sm">
-          <div className="flex items-center space-x-4">
-            <span className={`font-medium ${getStatusColor()}`}>
-              Status: {getGameStatus()}
-            </span>
-            <span className="text-deco-pewter">
-              Moves: <span className="text-deco-gold">{currentMoves}/6</span>
-            </span>
+        {/* Status & Helper Info */}
+        <div className="flex flex-col sm:flex-row items-center justify-center w-full gap-4 text-sm mt-4">
+          <div className="flex items-center gap-4 bg-black/30 px-4 py-2 rounded-full border border-white/10">
+            <span className="text-white/80">Status: <span className={
+              status === "Complete" ? "text-green-400 font-bold" :
+                status === "Game Over" ? "text-red-400 font-bold" :
+                  "text-deco-gold font-bold"
+            }>{status}</span></span>
+            <span className="text-white/40">|</span>
+            <span className="text-white/80">Moves: <span className="text-deco-gold font-bold">{currentMoves}/6</span></span>
           </div>
 
           {onFlip && (
             <Button
               onClick={onFlip}
               disabled={!canFlip}
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="border-deco-gold/50 text-deco-gold hover:bg-deco-gold/10 hover:border-deco-gold text-xs uppercase tracking-wider transition-all duration-200"
+              className="text-white/50 hover:text-white hover:bg-white/10 text-xs uppercase tracking-wider"
             >
               <ArrowLeftRight className="w-3 h-3 mr-2" />
-              Switch Starting Actor
+              Flip Actors
             </Button>
           )}
         </div>
+
       </div>
 
       {/* Zoom Modal Overlay */}
       {zoomedActor && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-deco-black/90 cursor-pointer backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 cursor-pointer backdrop-blur-md"
           onClick={handleCloseModal}
         >
-          <div className="flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
             <img
               src={zoomedActor.profilePath.startsWith('http')
                 ? zoomedActor.profilePath
-                : `https://image.tmdb.org/t/p/w342${zoomedActor.profilePath}`}
+                : `https://image.tmdb.org/t/p/w500${zoomedActor.profilePath}`}
               alt={zoomedActor.name}
-              className="w-64 h-64 sm:w-80 sm:h-80 rounded-full object-cover border-4 border-deco-gold shadow-2xl"
+              className="w-72 h-72 sm:w-96 sm:h-96 rounded-full object-cover border-4 border-deco-gold shadow-[0_0_50px_rgba(196,151,49,0.3)]"
             />
-            <p className="mt-4 font-display text-deco-cream text-xl tracking-wide">{zoomedActor.name}</p>
+            <p className="mt-6 font-display text-white text-3xl tracking-wide drop-shadow-lg">{zoomedActor.name}</p>
           </div>
         </div>
       )}
