@@ -95,10 +95,10 @@ export default function TodaysChallenge({
       <div className="relative z-10 flex flex-col items-center">
 
         {/* Actors Row */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 w-full mb-8">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8 w-full mb-8 max-w-2xl mx-auto">
 
           {/* Start Actor (Left - Blue/Cyan Theme) */}
-          <div className="flex flex-col items-center group">
+          <div className="flex flex-col items-center group justify-self-center">
             <div className="relative mb-3">
               {/* Glow Effect */}
               <div className="absolute -inset-2 rounded-full bg-cyan-500/30 blur-md group-hover:bg-cyan-400/50 transition-all duration-500 opacity-60" />
@@ -134,8 +134,8 @@ export default function TodaysChallenge({
               onClick={() => onHint('start')}
               disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
               className={`text-sm tracking-widest uppercase py-1 px-3 rounded transition-all duration-300 ${startActorHint
-                  ? 'text-cyan-300 font-semibold drop-shadow-[0_0_5px_rgba(103,232,249,0.8)]'
-                  : 'text-white/60 hover:text-cyan-300 hover:drop-shadow-[0_0_5px_rgba(103,232,249,0.5)]'
+                ? 'text-cyan-300 font-semibold drop-shadow-[0_0_5px_rgba(103,232,249,0.8)]'
+                : 'text-white/60 hover:text-cyan-300 hover:drop-shadow-[0_0_5px_rgba(103,232,249,0.5)]'
                 }`}
             >
               {loadingHintType === 'start' ? 'Loading...' : (startActorHint ? 'View Hint' : 'Show Hint')}
@@ -143,12 +143,12 @@ export default function TodaysChallenge({
           </div>
 
           {/* Infinity Icon (Center) */}
-          <div className="text-deco-cream/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] transform scale-150 sm:scale-[2.0] opacity-80 animate-pulse-slow">
+          <div className="flex justify-center items-center text-deco-cream/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] transform scale-150 sm:scale-[2.0] opacity-80 animate-pulse-slow">
             <Infinity strokeWidth={1.5} />
           </div>
 
           {/* End Actor (Right - Gold/Yellow Theme) */}
-          <div className="flex flex-col items-center group">
+          <div className="flex flex-col items-center group justify-self-center">
             <div className="relative mb-3">
               {/* Glow Effect */}
               <div className="absolute -inset-2 rounded-full bg-amber-500/30 blur-md group-hover:bg-amber-400/50 transition-all duration-500 opacity-60" />
@@ -184,8 +184,8 @@ export default function TodaysChallenge({
               onClick={() => onHint('end')}
               disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
               className={`text-sm tracking-widest uppercase py-1 px-3 rounded transition-all duration-300 ${endActorHint
-                  ? 'text-amber-300 font-semibold drop-shadow-[0_0_5px_rgba(252,211,77,0.8)]'
-                  : 'text-white/60 hover:text-amber-300 hover:drop-shadow-[0_0_5px_rgba(252,211,77,0.5)]'
+                ? 'text-amber-300 font-semibold drop-shadow-[0_0_5px_rgba(252,211,77,0.8)]'
+                : 'text-white/60 hover:text-amber-300 hover:drop-shadow-[0_0_5px_rgba(252,211,77,0.5)]'
                 }`}
             >
               {loadingHintType === 'end' ? 'Loading...' : (endActorHint ? 'View Hint' : 'Show Hint')}
