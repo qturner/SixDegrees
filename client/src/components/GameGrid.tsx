@@ -326,15 +326,15 @@ export default function GameGrid({
                   </div>
                 </div>
 
-                {/* Cosmic Connector Line (Desktop Only) - Soft Cosmic Style */}
+                {/* Cosmic Connector Line (Desktop Only) - Perfected Cosmic Style */}
                 {!isLastConnection && (
-                  <div className={`hidden md:block absolute top-[50%] w-[100%] pointer-events-none z-40 ${index % 2 === 0
+                  <div className={`hidden md:block absolute top-[50%] w-[100%] h-[250px] pointer-events-none z-40 ${index % 2 === 0
                     ? 'left-[100%]' // From Left card rightward
                     : 'right-[100%]' // From Right card leftward
                     }`}>
                     <svg
                       width="100%"
-                      height="250"
+                      height="100%"
                       viewBox="0 0 100 250"
                       className="overflow-visible"
                       preserveAspectRatio="none"
@@ -350,7 +350,7 @@ export default function GameGrid({
                         </filter>
                       </defs>
 
-                      {/* elegant narrowed diagonal line */}
+                      {/* elegant narrowed diagonal line with 60% opacity */}
                       <line
                         x1={index % 2 === 0 ? "0" : "100"}
                         y1="0"
@@ -358,26 +358,28 @@ export default function GameGrid({
                         y2="200"
                         stroke={`url(#cosmic-gradient-${index})`}
                         strokeWidth="1.5"
-                        className="opacity-80"
-                        style={{ filter: `url(#cosmic-glow-${index})` }}
-                      />
-
-                      {/* Connection Nodes (Small subtle dots) */}
-                      <circle
-                        cx={index % 2 === 0 ? "0" : "100"}
-                        cy="0"
-                        r="3"
-                        fill="#22d3ee"
-                        style={{ filter: `url(#cosmic-glow-${index})` }}
-                      />
-                      <circle
-                        cx={index % 2 === 0 ? "100" : "0"}
-                        cy="200"
-                        r="3"
-                        fill="#a855f7"
+                        className="opacity-60"
                         style={{ filter: `url(#cosmic-glow-${index})` }}
                       />
                     </svg>
+
+                    {/* Connection Nodes (Perfect circular dots) */}
+                    <div
+                      className="absolute w-2 h-2 rounded-full bg-[#22d3ee] shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                      style={{
+                        top: '0',
+                        left: index % 2 === 0 ? '0' : '100%',
+                        transform: 'translate(-50%, -50%)'
+                      }}
+                    />
+                    <div
+                      className="absolute w-2 h-2 rounded-full bg-[#a855f7] shadow-[0_0_8px_rgba(168,85,247,0.8)]"
+                      style={{
+                        top: '200px',
+                        left: index % 2 === 0 ? '100%' : '0',
+                        transform: 'translate(-50%, -50%)'
+                      }}
+                    />
                   </div>
                 )}
               </div>
