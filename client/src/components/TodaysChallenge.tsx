@@ -103,8 +103,9 @@ export default function TodaysChallenge({
           </div>
 
           {/* Infinity Icon (Center) */}
-          <div className="flex justify-center items-center text-deco-cream/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] transform scale-150 sm:scale-[2.0] opacity-80 animate-pulse-slow">
-            <Infinity strokeWidth={1.5} />
+          {/* Infinity Icon (Center) */}
+          <div className="flex justify-center items-center text-deco-gold drop-shadow-[0_4px_3px_rgba(0,0,0,0.6)] filter backdrop-blur-sm transform scale-150 sm:scale-[2.0] animate-pulse-slow">
+            <Infinity strokeWidth={2} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]" />
           </div>
 
           {/* End Actor (Right - Gold/Yellow Theme) */}
