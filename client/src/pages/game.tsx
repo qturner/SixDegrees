@@ -104,6 +104,18 @@ export default function Game() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
+  const {
+    startActorHint,
+    endActorHint,
+    activeHint,
+    hintsRemaining,
+    loadingHintType,
+    handleHintClick
+  } = useHints({
+    startActorName: challenge?.startActorName || '',
+    endActorName: challenge?.endActorName || ''
+  });
+
   // Query for current user (if logged in)
   const { data: currentUser } = useQuery<{
     id: string;
@@ -320,17 +332,7 @@ export default function Game() {
   }
 
 
-  const {
-    startActorHint,
-    endActorHint,
-    activeHint,
-    hintsRemaining,
-    loadingHintType,
-    handleHintClick
-  } = useHints({
-    startActorName: challenge?.startActorName || '',
-    endActorName: challenge?.endActorName || ''
-  });
+
 
   const effectiveChallenge = getEffectiveChallenge();
 
