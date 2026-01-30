@@ -264,8 +264,10 @@ export default function Game() {
         ...challenge,
         startActorId: challenge.endActorId,
         startActorName: challenge.endActorName,
+        startActorProfilePath: challenge.endActorProfilePath,
         endActorId: challenge.startActorId,
         endActorName: challenge.startActorName,
+        endActorProfilePath: challenge.startActorProfilePath,
       };
     }
     return challenge;

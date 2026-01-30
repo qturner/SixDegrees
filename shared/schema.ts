@@ -66,8 +66,10 @@ export const movieSchema = z.object({
 export const connectionSchema = z.object({
   actorId: z.number(),
   actorName: z.string(),
+  actorProfilePath: z.string().nullable().optional(),
   movieId: z.number(),
   movieTitle: z.string(),
+  moviePosterPath: z.string().nullable().optional(),
 });
 
 export const gameConnectionSchema = z.object({
