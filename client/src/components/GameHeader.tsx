@@ -60,7 +60,7 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
   };
 
   return (
-    <header className="bg-deco-charcoal border-b border-deco-gold/30 relative overflow-hidden" role="banner">
+    <header className="bg-transparent border-b border-deco-gold/10 relative overflow-hidden z-10" role="banner">
       {/* Auth UI - Top Right */}
       <div className="absolute top-4 right-4 z-50">
         {user ? (

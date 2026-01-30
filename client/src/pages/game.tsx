@@ -321,7 +321,7 @@ export default function Game() {
   const effectiveChallenge = getEffectiveChallenge();
 
   return (
-    <div className="min-h-screen bg-game-background text-game-text font-sans">
+    <div className="min-h-screen text-game-text font-sans">
       {/* Admin Login - Bottom right, only visible when scrolled to bottom */}
       {isAtBottom && (
         <div className="fixed bottom-4 right-4 z-50 transition-opacity duration-300">
