@@ -209,6 +209,45 @@ export default function GameGrid({
                   ${index > 0 ? 'md:-mt-24' : ''}
                 `}
               >
+                {/* Cosmic Connector Line (Desktop Only) */}
+                {!isLastConnection && (
+                  <div className={`hidden md:block absolute top-1/2 w-[100%] pointer-events-none z-0 ${index % 2 === 0
+                    ? '-right-[90%] rotate-0' // Left Card -> Right
+                    : '-left-[90%] rotate-180' // Right Card -> Left
+                    }`}>
+                    <svg
+                      width="100%"
+                      height="100"
+                      viewBox="0 0 200 100"
+                      className="overflow-visible"
+                    >
+                      <defs>
+                        <linearGradient id={`cosmic-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0" />
+                          <stop offset="20%" stopColor="#22d3ee" stopOpacity="0.8" />
+                          <stop offset="50%" stopColor="#a855f7" stopOpacity="1" />
+                          <stop offset="80%" stopColor="#fbbf24" stopOpacity="0.8" />
+                          <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
+                        </linearGradient>
+                        <filter id="glow">
+                          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                          <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                          </feMerge>
+                        </filter>
+                      </defs>
+                      <path
+                        d="M 10,50 C 60,50 140,50 190,50"
+                        stroke={`url(#cosmic-gradient-${index})`}
+                        strokeWidth="3"
+                        fill="none"
+                        filter="url(#glow)"
+                        className="animate-pulse-slow opacity-80"
+                      />
+                    </svg>
+                  </div>
+                )}
                 {/* Glow effect behind card */}
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-70 transition-opacity duration-300" />
 
