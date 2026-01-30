@@ -70,7 +70,11 @@ export default function GameHeader({ challenge, currentMoves, isFlipped = false,
         <div className="text-center">
           <div className="flex flex-col items-center justify-center mb-4">
             <div className="flex items-center justify-center mb-1">
-              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-[0.2em] uppercase" style={{ textShadow: '0 0 10px rgba(255, 255, 255, 0.3)' }}>
+              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-[0.2em] uppercase animate-pulse-slow"
+                style={{
+                  textShadow: '0 0 10px rgba(34,211,238,0.8), 0 0 20px rgba(34,211,238,0.4), 0 0 30px rgba(168,85,247,0.4)',
+                  filter: 'drop-shadow(0 0 15px rgba(34,211,238,0.6))'
+                }}>
                 Six Degrees
               </h1>
             </div>

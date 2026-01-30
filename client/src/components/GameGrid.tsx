@@ -167,7 +167,7 @@ export default function GameGrid({
   );
 
   return (
-    <div className="deco-card deco-corners p-6 sm:p-10 mb-8 relative overflow-hidden backdrop-blur-md bg-deco-black/40 border border-white/10">
+    <div className="deco-card deco-corners p-6 sm:p-10 mb-8 relative md:overflow-visible backdrop-blur-md bg-deco-black/40 border border-white/10">
       {/* Subtle background effects matched from TodaysChallenge */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-transparent to-amber-900/20 pointer-events-none" />
       <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
@@ -210,49 +210,10 @@ export default function GameGrid({
                 `}
                 style={{ zIndex: 50 - index }}
               >
-                {/* Cosmic Connector Line (Desktop Only) */}
-                {/* Cosmic Connector Line (Desktop Only) */}
-                {!isLastConnection && (
-                  <div className={`hidden md:block absolute top-1/2 w-[120%] pointer-events-none z-10 ${index % 2 === 0
-                    ? '-right-[100%] rotate-0' // Left Card -> Right
-                    : '-left-[100%] rotate-180' // Right Card -> Left
-                    }`}>
-                    <svg
-                      width="100%"
-                      height="100"
-                      viewBox="0 0 200 100"
-                      className="overflow-visible"
-                    >
-                      <defs>
-                        <linearGradient id={`cosmic-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0" />
-                          <stop offset="25%" stopColor="#22d3ee" stopOpacity="1" />
-                          <stop offset="50%" stopColor="#a855f7" stopOpacity="1" />
-                          <stop offset="75%" stopColor="#fbbf24" stopOpacity="1" />
-                          <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
-                        </linearGradient>
-                        <filter id="glow-${index}">
-                          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                          <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                          </feMerge>
-                        </filter>
-                      </defs>
-                      <path
-                        d="M 0,50 C 60,50 140,50 200,50"
-                        stroke={`url(#cosmic-gradient-${index})`}
-                        strokeWidth="5"
-                        fill="none"
-                        filter={`url(#glow-${index})`}
-                        className="animate-pulse-slow opacity-100"
-                      />
-                    </svg>
-                  </div>
-                )}
                 {/* Glow effect behind card */}
                 <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-60 blur-md transition-opacity duration-500" />
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-0 transition-opacity duration-300" />
+
 
                 {/* Main card - Updated border to gradient ring style */}
                 <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black p-[2px] rounded-lg shadow-[0_4px_16px_rgba(196,151,49,0.15)] hover:shadow-[0_6px_24px_rgba(196,151,49,0.25)] transition-all duration-200">
@@ -364,6 +325,58 @@ export default function GameGrid({
                     )}
                   </div>
                 </div>
+
+                {/* Cosmic Connector Line (Desktop Only) - Moved here for ultimate stacking */}
+                {!isLastConnection && (
+                  <div className={`hidden md:block absolute top-[50%] w-[100%] pointer-events-none z-40 ${index % 2 === 0
+                    ? 'left-[100%]' // From Left card rightward
+                    : 'right-[100%]' // From Right card leftward
+                    }`}>
+                    <svg
+                      width="100%"
+                      height="250"
+                      viewBox="0 0 100 250"
+                      className="overflow-visible"
+                      preserveAspectRatio="none"
+                    >
+                      <defs>
+                        <filter id={`neon-glow-${index}`} x="-100%" y="-100%" width="300%" height="300%">
+                          <feGaussianBlur stdDeviation="5" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+
+                      {/* Diagonal Line */}
+                      <line
+                        x1={index % 2 === 0 ? "0" : "100"}
+                        y1="0"
+                        x2={index % 2 === 0 ? "100" : "0"}
+                        y2="200"
+                        stroke="#00ffff"
+                        strokeWidth="4"
+                        strokeDasharray="6 4"
+                        className="animate-pulse-slow"
+                        style={{ filter: `url(#neon-glow-${index})` }}
+                      />
+
+                      {/* Connection Nodes (Dots) */}
+                      <circle
+                        cx={index % 2 === 0 ? "0" : "100"}
+                        cy="0"
+                        r="6"
+                        fill="#00ffff"
+                        style={{ filter: `url(#neon-glow-${index})` }}
+                      />
+                      <circle
+                        cx={index % 2 === 0 ? "100" : "0"}
+                        cy="200"
+                        r="6"
+                        fill="#00ffff"
+                        style={{ filter: `url(#neon-glow-${index})` }}
+                      />
+                    </svg>
+                  </div>
+                )}
               </div>
             );
           })}
