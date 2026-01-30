@@ -169,7 +169,9 @@ export default function GameGrid({
   return (
     <div className="mb-8 relative rounded-xl p-[2px] bg-gradient-to-b from-deco-gold via-deco-bronze to-deco-charcoal shadow-lg">
       <div className="absolute inset-0 bg-deco-black rounded-xl" />
-      <div className="relative rounded-xl bg-deco-black/90 p-4 sm:p-6 backdrop-blur-sm overflow-hidden">
+      <div className="relative rounded-xl bg-deco-black/40 p-4 sm:p-6 backdrop-blur-md overflow-hidden">
+        {/* Subtle background effects matched from TodaysChallenge */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-transparent to-amber-900/20 pointer-events-none" />
         <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
 
         <div className="relative z-10">
