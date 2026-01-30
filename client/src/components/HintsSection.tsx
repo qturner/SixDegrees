@@ -30,7 +30,7 @@ export function HintsSection({ activeHint, hintsRemaining }: HintsSectionProps) 
 
         <div className="space-y-4">
           {activeHint && (
-            <div className="bg-deco-black/50 border border-deco-gold/30 p-4">
+            <div className="bg-deco-black/40 border border-white/10 p-4 rounded-lg backdrop-blur-sm">
               <h4 className="font-display text-deco-gold text-sm mb-3 flex items-center gap-2">
                 <Film className="h-4 w-4" />
                 Movies featuring {activeHint.actorName}
@@ -39,7 +39,7 @@ export function HintsSection({ activeHint, hintsRemaining }: HintsSectionProps) 
                 {(activeHint?.movies || []).map((movie) => (
                   <div
                     key={movie.id}
-                    className="p-3 border border-deco-gold/20 bg-deco-charcoal/50 transition-all duration-200 hover:border-deco-gold/50 hover:bg-deco-gold/5"
+                    className="p-3 rounded border border-white/10 bg-deco-black/20 hover:bg-white/5 transition-all duration-200"
                   >
                     <div className="font-medium text-sm text-deco-cream">{movie.title}</div>
                     {movie.release_date && (
