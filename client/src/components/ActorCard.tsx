@@ -8,6 +8,7 @@ interface ActorCardProps {
     onClick?: () => void;
     className?: string;
     showName?: boolean;
+    allowZoom?: boolean;
     children?: React.ReactNode; // For hint buttons or other actions
 }
 
@@ -19,6 +20,7 @@ export default function ActorCard({
     onClick,
     className = '',
     showName = true,
+    allowZoom = true,
     children
 }: ActorCardProps) {
     const [isZoomed, setIsZoomed] = useState(false);
@@ -72,7 +74,7 @@ export default function ActorCard({
         e.stopPropagation();
         if (onClick) {
             onClick();
-        } else if (profilePath) {
+        } else if (profilePath && allowZoom) {
             setIsZoomed(true);
         }
     };

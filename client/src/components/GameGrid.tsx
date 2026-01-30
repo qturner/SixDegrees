@@ -309,6 +309,7 @@ export default function GameGrid({
                                 variant="neutral"
                                 size="sm"
                                 showName={false}
+                                allowZoom={false}
                                 className="scale-75 origin-left"
                               />
                             </div>
