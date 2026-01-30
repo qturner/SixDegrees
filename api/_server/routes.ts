@@ -1521,7 +1521,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } : null,
         hasGoogleCredentials,
         repolyDomain,
-        sessionID: req.sessionID,
         environment: process.env.NODE_ENV || 'unknown'
       });
     } catch (error) {
@@ -1534,24 +1533,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Session test endpoint to diagnose OAuth state issues
   app.get("/api/debug/session-test", (req, res) => {
-    console.log(`🧪 Session test - Session ID: ${req.sessionID}`);
+    console.log(`🧪 Session test - Session exists: ${!!req.session}`);
     console.log(`🧪 Session exists:`, !!req.session);
     console.log(`🧪 Session contents:`, req.session);
 
     if (!req.session) {
-      return res.json({ error: 'No session found', sessionId: req.sessionID });
+      return res.json({ error: 'No session found' });
     }
 
     // Set a test value
     (req.session as any).testValue = 'test-' + Date.now();
-    req.session.save((err) => {
+    req.session.save((err: any) => {
       if (err) {
         console.error(`🧪 Session save error:`, err);
         return res.json({ error: 'Session save failed', details: err.message });
       }
       console.log(`🧪 Session saved successfully`);
       res.json({
-        sessionId: req.sessionID,
+        session: req.session,
         testValue: (req.session as any).testValue,
         success: true
       });
@@ -1560,12 +1559,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Session retrieve endpoint to test persistence
   app.get("/api/debug/session-retrieve", (req, res) => {
-    console.log(`🧪 Session retrieve - Session ID: ${req.sessionID}`);
+    console.log(`🧪 Session retrieve - Session exists: ${!!req.session}`);
     console.log(`🧪 Session exists:`, !!req.session);
     console.log(`🧪 Session contents:`, req.session);
 
     res.json({
-      sessionId: req.sessionID,
+      session: req.session,
       testValue: req.session ? (req.session as any).testValue : null,
       hasSession: !!req.session,
       sessionKeys: req.session ? Object.keys(req.session) : []

@@ -266,7 +266,6 @@ export async function setupAuth(app: Express) {
   app.get("/api/auth/debug-session", (req, res) => {
     res.json({
       timestamp: new Date().toISOString(),
-      sessionID: req.sessionID,
       hasSession: !!req.session,
       userId: (req.session as any)?.userId,
       passportUser: req.user,

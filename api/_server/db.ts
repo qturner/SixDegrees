@@ -6,9 +6,12 @@ import * as schema from "../../shared/schema.js";
 
 const isProd = process.env.NODE_ENV === 'production';
 
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
 // Only use WebSockets for the Pool (sessions)
 if (!isProd) {
-  const ws = (await import("ws")).default;
+  const ws = require("ws");
   neonConfig.webSocketConstructor = ws;
 }
 
