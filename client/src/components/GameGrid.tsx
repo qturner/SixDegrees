@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, RotateCcw, User, Film } from "lucide-react";
 import ActorSearch from "./ActorSearch";
 import MovieSearch from "./MovieSearch";
+import ActorCard from "./ActorCard";
 import { DailyChallenge, Connection, ValidationResult } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { trackGameEvent } from "@/lib/analytics";
@@ -166,14 +167,17 @@ export default function GameGrid({
 
       <div className="relative z-10">
         {/* Starting Actor */}
-        <div className="mb-6">
-          <h3 className="font-display text-lg text-deco-gold mb-3 text-center tracking-wide">
-            <User className="inline-block w-5 h-5 mr-2" />
+        <div className="mb-8 flex flex-col items-center">
+          <h3 className="font-display text-lg text-deco-gold mb-4 text-center tracking-wide flex items-center gap-2">
+            <User className="w-5 h-5" />
             Starting Actor
           </h3>
-          <div className="p-4 bg-gradient-to-r from-deco-gold to-deco-bronze text-deco-black text-center font-display font-semibold tracking-wide transition-all duration-200">
-            {challenge.startActorName}
-          </div>
+          <ActorCard
+            name={challenge.startActorName}
+            profilePath={challenge.startActorProfilePath}
+            variant="cyan"
+            size="md"
+          />
         </div>
 
         {/* Connection Chain */}
@@ -294,14 +298,17 @@ export default function GameGrid({
         </div>
 
         {/* Target Actor */}
-        <div className="mt-6">
-          <h3 className="font-display text-lg text-deco-gold mb-3 text-center tracking-wide">
-            <User className="inline-block w-5 h-5 mr-2" />
+        <div className="mt-8 flex flex-col items-center">
+          <h3 className="font-display text-lg text-deco-gold mb-4 text-center tracking-wide flex items-center gap-2">
+            <User className="w-5 h-5" />
             Target Actor
           </h3>
-          <div className="p-4 bg-gradient-to-r from-deco-gold to-deco-bronze text-deco-black text-center font-display font-semibold tracking-wide transition-all duration-200">
-            {challenge.endActorName}
-          </div>
+          <ActorCard
+            name={challenge.endActorName}
+            profilePath={challenge.endActorProfilePath}
+            variant="amber"
+            size="md"
+          />
         </div>
 
         {/* Game Actions */}

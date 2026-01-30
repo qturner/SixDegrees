@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { ArrowLeftRight, Infinity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HintResponse } from "@/hooks/useHints";
+import ActorCard from "./ActorCard";
 
 interface Challenge {
   id: string;
@@ -35,11 +35,6 @@ interface TodaysChallengeProps {
   endActorHint: HintResponse | null;
 }
 
-interface ZoomedActor {
-  name: string;
-  profilePath: string;
-}
-
 export default function TodaysChallenge({
   challenge,
   currentMoves,
@@ -53,17 +48,6 @@ export default function TodaysChallenge({
   startActorHint,
   endActorHint
 }: TodaysChallengeProps) {
-  const [zoomedActor, setZoomedActor] = useState<ZoomedActor | null>(null);
-
-  const handleImageClick = (name: string, profilePath: string | null | undefined) => {
-    if (profilePath) {
-      setZoomedActor({ name, profilePath });
-    }
-  };
-
-  const handleCloseModal = () => {
-    setZoomedActor(null);
-  };
 
   const displayChallenge = isFlipped
     ? {
@@ -98,48 +82,24 @@ export default function TodaysChallenge({
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8 w-full mb-8 max-w-2xl mx-auto">
 
           {/* Start Actor (Left - Blue/Cyan Theme) */}
-          <div className="flex flex-col items-center group justify-self-center">
-            <div className="relative mb-3">
-              {/* Glow Effect */}
-              <div className="absolute -inset-2 rounded-full bg-cyan-500/30 blur-md group-hover:bg-cyan-400/50 transition-all duration-500 opacity-60" />
-
-              {/* Image Container with Ring */}
-              <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full p-1 bg-gradient-to-b from-cyan-300 to-cyan-600 shadow-[0_0_20px_rgba(34,211,238,0.4)]">
-                <div className="w-full h-full rounded-full border-4 border-black overflow-hidden bg-black relative">
-                  {displayChallenge.startActorProfilePath ? (
-                    <img
-                      src={displayChallenge.startActorProfilePath.startsWith('http')
-                        ? displayChallenge.startActorProfilePath
-                        : `https://image.tmdb.org/t/p/w185${displayChallenge.startActorProfilePath}`}
-                      alt={displayChallenge.startActorName}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer"
-                      onClick={() => handleImageClick(displayChallenge.startActorName, displayChallenge.startActorProfilePath)}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-cyan-400 font-bold text-2xl">
-                      {displayChallenge.startActorName.charAt(0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Name */}
-            <h3 className="text-xl sm:text-2xl font-display font-bold text-white tracking-wide mb-2 text-center drop-shadow-md">
-              {displayChallenge.startActorName}
-            </h3>
-
-            {/* Hint Button */}
-            <button
-              onClick={() => onHint('start')}
-              disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
-              className={`text-sm tracking-widest uppercase py-1 px-3 rounded transition-all duration-300 ${startActorHint
-                ? 'text-cyan-300 font-semibold drop-shadow-[0_0_5px_rgba(103,232,249,0.8)]'
-                : 'text-white/60 hover:text-cyan-300 hover:drop-shadow-[0_0_5px_rgba(103,232,249,0.5)]'
-                }`}
+          <div className="justify-self-center">
+            <ActorCard
+              name={displayChallenge.startActorName}
+              profilePath={displayChallenge.startActorProfilePath}
+              variant="cyan"
+              size="md"
             >
-              {loadingHintType === 'start' ? 'Loading...' : (startActorHint ? 'View Hint' : 'Show Hint')}
-            </button>
+              <button
+                onClick={() => onHint('start')}
+                disabled={(hintsRemaining <= 0 && !startActorHint) || loadingHintType === 'start'}
+                className={`text-sm tracking-widest uppercase py-1 px-3 rounded transition-all duration-300 mt-2 ${startActorHint
+                  ? 'text-cyan-300 font-semibold drop-shadow-[0_0_5px_rgba(103,232,249,0.8)]'
+                  : 'text-white/60 hover:text-cyan-300 hover:drop-shadow-[0_0_5px_rgba(103,232,249,0.5)]'
+                  }`}
+              >
+                {loadingHintType === 'start' ? 'Loading...' : (startActorHint ? 'View Hint' : 'Show Hint')}
+              </button>
+            </ActorCard>
           </div>
 
           {/* Infinity Icon (Center) */}
@@ -148,48 +108,24 @@ export default function TodaysChallenge({
           </div>
 
           {/* End Actor (Right - Gold/Yellow Theme) */}
-          <div className="flex flex-col items-center group justify-self-center">
-            <div className="relative mb-3">
-              {/* Glow Effect */}
-              <div className="absolute -inset-2 rounded-full bg-amber-500/30 blur-md group-hover:bg-amber-400/50 transition-all duration-500 opacity-60" />
-
-              {/* Image Container with Ring */}
-              <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full p-1 bg-gradient-to-b from-amber-300 to-amber-600 shadow-[0_0_20px_rgba(251,191,36,0.4)]">
-                <div className="w-full h-full rounded-full border-4 border-black overflow-hidden bg-black relative">
-                  {displayChallenge.endActorProfilePath ? (
-                    <img
-                      src={displayChallenge.endActorProfilePath.startsWith('http')
-                        ? displayChallenge.endActorProfilePath
-                        : `https://image.tmdb.org/t/p/w185${displayChallenge.endActorProfilePath}`}
-                      alt={displayChallenge.endActorName}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer"
-                      onClick={() => handleImageClick(displayChallenge.endActorName, displayChallenge.endActorProfilePath)}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-amber-400 font-bold text-2xl">
-                      {displayChallenge.endActorName.charAt(0)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Name */}
-            <h3 className="text-xl sm:text-2xl font-display font-bold text-white tracking-wide mb-2 text-center drop-shadow-md">
-              {displayChallenge.endActorName}
-            </h3>
-
-            {/* Hint Button */}
-            <button
-              onClick={() => onHint('end')}
-              disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
-              className={`text-sm tracking-widest uppercase py-1 px-3 rounded transition-all duration-300 ${endActorHint
-                ? 'text-amber-300 font-semibold drop-shadow-[0_0_5px_rgba(252,211,77,0.8)]'
-                : 'text-white/60 hover:text-amber-300 hover:drop-shadow-[0_0_5px_rgba(252,211,77,0.5)]'
-                }`}
+          <div className="justify-self-center">
+            <ActorCard
+              name={displayChallenge.endActorName}
+              profilePath={displayChallenge.endActorProfilePath}
+              variant="amber"
+              size="md"
             >
-              {loadingHintType === 'end' ? 'Loading...' : (endActorHint ? 'View Hint' : 'Show Hint')}
-            </button>
+              <button
+                onClick={() => onHint('end')}
+                disabled={(hintsRemaining <= 0 && !endActorHint) || loadingHintType === 'end'}
+                className={`text-sm tracking-widest uppercase py-1 px-3 rounded transition-all duration-300 mt-2 ${endActorHint
+                  ? 'text-amber-300 font-semibold drop-shadow-[0_0_5px_rgba(252,211,77,0.8)]'
+                  : 'text-white/60 hover:text-amber-300 hover:drop-shadow-[0_0_5px_rgba(252,211,77,0.5)]'
+                  }`}
+              >
+                {loadingHintType === 'end' ? 'Loading...' : (endActorHint ? 'View Hint' : 'Show Hint')}
+              </button>
+            </ActorCard>
           </div>
         </div>
 
@@ -221,24 +157,6 @@ export default function TodaysChallenge({
 
       </div>
 
-      {/* Zoom Modal Overlay */}
-      {zoomedActor && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 cursor-pointer backdrop-blur-md"
-          onClick={handleCloseModal}
-        >
-          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={zoomedActor.profilePath.startsWith('http')
-                ? zoomedActor.profilePath
-                : `https://image.tmdb.org/t/p/w500${zoomedActor.profilePath}`}
-              alt={zoomedActor.name}
-              className="w-72 h-72 sm:w-96 sm:h-96 rounded-full object-cover border-4 border-deco-gold shadow-[0_0_50px_rgba(196,151,49,0.3)]"
-            />
-            <p className="mt-6 font-display text-white text-3xl tracking-wide drop-shadow-lg">{zoomedActor.name}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
