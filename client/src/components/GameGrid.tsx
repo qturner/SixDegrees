@@ -274,20 +274,7 @@ export default function GameGrid({
                         </label>
 
                         <div className="flex items-center gap-4">
-                          {/* Small Headshot Display */}
-                          {(connection.actorName) && (
-                            <div className="shrink-0">
-                              <ActorCard
-                                name={connection.actorName}
-                                profilePath={connection.actorProfilePath}
-                                variant="neutral"
-                                size="sm"
-                                showName={false}
-                                allowZoom={false}
-                                className="scale-75 origin-left"
-                              />
-                            </div>
-                          )}
+
 
                           <div className="relative flex-grow">
                             <ActorSearch
@@ -380,6 +367,24 @@ export default function GameGrid({
                         transform: 'translate(-50%, -50%)'
                       }}
                     />
+
+                    {/* Centered Actor Node - Shown when validated */}
+                    {validationResult?.valid && connection.actorName && (
+                      <div className="absolute top-[100px] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-50 animate-in fade-in zoom-in duration-500">
+                        <div className="relative group/actor">
+                          <div className="absolute -inset-4 bg-emerald-500/20 rounded-full blur-xl opacity-0 group-hover/actor:opacity-100 transition-opacity" />
+                          <ActorCard
+                            name={connection.actorName}
+                            profilePath={connection.actorProfilePath}
+                            variant="cyan"
+                            size="sm"
+                            showName={true}
+                            allowZoom={true}
+                            className="scale-90 shadow-[0_0_20px_rgba(34,211,238,0.4)]"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
