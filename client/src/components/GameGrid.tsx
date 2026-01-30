@@ -188,7 +188,7 @@ export default function GameGrid({
         </div>
 
         {/* Connection Chain */}
-        <div className="space-y-4">
+        <div className="space-y-4 md:space-y-0">
           {connectionSlots.map((connection, index) => {
             const validationResult = validationResults?.[index];
             const isLastConnection = index === connectionSlots.length - 1;
@@ -204,8 +204,10 @@ export default function GameGrid({
             return (
               <div
                 key={`connection-${index}`}
-                className={`group relative md:w-1/3 transition-all duration-300 ${index % 2 === 0 ? 'md:mr-auto md:ml-0' : 'md:ml-auto md:mr-0'
-                  }`}
+                className={`group relative md:w-1/3 transition-all duration-300 
+                  ${index % 2 === 0 ? 'md:mr-auto md:ml-0' : 'md:ml-auto md:mr-0'}
+                  ${index > 0 ? 'md:-mt-24' : ''}
+                `}
               >
                 {/* Glow effect behind card */}
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-70 transition-opacity duration-300" />
