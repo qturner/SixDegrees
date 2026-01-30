@@ -210,10 +210,11 @@ export default function GameGrid({
                 `}
               >
                 {/* Cosmic Connector Line (Desktop Only) */}
+                {/* Cosmic Connector Line (Desktop Only) */}
                 {!isLastConnection && (
-                  <div className={`hidden md:block absolute top-1/2 w-[100%] pointer-events-none z-0 ${index % 2 === 0
-                    ? '-right-[90%] rotate-0' // Left Card -> Right
-                    : '-left-[90%] rotate-180' // Right Card -> Left
+                  <div className={`hidden md:block absolute top-1/2 w-[120%] pointer-events-none z-10 ${index % 2 === 0
+                    ? '-right-[100%] rotate-0' // Left Card -> Right
+                    : '-left-[100%] rotate-180' // Right Card -> Left
                     }`}>
                     <svg
                       width="100%"
@@ -224,13 +225,13 @@ export default function GameGrid({
                       <defs>
                         <linearGradient id={`cosmic-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#22d3ee" stopOpacity="0" />
-                          <stop offset="20%" stopColor="#22d3ee" stopOpacity="0.8" />
+                          <stop offset="25%" stopColor="#22d3ee" stopOpacity="1" />
                           <stop offset="50%" stopColor="#a855f7" stopOpacity="1" />
-                          <stop offset="80%" stopColor="#fbbf24" stopOpacity="0.8" />
+                          <stop offset="75%" stopColor="#fbbf24" stopOpacity="1" />
                           <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
                         </linearGradient>
-                        <filter id="glow">
-                          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                        <filter id="glow-${index}">
+                          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
                           <feMerge>
                             <feMergeNode in="coloredBlur" />
                             <feMergeNode in="SourceGraphic" />
@@ -238,18 +239,19 @@ export default function GameGrid({
                         </filter>
                       </defs>
                       <path
-                        d="M 10,50 C 60,50 140,50 190,50"
+                        d="M 0,50 C 60,50 140,50 200,50"
                         stroke={`url(#cosmic-gradient-${index})`}
-                        strokeWidth="3"
+                        strokeWidth="5"
                         fill="none"
-                        filter="url(#glow)"
-                        className="animate-pulse-slow opacity-80"
+                        filter={`url(#glow-${index})`}
+                        className="animate-pulse-slow opacity-100"
                       />
                     </svg>
                   </div>
                 )}
                 {/* Glow effect behind card */}
-                <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-70 transition-opacity duration-300" />
+                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-60 blur-md transition-opacity duration-500" />
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-0 transition-opacity duration-300" />
 
                 {/* Main card - Updated border to gradient ring style */}
                 <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black p-[2px] rounded-lg shadow-[0_4px_16px_rgba(196,151,49,0.15)] hover:shadow-[0_6px_24px_rgba(196,151,49,0.25)] transition-all duration-200">
