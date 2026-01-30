@@ -68,9 +68,9 @@ export default {
         "game-warning": "var(--game-warning)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)"],
+        sans: ["Anton", "sans-serif"],
         serif: ["var(--font-serif)"],
-        display: ["var(--font-display)"],
+        display: ["Anton", "sans-serif"],
         mono: ["var(--font-mono)"],
       },
       keyframes: {
