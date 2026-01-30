@@ -2,23 +2,25 @@ import { HelpCircle, Trophy } from "lucide-react";
 
 export default function GameInstructions() {
   return (
-    <div id="how-to-play" className="deco-card deco-corners p-6 sm:p-8 mb-8 relative overflow-hidden">
+    <div id="how-to-play" className="deco-card deco-corners p-6 sm:p-8 mb-8 relative overflow-hidden backdrop-blur-md bg-deco-black/40 border border-white/10">
+      {/* Subtle background effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-transparent to-amber-900/20 pointer-events-none" />
       {/* Subtle pattern overlay */}
       <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
-      
+
       <div className="relative z-10">
         <h3 className="font-display text-xl sm:text-2xl text-deco-gold mb-2 text-center tracking-wide">
           <HelpCircle className="inline-block w-5 h-5 mr-2 mb-1" />
           How to Play
         </h3>
-        
+
         {/* Decorative divider */}
         <div className="flex items-center justify-center gap-3 mb-6">
           <div className="h-px w-12 bg-gradient-to-r from-transparent to-deco-gold/40" />
           <div className="w-1.5 h-1.5 rotate-45 bg-deco-gold/60" />
           <div className="h-px w-12 bg-gradient-to-l from-transparent to-deco-gold/40" />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
             <h4 className="font-display text-lg text-deco-gold mb-4 tracking-wide">Game Rules</h4>
@@ -37,7 +39,7 @@ export default function GameInstructions() {
               </li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-display text-lg text-deco-gold mb-4 tracking-wide">Example Chain</h4>
             <div className="space-y-2 text-sm">
