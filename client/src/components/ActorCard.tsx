@@ -83,6 +83,7 @@ export default function ActorCard({
                 <div className="relative mb-3">
                     {/* Glow Effect */}
                     <div className={`absolute -inset-2 rounded-full blur-md transition-all duration-500 opacity-60 ${colors.glow}`} />
+                    <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-80 blur-xl transition-all duration-500" />
 
                     {/* Image Container with Ring */}
                     <div className={`relative rounded-full p-1 bg-gradient-to-b ${colors.ring} ${colors.shadow} ${sizeClasses[size]}`}>
