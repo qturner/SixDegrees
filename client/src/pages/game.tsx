@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
+import Portal from "@/components/ui/portal";
 import { Button } from "@/components/ui/button";
 import { Shield, User } from "lucide-react";
 import GameHeader from "@/components/GameHeader";
@@ -343,44 +344,50 @@ export default function Game() {
   return (
     <div className="min-h-screen text-game-text font-sans flex flex-col">
       {/* Auth UI - Bottom Left */}
-      <div className="fixed bottom-4 left-4 z-50 transition-opacity duration-300">
-        {user ? (
-          <UserMenu />
-        ) : (
-          <Button
-            size="sm"
-            className="flex items-center gap-2 bg-deco-gold text-deco-charcoal hover:bg-deco-gold/80 hover:text-black transition-colors font-bold shadow-lg border border-transparent"
-            onClick={() => setIsAuthModalOpen(true)}
-            data-testid="button-signin"
-          >
-            <User className="w-4 h-4 mr-2" />
-            <span className="font-medium">Sign In</span>
-          </Button>
-        )}
-      </div>
+      {/* Auth UI - Bottom Left - Portalled to escape transforms */}
+      <Portal>
+        <div className="fixed bottom-4 left-4 z-50 transition-opacity duration-300">
+          {user ? (
+            <UserMenu />
+          ) : (
+            <Button
+              size="sm"
+              className="flex items-center gap-2 bg-deco-gold text-deco-charcoal hover:bg-deco-gold/80 hover:text-black transition-colors font-bold shadow-lg border border-transparent"
+              onClick={() => setIsAuthModalOpen(true)}
+              data-testid="button-signin"
+            >
+              <User className="w-4 h-4 mr-2" />
+              <span className="font-medium">Sign In</span>
+            </Button>
+          )}
+        </div>
+      </Portal>
 
       <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
 
       {/* Admin Login - Bottom right, only visible when scrolled to bottom */}
-      {isAtBottom && (
-        <div className="fixed bottom-4 right-4 z-50 transition-opacity duration-300">
-          {currentUser ? (
-            <UserMenu />
-          ) : (
-            <Link href="/admin-login">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 bg-deco-charcoal/90 backdrop-blur-sm border-deco-gold/30 shadow-lg hover:border-deco-gold text-deco-gold hover:text-deco-gold-light transition-all duration-200"
-                data-testid="button-admin"
-              >
-                <Shield className="h-4 w-4" />
-                Admin
-              </Button>
-            </Link>
-          )}
-        </div>
-      )}
+      {/* Admin Login - Bottom right, only visible when scrolled to bottom */}
+      <Portal>
+        {isAtBottom && (
+          <div className="fixed bottom-4 right-4 z-50 transition-opacity duration-300">
+            {currentUser ? (
+              <UserMenu />
+            ) : (
+              <Link href="/admin-login">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 bg-deco-charcoal/90 backdrop-blur-sm border-deco-gold/30 shadow-lg hover:border-deco-gold text-deco-gold hover:text-deco-gold-light transition-all duration-200"
+                  data-testid="button-admin"
+                >
+                  <Shield className="h-4 w-4" />
+                  Admin
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
+      </Portal>
 
       <GameHeader
         challenge={challenge}
