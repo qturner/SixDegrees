@@ -232,7 +232,7 @@ export default function GameGrid({
                     ${validationResult?.valid ? 'opacity-20' : 'opacity-40 group-hover:opacity-60'}
                   `} />
 
-                  <div className="relative bg-black rounded-lg p-4 space-y-4">
+                  <div className="relative bg-black rounded-lg p-4 space-y-4 h-[300px] flex flex-col overflow-hidden">
 
                     <h4 className="text-xs font-medium text-deco-pewter text-center uppercase tracking-wider">
                       Connection {index + 1} of {connectionSlots.length}
@@ -315,7 +315,7 @@ export default function GameGrid({
 
                 {/* Cosmic Connector Line (Desktop Only) - Perfected Cosmic Style */}
                 {!isLastConnection && (
-                  <div className={`hidden md:block absolute top-[50%] w-[100%] h-[250px] pointer-events-none z-40 ${index % 2 === 0
+                  <div className={`hidden md:block absolute top-[150px] w-[100%] h-[250px] pointer-events-none z-40 ${index % 2 === 0
                     ? 'left-[100%]' // From Left card rightward
                     : 'right-[100%]' // From Right card leftward
                     }`}>
@@ -372,15 +372,15 @@ export default function GameGrid({
                     {validationResult?.valid && connection.actorName && (
                       <div className="absolute top-[100px] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-50 animate-in fade-in zoom-in duration-500">
                         <div className="relative group/actor">
-                          <div className="absolute -inset-4 bg-emerald-500/20 rounded-full blur-xl opacity-0 group-hover/actor:opacity-100 transition-opacity" />
                           <ActorCard
                             name={connection.actorName}
                             profilePath={connection.actorProfilePath}
                             variant="cyan"
                             size="sm"
-                            showName={true}
+                            showName={false}
+                            minimal={true}
                             allowZoom={true}
-                            className="scale-90 shadow-[0_0_20px_rgba(34,211,238,0.4)]"
+                            className="scale-110"
                           />
                         </div>
                       </div>

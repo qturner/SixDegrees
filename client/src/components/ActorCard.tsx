@@ -9,7 +9,8 @@ interface ActorCardProps {
     className?: string;
     showName?: boolean;
     allowZoom?: boolean;
-    children?: React.ReactNode; // For hint buttons or other actions
+    minimal?: boolean; // New prop to remove borders/shade
+    children?: React.ReactNode;
 }
 
 export default function ActorCard({
@@ -21,19 +22,13 @@ export default function ActorCard({
     className = '',
     showName = true,
     allowZoom = true,
+    minimal = false,
     children
 }: ActorCardProps) {
     const [isZoomed, setIsZoomed] = useState(false);
 
     // Size mappings
     const sizeClasses = {
-        sm: "w-20 h-20",
-        md: "w-32 h-32 sm:w-40 sm:h-40",
-        lg: "w-40 h-40 sm:w-48 sm:h-48",
-        xl: "w-48 h-48 sm:w-64 sm:h-64"
-    };
-
-    const imageSizeClasses = {
         sm: "w-20 h-20",
         md: "w-32 h-32 sm:w-40 sm:h-40",
         lg: "w-40 h-40 sm:w-48 sm:h-48",
@@ -83,13 +78,23 @@ export default function ActorCard({
         <>
             <div className={`flex flex-col items-center group ${className}`}>
                 <div className="relative mb-3">
-                    {/* Glow Effect */}
-                    <div className={`absolute -inset-2 rounded-full blur-md transition-all duration-500 opacity-60 ${colors.glow}`} />
-                    <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-80 blur-xl transition-all duration-500" />
+                    {/* Glow Effect - Hidden if minimal */}
+                    {!minimal && (
+                        <>
+                            <div className={`absolute -inset-2 rounded-full blur-md transition-all duration-500 opacity-60 ${colors.glow}`} />
+                            <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-80 blur-xl transition-all duration-500" />
+                        </>
+                    )}
 
-                    {/* Image Container with Ring */}
-                    <div className={`relative rounded-full p-1 bg-gradient-to-b ${colors.ring} ${colors.shadow} ${sizeClasses[size]}`}>
-                        <div className="w-full h-full rounded-full border-4 border-black overflow-hidden bg-black relative">
+                    {/* Image Container with Ring - Simplified if minimal */}
+                    <div className={`relative rounded-full overflow-hidden transition-all duration-300
+                        ${minimal
+                            ? `border-2 border-white/20 shadow-lg ${sizeClasses[size]}`
+                            : `p-1 bg-gradient-to-b ${colors.ring} ${colors.shadow} ${sizeClasses[size]}`
+                        }`}>
+                        <div className={`w-full h-full rounded-full overflow-hidden relative
+                            ${minimal ? '' : 'border-4 border-black bg-black'}
+                        `}>
                             {profilePath ? (
                                 <img
                                     src={profilePath.startsWith('http')
