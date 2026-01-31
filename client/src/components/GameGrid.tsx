@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, RotateCcw, User, Film } from "lucide-react";
@@ -18,6 +18,7 @@ interface GameGridProps {
   onValidationResult: (index: number, result: ValidationResult | null) => void;
   onGameResult: (result: ValidationResult) => void;
   onReset: () => void;
+  gameResult: ValidationResult | null;
 }
 
 export default function GameGrid({
@@ -27,7 +28,8 @@ export default function GameGrid({
   onConnectionUpdate,
   onValidationResult,
   onGameResult,
-  onReset
+  onReset,
+  gameResult
 }: GameGridProps) {
   const [validatingIndex, setValidatingIndex] = useState<number | null>(null);
 
@@ -165,6 +167,33 @@ export default function GameGrid({
   const connectionSlots = Array.from({ length: 6 }, (_, index) =>
     connections[index] || { actorId: 0, actorName: "", movieId: 0, movieTitle: "" }
   );
+
+  // Auto-validation logic: Trigger game completion when target is reached
+  useEffect(() => {
+    // Only proceed if game isn't already finished
+    if (gameResult?.completed) return;
+
+    // Check if any connection matches the target actor and is valid
+    const targetIndex = connections.findIndex(c => c.actorId === challenge.endActorId);
+
+    if (targetIndex !== -1) {
+      // Check if this connection and all previous ones are valid
+      const allPreviousValid = Array.from({ length: targetIndex + 1 }).every((_, i) =>
+        validationResults[i]?.valid === true
+      );
+
+      if (allPreviousValid && !validateGameMutation.isPending) {
+        // Trigger the full game validation automatically
+        const validConnections = connections.slice(0, targetIndex + 1);
+
+        validateGameMutation.mutate({
+          connections: validConnections,
+          startActorId: challenge.startActorId,
+          endActorId: challenge.endActorId,
+        });
+      }
+    }
+  }, [connections, validationResults, gameResult?.completed, challenge.endActorId, challenge.startActorId, validateGameMutation.isPending]);
 
   return (
     <div className="deco-card p-6 sm:p-10 mb-8 relative md:overflow-visible backdrop-blur-md bg-deco-black/40 border border-white/10">
@@ -411,24 +440,12 @@ export default function GameGrid({
         </div>
 
         {/* Game Actions */}
-        <div className="mt-8 flex flex-col gap-4 justify-center">
-          <p className="text-center text-sm text-deco-cream/70">
-            Finished? Verify your connections here!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              onClick={handleValidateGame}
-              disabled={validateGameMutation.isPending || connections.length === 0}
-              className="px-8 py-3 deco-button uppercase tracking-wider transition-all duration-200"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              {validateGameMutation.isPending ? "Validating..." : "Validate"}
-            </Button>
-
+        <div className="mt-8 flex justify-center">
+          <div className="flex justify-center">
             <Button
               onClick={handleReset}
               variant="outline"
-              className="px-8 py-3 border-2 border-deco-pewter/50 text-deco-pewter hover:border-deco-gold hover:text-deco-gold bg-transparent uppercase tracking-wider transition-all duration-200"
+              className="px-12 py-3 border-2 border-deco-pewter/50 text-deco-pewter hover:border-deco-gold hover:text-deco-gold bg-transparent uppercase tracking-wider transition-all duration-200"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset

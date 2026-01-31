@@ -424,6 +424,7 @@ export default function Game() {
           onValidationResult={handleValidationResult}
           onGameResult={handleGameResult}
           onReset={resetGame}
+          gameResult={gameResult}
         />
 
         <ValidationFeedback
