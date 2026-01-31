@@ -173,36 +173,18 @@ export default function GameGrid({
       <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
 
       <div className="relative z-10">
-        {/* Starting Actor - Standardized for Graph Anchoring */}
-        <div className="mb-8 flex flex-col items-center relative h-[220px]">
+        {/* Starting Actor */}
+        <div className="mb-8 flex flex-col items-center">
           <h3 className="font-display text-lg text-deco-gold mb-4 text-center tracking-wide flex items-center gap-2">
             <User className="w-5 h-5" />
             Starting Actor
           </h3>
-          <div className="relative z-50">
-            <ActorCard
-              name={challenge.startActorName}
-              profilePath={challenge.startActorProfilePath}
-              variant="cyan"
-              size="md"
-            />
-          </div>
-
-          {/* Graphical Connector: Start -> First Connection Card */}
-          <div className="hidden md:block absolute top-[120px] left-[50%] w-[16.6%] h-[250px] pointer-events-none z-0">
-            <svg width="100%" height="100%" viewBox="0 0 100 250" preserveAspectRatio="none" className="overflow-visible">
-              <defs>
-                <linearGradient id="start-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#22d3ee" />
-                  <stop offset="100%" stopColor="#a855f7" />
-                </linearGradient>
-              </defs>
-              <line
-                x1="0" y1="0" x2="-100" y2="250"
-                stroke="url(#start-gradient)" strokeWidth="1.5" className="opacity-40"
-              />
-            </svg>
-          </div>
+          <ActorCard
+            name={challenge.startActorName}
+            profilePath={challenge.startActorProfilePath}
+            variant="cyan"
+            size="md"
+          />
         </div>
 
         {/* Connection Chain */}
@@ -404,43 +386,23 @@ export default function GameGrid({
                     )}
                   </div>
                 )}
-
-                {/* Final Connection Connector -> Target Actor */}
-                {isLastConnection && (
-                  <div className="hidden md:block absolute top-[150px] left-[50%] w-[16.6%] h-[250px] pointer-events-none z-0">
-                    <svg width="100%" height="100%" viewBox="0 0 100 250" preserveAspectRatio="none" className="overflow-visible">
-                      <defs>
-                        <linearGradient id="end-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#22d3ee" />
-                          <stop offset="100%" stopColor="#a855f7" />
-                        </linearGradient>
-                      </defs>
-                      <line
-                        x1="100" y1="0" x2="0" y2="250"
-                        stroke="url(#end-gradient)" strokeWidth="1.5" className="opacity-40"
-                      />
-                    </svg>
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
 
-        {/* Target Actor - Standardized for Graph Anchoring */}
-        <div className="mt-8 flex flex-col items-center h-[220px] relative">
+        {/* Target Actor */}
+        <div className="mt-8 flex flex-col items-center">
           <h3 className="font-display text-lg text-deco-gold mb-4 text-center tracking-wide flex items-center gap-2">
             <User className="w-5 h-5" />
             Target Actor
           </h3>
-          <div className="relative z-50">
-            <ActorCard
-              name={challenge.endActorName}
-              profilePath={challenge.endActorProfilePath}
-              variant="amber"
-              size="md"
-            />
-          </div>
+          <ActorCard
+            name={challenge.endActorName}
+            profilePath={challenge.endActorProfilePath}
+            variant="amber"
+            size="md"
+          />
         </div>
 
         {/* Game Actions */}
