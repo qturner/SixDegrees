@@ -10,6 +10,7 @@ interface ActorCardProps {
     showName?: boolean;
     allowZoom?: boolean;
     minimal?: boolean; // New prop to remove borders/shade
+    nameClassName?: string;
     children?: React.ReactNode;
 }
 
@@ -23,6 +24,7 @@ export default function ActorCard({
     showName = true,
     allowZoom = true,
     minimal = false,
+    nameClassName = '',
     children
 }: ActorCardProps) {
     const [isZoomed, setIsZoomed] = useState(false);
@@ -116,7 +118,7 @@ export default function ActorCard({
 
                 {/* Name */}
                 {showName && (
-                    <h3 className="text-xl sm:text-2xl font-display font-bold text-white tracking-wide mb-2 text-center drop-shadow-md">
+                    <h3 className={`text-xl sm:text-2xl font-display font-bold text-white tracking-wide mb-2 text-center drop-shadow-md ${nameClassName}`}>
                         {name}
                     </h3>
                 )}

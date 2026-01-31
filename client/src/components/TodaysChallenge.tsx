@@ -89,6 +89,7 @@ export default function TodaysChallenge({
               profilePath={displayChallenge.startActorProfilePath}
               variant="cyan"
               size="md"
+              nameClassName="min-h-[3.5rem] sm:min-h-[4rem] flex items-center justify-center"
             >
               <button
                 onClick={() => onHint('start')}
@@ -115,6 +116,7 @@ export default function TodaysChallenge({
               profilePath={displayChallenge.endActorProfilePath}
               variant="amber"
               size="md"
+              nameClassName="min-h-[3.5rem] sm:min-h-[4rem] flex items-center justify-center"
             >
               <button
                 onClick={() => onHint('end')}
