@@ -315,14 +315,14 @@ export default function GameGrid({
 
                 {/* Cosmic Connector Line (Desktop Only) - Perfected Cosmic Style */}
                 {!isLastConnection && (
-                  <div className={`hidden md:block absolute top-[150px] w-[100%] h-[250px] pointer-events-none z-40 ${index % 2 === 0
+                  <div className={`hidden md:block absolute top-[150px] w-[100%] h-[204px] pointer-events-none z-40 ${index % 2 === 0
                     ? 'left-[100%]' // From Left card rightward
                     : 'right-[100%]' // From Right card leftward
                     }`}>
                     <svg
                       width="100%"
                       height="100%"
-                      viewBox="0 0 100 250"
+                      viewBox="0 0 100 204"
                       className="overflow-visible"
                       preserveAspectRatio="none"
                     >
@@ -337,18 +337,19 @@ export default function GameGrid({
                         </filter>
                       </defs>
 
-                      {/* elegant narrowed diagonal line with 60% opacity */}
+                      {/* elegant narrowed diagonal line with 60% opacity - perfectly anchored to centers */}
                       <line
                         x1={index % 2 === 0 ? "0" : "100"}
                         y1="0"
                         x2={index % 2 === 0 ? "100" : "0"}
-                        y2="200"
+                        y2="204"
                         stroke={`url(#cosmic-gradient-${index})`}
                         strokeWidth="1.5"
                         className="opacity-60"
                         style={{ filter: `url(#cosmic-glow-${index})` }}
                       />
                     </svg>
+
 
                     {/* Connection Nodes (Perfect circular dots) */}
                     <div
@@ -362,7 +363,7 @@ export default function GameGrid({
                     <div
                       className="absolute w-2 h-2 rounded-full bg-[#a855f7] shadow-[0_0_8px_rgba(168,85,247,0.8)]"
                       style={{
-                        top: '200px',
+                        top: '204px',
                         left: index % 2 === 0 ? '100%' : '0',
                         transform: 'translate(-50%, -50%)'
                       }}
@@ -370,7 +371,7 @@ export default function GameGrid({
 
                     {/* Centered Actor Node - Shown when validated */}
                     {validationResult?.valid && connection.actorName && (
-                      <div className="absolute top-[100px] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-50 animate-in fade-in zoom-in duration-500">
+                      <div className="absolute top-[102px] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-50 animate-in fade-in zoom-in duration-500">
                         <div className="relative group/actor">
                           <ActorCard
                             name={connection.actorName}

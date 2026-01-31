@@ -89,7 +89,7 @@ export default function ActorCard({
                     {/* Image Container with Ring - Simplified if minimal */}
                     <div className={`relative rounded-full overflow-hidden transition-all duration-300
                         ${minimal
-                            ? `border-2 border-white/20 shadow-lg ${sizeClasses[size]}`
+                            ? `${sizeClasses[size]}`
                             : `p-1 bg-gradient-to-b ${colors.ring} ${colors.shadow} ${sizeClasses[size]}`
                         }`}>
                         <div className={`w-full h-full rounded-full overflow-hidden relative
