@@ -1720,7 +1720,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const activeChallenge = await storage.getChallengeByStatus('active');
         if (activeChallenge) {
-          await storage.deleteDailyChallenge(activeChallenge.date);
+          console.log(`Archiving former active challenge: ${activeChallenge.date}`);
+          await storage.updateChallengeStatus(activeChallenge.id, 'archived');
         }
 
         await storage.deleteDailyChallenge(nextChallenge.date);

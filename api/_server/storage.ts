@@ -616,9 +616,9 @@ export class DatabaseStorage implements IStorage {
     moves?: number;
   }[]> {
     return await withRetry(async () => {
-      // Get recent challenges
+      // Get recent challenges (active or archived)
       const recentChallenges = await db.select().from(dailyChallenges)
-        .where(eq(dailyChallenges.status, 'active'))
+        .where(sql`${dailyChallenges.status} IN ('active', 'archived')`)
         .orderBy(desc(dailyChallenges.date))
         .limit(limit);
 
