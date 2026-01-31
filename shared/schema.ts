@@ -269,6 +269,7 @@ export type InsertUserChallengeCompletion = typeof userChallengeCompletions.$inf
 
 export const insertUserChallengeCompletionSchema = createInsertSchema(userChallengeCompletions).omit({
   id: true,
+  userId: true,
   completedAt: true,
 });
 
