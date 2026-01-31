@@ -83,7 +83,7 @@ export default function TodaysChallenge({
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-8 w-full mb-8 max-w-2xl mx-auto">
 
           {/* Start Actor (Left - Blue/Cyan Theme) */}
-          <div className="justify-self-center">
+          <div className="justify-self-center self-start">
             <ActorCard
               name={displayChallenge.startActorName}
               profilePath={displayChallenge.startActorProfilePath}
@@ -109,7 +109,7 @@ export default function TodaysChallenge({
           </div>
 
           {/* End Actor (Right - Gold/Yellow Theme) */}
-          <div className="justify-self-center">
+          <div className="justify-self-center self-start">
             <ActorCard
               name={displayChallenge.endActorName}
               profilePath={displayChallenge.endActorProfilePath}
