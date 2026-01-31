@@ -71,7 +71,7 @@ export default function TodaysChallenge({
   const status = getGameStatus();
 
   return (
-    <div className="deco-card deco-corners p-6 sm:p-10 mb-6 sm:mb-8 relative overflow-hidden backdrop-blur-md bg-deco-black/40 border border-white/10">
+    <div className="deco-card p-6 sm:p-10 mb-6 sm:mb-8 relative overflow-hidden backdrop-blur-md bg-deco-black/40 border border-white/10">
       {/* Subtle background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-transparent to-amber-900/20 pointer-events-none" />
 

@@ -167,7 +167,7 @@ export default function GameGrid({
   );
 
   return (
-    <div className="deco-card deco-corners p-6 sm:p-10 mb-8 relative md:overflow-visible backdrop-blur-md bg-deco-black/40 border border-white/10">
+    <div className="deco-card p-6 sm:p-10 mb-8 relative md:overflow-visible backdrop-blur-md bg-deco-black/40 border border-white/10">
       {/* Subtle background effects matched from TodaysChallenge */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-transparent to-amber-900/20 pointer-events-none" />
       <div className="absolute inset-0 art-deco-bg opacity-20 pointer-events-none" />
