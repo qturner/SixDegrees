@@ -174,7 +174,7 @@ export default function GameGrid({
 
       <div className="relative z-10">
         {/* Starting Actor */}
-        <div className="mb-8 flex flex-col items-center">
+        <div className="mb-4 flex flex-col items-center">
           <h3 className="font-display text-lg text-deco-gold mb-4 text-center tracking-wide flex items-center gap-2">
             <User className="w-5 h-5" />
             Starting Actor
@@ -187,8 +187,8 @@ export default function GameGrid({
           />
         </div>
 
-        {/* Connection Chain */}
-        <div className="space-y-4 md:space-y-0">
+        {/* Connection Chain - Precision Anchored System */}
+        <div className="relative space-y-4 md:space-y-0 md:min-h-[1400px]">
           {connectionSlots.map((connection, index) => {
             const validationResult = validationResults?.[index];
             const isLastConnection = index === connectionSlots.length - 1;
@@ -204,188 +204,193 @@ export default function GameGrid({
             return (
               <div
                 key={`connection-${index}`}
-                className={`group relative md:w-1/3 transition-all duration-300 
-                  ${index % 2 === 0 ? 'md:mr-auto md:ml-0' : 'md:ml-auto md:mr-0'}
-                  ${index > 0 ? 'md:-mt-24' : ''}
+                className={`group md:absolute w-full transition-all duration-300
+                  ${index % 2 === 0 ? 'md:left-0' : 'md:left-0'}
                 `}
-                style={{ zIndex: 50 - index }}
+                style={{
+                  zIndex: 50 - index,
+                  top: `calc(${index} * 204px)` // Mathematically perfect vertical step
+                }}
               >
-                {/* Glow effect behind card */}
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-60 blur-md transition-opacity duration-500" />
-                <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-0 transition-opacity duration-300" />
+                <div className={`relative md:w-1/3 ${index % 2 === 0 ? 'md:mr-auto md:ml-0' : 'md:ml-auto md:mr-0'}`}>
+                  {/* Glow effect behind card */}
+                  {/* Glow effect behind card */}
+                  <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-60 blur-md transition-opacity duration-500" />
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-0 transition-opacity duration-300" />
 
 
-                {/* Main card - Updated border to gradient ring style */}
-                <div className={`relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black p-[2px] rounded-lg transition-all duration-300 
+                  {/* Main card - Updated border to gradient ring style */}
+                  <div className={`relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black p-[2px] rounded-lg transition-all duration-300 
                   ${validationResult?.valid
-                    ? 'ring-2 ring-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.3)]'
-                    : 'shadow-[0_4px_16px_rgba(196,151,49,0.15)] hover:shadow-[0_6px_24px_rgba(196,151,49,0.25)]'}
+                      ? 'ring-2 ring-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.3)]'
+                      : 'shadow-[0_4px_16px_rgba(196,151,49,0.15)] hover:shadow-[0_6px_24px_rgba(196,151,49,0.25)]'}
                 `}>
-                  {/* Validation Checkmark */}
-                  {validationResult?.valid && (
-                    <div className="absolute -top-3 -right-3 z-50 bg-emerald-500 rounded-full p-1 shadow-[0_0_15px_rgba(16,185,129,0.6)] animate-in zoom-in duration-300 scale-110">
-                      <CheckCircle className="w-5 h-5 text-white" />
-                    </div>
-                  )}
+                    {/* Validation Checkmark */}
+                    {validationResult?.valid && (
+                      <div className="absolute -top-3 -right-3 z-50 bg-emerald-500 rounded-full p-1 shadow-[0_0_15px_rgba(16,185,129,0.6)] animate-in zoom-in duration-300 scale-110">
+                        <CheckCircle className="w-5 h-5 text-white" />
+                      </div>
+                    )}
 
-                  <div className={`absolute inset-0 bg-gradient-to-br from-deco-gold via-deco-bronze to-transparent rounded-lg transition-opacity duration-300 
+                    <div className={`absolute inset-0 bg-gradient-to-br from-deco-gold via-deco-bronze to-transparent rounded-lg transition-opacity duration-300 
                     ${validationResult?.valid ? 'opacity-20' : 'opacity-40 group-hover:opacity-60'}
                   `} />
 
-                  <div className="relative bg-black rounded-lg p-4 space-y-4 h-[300px] flex flex-col overflow-hidden">
+                    <div className="relative bg-black rounded-lg p-4 space-y-4 h-[300px] flex flex-col overflow-hidden">
 
-                    <h4 className="text-xs font-medium text-deco-pewter text-center uppercase tracking-wider">
-                      Connection {index + 1} of {connectionSlots.length}
-                    </h4>
+                      <h4 className="text-xs font-medium text-deco-pewter text-center uppercase tracking-wider">
+                        Connection {index + 1} of {connectionSlots.length}
+                      </h4>
 
-                    {/* Movie Input */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-deco-cream">
-                        <div className="flex items-center">
-                          <Film className="w-4 h-4 mr-2 text-deco-gold" />
-                          Movie featuring {previousActorName || 'previous actor'}
-                        </div>
-                        {isLastConnection && (
-                          <div className="text-deco-gold ml-6 mt-1">and {challenge.endActorName}</div>
-                        )}
-                      </label>
-                      <div className="relative">
-                        <MovieSearch
-                          onSelect={(movie) => handleMovieSelect(index, movie)}
-                          placeholder={isLastConnection ? "Final movie with both actors..." : "Search for movie..."}
-                          value={connection.movieTitle}
-                          disabled={validatingIndex === index}
-                        />
-
-                        {validatingIndex === index && (
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-deco-gold"></div>
+                      {/* Movie Input */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-deco-cream">
+                          <div className="flex items-center">
+                            <Film className="w-4 h-4 mr-2 text-deco-gold" />
+                            Movie featuring {previousActorName || 'previous actor'}
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Actor Input - Not shown for last connection */}
-                    {!isLastConnection && (
-                      <div className="space-y-4 ml-4 border-l-2 border-deco-gold/30 pl-4">
-                        <label className="text-sm font-medium text-deco-cream flex items-center">
-                          <User className="w-4 h-4 mr-2 text-deco-gold" />
-                          Co-star in {connection.movieTitle || 'this movie'}
+                          {isLastConnection && (
+                            <div className="text-deco-gold ml-6 mt-1">and {challenge.endActorName}</div>
+                          )}
                         </label>
+                        <div className="relative">
+                          <MovieSearch
+                            onSelect={(movie) => handleMovieSelect(index, movie)}
+                            placeholder={isLastConnection ? "Final movie with both actors..." : "Search for movie..."}
+                            value={connection.movieTitle}
+                            disabled={validatingIndex === index}
+                          />
 
-                        <div className="flex items-center gap-4">
+                          {validatingIndex === index && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-deco-gold"></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actor Input - Not shown for last connection */}
+                      {!isLastConnection && (
+                        <div className="space-y-4 ml-4 border-l-2 border-deco-gold/30 pl-4">
+                          <label className="text-sm font-medium text-deco-cream flex items-center">
+                            <User className="w-4 h-4 mr-2 text-deco-gold" />
+                            Co-star in {connection.movieTitle || 'this movie'}
+                          </label>
+
+                          <div className="flex items-center gap-4">
 
 
-                          <div className="relative flex-grow">
-                            <ActorSearch
-                              onSelect={(actor) => handleActorSelect(index, actor)}
-                              placeholder={connection.movieTitle ? "Who else is in this movie?" : "Select movie first"}
-                              value={connection.actorName}
-                              disabled={!connection.movieTitle || validatingIndex === index}
-                            />
+                            <div className="relative flex-grow">
+                              <ActorSearch
+                                onSelect={(actor) => handleActorSelect(index, actor)}
+                                placeholder={connection.movieTitle ? "Who else is in this movie?" : "Select movie first"}
+                                value={connection.actorName}
+                                disabled={!connection.movieTitle || validatingIndex === index}
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Special note for last connection - Hide on success to keep card compact */}
-                    {isLastConnection && connection.movieTitle && !validationResult?.valid && (
-                      <div className="space-y-2 ml-4 border-l-2 border-deco-gold pl-4 bg-deco-charcoal/50 p-3">
-                        <div className="text-sm font-medium text-deco-gold flex items-center">
-                          <User className="w-4 h-4 mr-2" />
-                          Final connection to {challenge.endActorName}
+                      {/* Special note for last connection - Hide on success to keep card compact */}
+                      {isLastConnection && connection.movieTitle && !validationResult?.valid && (
+                        <div className="space-y-2 ml-4 border-l-2 border-deco-gold pl-4 bg-deco-charcoal/50 p-3">
+                          <div className="text-sm font-medium text-deco-gold flex items-center">
+                            <User className="w-4 h-4 mr-2" />
+                            Final connection to {challenge.endActorName}
+                          </div>
+                          <p className="text-xs text-deco-cream/70">
+                            This movie should feature both {previousActorName} and {challenge.endActorName}
+                          </p>
                         </div>
-                        <p className="text-xs text-deco-cream/70">
-                          This movie should feature both {previousActorName} and {challenge.endActorName}
-                        </p>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Connection Status - Only show errors here to keep success cards fixed size */}
-                    {validationResult && !validationResult.valid && connection.movieTitle && connection.actorName && (
-                      <div className="text-sm p-3 bg-game-error/20 text-game-error border border-game-error/30 animate-in fade-in slide-in-from-top-1 duration-200">
-                        <div className="flex items-center">
-                          <XCircle className="w-4 h-4 mr-2" />
-                          <span className="leading-snug">{validationResult.message}</span>
+                      {/* Connection Status - Only show errors here to keep success cards fixed size */}
+                      {validationResult && !validationResult.valid && connection.movieTitle && connection.actorName && (
+                        <div className="text-sm p-3 bg-game-error/20 text-game-error border border-game-error/30 animate-in fade-in slide-in-from-top-1 duration-200">
+                          <div className="flex items-center">
+                            <XCircle className="w-4 h-4 mr-2" />
+                            <span className="leading-snug">{validationResult.message}</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Cosmic Connector Line (Desktop Only) - Perfected Cosmic Style */}
-                {!isLastConnection && (
-                  <div className={`hidden md:block absolute top-[150px] w-[100%] h-[204px] pointer-events-none z-40 ${index % 2 === 0
-                    ? 'left-[100%]' // From Left card rightward
-                    : 'right-[100%]' // From Right card leftward
-                    }`}>
-                    <svg
-                      width="100%"
-                      height="100%"
-                      viewBox="0 0 100 204"
-                      className="overflow-visible"
-                      preserveAspectRatio="none"
-                    >
-                      <defs>
-                        <linearGradient id={`cosmic-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#22d3ee" />
-                          <stop offset="100%" stopColor="#a855f7" />
-                        </linearGradient>
-                        <filter id={`cosmic-glow-${index}`} x="-100%" y="-100%" width="300%" height="300%">
-                          <feGaussianBlur stdDeviation="2" result="blur" />
-                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                      </defs>
+                  {/* Cosmic Connector Line (Desktop Only) - Perfected Cosmic Style */}
+                  {!isLastConnection && (
+                    <div className={`hidden md:block absolute top-[150px] w-[100%] h-[204px] pointer-events-none z-40 ${index % 2 === 0
+                      ? 'left-[100%]' // From Left card rightward
+                      : 'right-[100%]' // From Right card leftward
+                      }`}>
+                      <svg
+                        width="100%"
+                        height="100%"
+                        viewBox="0 0 100 204"
+                        className="overflow-visible"
+                        preserveAspectRatio="none"
+                      >
+                        <defs>
+                          <linearGradient id={`cosmic-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#22d3ee" />
+                            <stop offset="100%" stopColor="#a855f7" />
+                          </linearGradient>
+                          <filter id={`cosmic-glow-${index}`} x="-100%" y="-100%" width="300%" height="300%">
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
 
-                      {/* elegant narrowed diagonal line with 60% opacity - perfectly anchored to centers */}
-                      <line
-                        x1={index % 2 === 0 ? "0" : "100"}
-                        y1="0"
-                        x2={index % 2 === 0 ? "100" : "0"}
-                        y2="204"
-                        stroke={`url(#cosmic-gradient-${index})`}
-                        strokeWidth="1.5"
-                        className="opacity-60"
-                        style={{ filter: `url(#cosmic-glow-${index})` }}
-                      />
-                    </svg>
-
-
-                    {/* Connection Nodes (Perfect circular dots) */}
-                    <div
-                      className="absolute w-2 h-2 rounded-full bg-[#22d3ee] shadow-[0_0_8px_rgba(34,211,238,0.8)]"
-                      style={{
-                        top: '0',
-                        left: index % 2 === 0 ? '0' : '100%',
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    />
-                    <div
-                      className="absolute w-2 h-2 rounded-full bg-[#a855f7] shadow-[0_0_8px_rgba(168,85,247,0.8)]"
-                      style={{
-                        top: '204px',
-                        left: index % 2 === 0 ? '100%' : '0',
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    />
-
-                    {/* Centered Actor Node - Shown when validated */}
-                    {validationResult?.valid && connection.actorName && (
-                      <div className="absolute top-[102px] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-50 animate-in fade-in zoom-in duration-500">
-                        <ActorCard
-                          name={connection.actorName}
-                          profilePath={connection.actorProfilePath}
-                          variant="cyan"
-                          size="sm"
-                          showName={false}
-                          minimal={true}
-                          allowZoom={true}
-                          className="scale-110"
+                        {/* elegant narrowed diagonal line with 60% opacity - perfectly anchored to centers */}
+                        <line
+                          x1={index % 2 === 0 ? "0" : "100"}
+                          y1="0"
+                          x2={index % 2 === 0 ? "100" : "0"}
+                          y2="204"
+                          stroke={`url(#cosmic-gradient-${index})`}
+                          strokeWidth="1.5"
+                          className="opacity-60"
+                          style={{ filter: `url(#cosmic-glow-${index})` }}
                         />
-                      </div>
-                    )}
-                  </div>
-                )}
+                      </svg>
+
+
+                      {/* Connection Nodes (Perfect circular dots) */}
+                      <div
+                        className="absolute w-2 h-2 rounded-full bg-[#22d3ee] shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                        style={{
+                          top: '0',
+                          left: index % 2 === 0 ? '0' : '100%',
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      />
+                      <div
+                        className="absolute w-2 h-2 rounded-full bg-[#a855f7] shadow-[0_0_8px_rgba(168,85,247,0.8)]"
+                        style={{
+                          top: '204px',
+                          left: index % 2 === 0 ? '100%' : '0',
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      />
+
+                      {/* Centered Actor Node - Shown when validated */}
+                      {validationResult?.valid && connection.actorName && (
+                        <div className="absolute top-[102px] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-50 animate-in fade-in zoom-in duration-500">
+                          <ActorCard
+                            name={connection.actorName}
+                            profilePath={connection.actorProfilePath}
+                            variant="cyan"
+                            size="sm"
+                            showName={false}
+                            minimal={true}
+                            allowZoom={true}
+                            className="scale-110"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
