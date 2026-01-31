@@ -343,6 +343,21 @@ export default function GameGrid({
                           </div>
                         </div>
                       )}
+
+                      {/* Mobile Headshot - Only on validated mobile cards */}
+                      {validationResult?.valid && connection.actorName && (
+                        <div className="md:hidden flex justify-center pt-2 mt-auto">
+                          <ActorCard
+                            name={connection.actorName}
+                            profilePath={connection.actorProfilePath}
+                            variant="cyan"
+                            size="xs"
+                            showName={false}
+                            minimal={true}
+                            allowZoom={true}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 

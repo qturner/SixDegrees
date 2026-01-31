@@ -4,7 +4,7 @@ interface ActorCardProps {
     name: string;
     profilePath?: string | null;
     variant?: 'cyan' | 'amber' | 'gold' | 'neutral';
-    size?: 'sm' | 'md' | 'lg' | 'xl';
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
     onClick?: () => void;
     className?: string;
     showName?: boolean;
@@ -29,6 +29,7 @@ export default function ActorCard({
 
     // Size mappings
     const sizeClasses = {
+        xs: "w-12 h-12",
         sm: "w-20 h-20",
         md: "w-32 h-32 sm:w-40 sm:h-40",
         lg: "w-40 h-40 sm:w-48 sm:h-48",
