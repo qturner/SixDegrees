@@ -265,7 +265,7 @@ export default function GameGrid({
                     ${validationResult?.valid ? 'opacity-20' : 'opacity-40 group-hover:opacity-60'}
                   `} />
 
-                    <div className="relative bg-black rounded-lg p-4 space-y-4 h-[300px] flex flex-col overflow-hidden">
+                    <div className="relative bg-black rounded-lg p-4 space-y-4 h-[380px] md:h-[300px] flex flex-col overflow-hidden">
 
                       <h4 className="text-xs font-medium text-deco-pewter text-center uppercase tracking-wider">
                         Connection {index + 1} of {connectionSlots.length}
