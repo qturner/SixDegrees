@@ -341,7 +341,7 @@ export default function Game() {
   const effectiveChallenge = getEffectiveChallenge();
 
   return (
-    <div className="min-h-screen text-game-text font-sans">
+    <div className="min-h-screen text-game-text font-sans flex flex-col">
       {/* Auth UI - Bottom Left */}
       <div className="fixed bottom-4 left-4 z-50 transition-opacity duration-300">
         {user ? (
@@ -391,7 +391,7 @@ export default function Game() {
         gameResult={gameResult}
       />
 
-      <main className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <main className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8 flex-1 w-full">
 
         <div className="mb-6 sm:mb-8">
           <TodaysChallenge
