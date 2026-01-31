@@ -66,10 +66,10 @@ export default function ValidationFeedback({ validationResults, gameResult, conn
       const movieTitles = connections
         .filter(conn => conn.movieTitle)
         .map(conn => conn.movieTitle);
-      
+
       const movieList = movieTitles.map((title, index) => `${index + 1}. ${title}`).join('\n');
       const text = `My winning path for today's 6 Degrees challenge:\n\n${movieList}\n\nCan you find a shorter path? Play at ${window.location.origin}`;
-      
+
       const shareData = {
         title: "My 6 Degrees Movie Path",
         text: text,
@@ -113,80 +113,85 @@ export default function ValidationFeedback({ validationResults, gameResult, conn
       {/* Game completion result */}
       {gameResult && (
         <div className="group relative">
-          {/* Glow effect behind card */}
-          <div className={`absolute -inset-1 rounded blur-md transition-opacity duration-300 ${
-            gameResult.valid && gameResult.completed
-              ? "bg-gradient-to-br from-deco-gold/40 via-game-success/30 to-transparent opacity-70"
-              : gameResult.valid
-              ? "bg-gradient-to-br from-game-success/30 via-deco-gold/20 to-transparent opacity-60"
-              : "bg-gradient-to-br from-game-error/30 via-deco-bronze/20 to-transparent opacity-60"
-          }`} />
-          
-          {/* Main card */}
-          <div className={`relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border-2 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 ${
-            gameResult.valid && gameResult.completed
-              ? "border-deco-gold"
-              : gameResult.valid
-              ? "border-game-success/60"
-              : "border-game-error/60"
-          }`}>
-            {/* Corner accents */}
-            <div className={`absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 ${gameResult.valid ? 'border-deco-gold' : 'border-game-error/60'}`} />
-            <div className={`absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 ${gameResult.valid ? 'border-deco-gold' : 'border-game-error/60'}`} />
-            <div className={`absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 ${gameResult.valid ? 'border-deco-gold' : 'border-game-error/60'}`} />
-            <div className={`absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 ${gameResult.valid ? 'border-deco-gold' : 'border-game-error/60'}`} />
-            
+          {/* Super Cosmic Glow Layers */}
+          {gameResult.completed && (
+            <>
+              <div className="absolute -inset-8 bg-gradient-to-tr from-cyan-500/30 via-fuchsia-500/30 to-amber-500/30 rounded-xl blur-3xl animate-pulse duration-[4000ms] opacity-60" />
+              <div className="absolute -inset-4 bg-gradient-to-br from-indigo-500/40 via-purple-500/40 to-pink-500/40 rounded-xl blur-2xl opacity-70" />
+            </>
+          )}
+
+          {/* Glow effect behind card (Standard Results) */}
+          {!gameResult.completed && (
+            <div className={`absolute -inset-1 rounded blur-md transition-opacity duration-300 ${gameResult.valid
+                ? "bg-gradient-to-br from-game-success/30 via-deco-gold/20 to-transparent opacity-60"
+                : "bg-gradient-to-br from-game-error/30 via-deco-bronze/20 to-transparent opacity-60"
+              }`} />
+          )}
+
+          {/* Main deco-card */}
+          <div className={`relative deco-card overflow-hidden backdrop-blur-md transition-all duration-500 ${gameResult.completed
+              ? "p-8 sm:p-12 border-2 border-deco-gold/50 shadow-[0_0_50px_rgba(196,151,49,0.3)] bg-deco-black/80"
+              : "p-6 border border-white/10 bg-deco-black/40"
+            }`}>
+            {/* Subtle background effects */}
+            <div className={`absolute inset-0 bg-gradient-to-br pointer-events-none opacity-20 ${gameResult.completed
+                ? "from-indigo-900 via-transparent to-amber-900"
+                : "from-indigo-900/40 via-transparent to-amber-900/40"
+              }`} />
+            <div className="absolute inset-0 art-deco-bg opacity-10 pointer-events-none" />
+
             {gameResult.completed ? (
-              <div className="space-y-4">
-                {/* Trophy icon with glow */}
+              <div className="relative z-10 space-y-6">
+                {/* Trophy icon with supercharged glow */}
                 <div className="flex justify-center">
-                  <div className="relative">
-                    <div className="absolute -inset-2 bg-deco-gold/30 rounded-full blur-md" />
-                    <Trophy className="relative w-12 h-12 text-deco-gold drop-shadow-[0_0_8px_rgba(196,151,49,0.6)]" />
+                  <div className="relative group/trophy">
+                    <div className="absolute -inset-6 bg-deco-gold/40 rounded-full blur-3xl animate-pulse" />
+                    <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 via-deco-gold to-fuchsia-400 rounded-full blur opacity-50 transition-opacity duration-500" />
+                    <Trophy className="relative w-16 h-16 text-deco-gold drop-shadow-[0_0_15px_rgba(196,151,49,0.8)]" />
                   </div>
                 </div>
-                
+
                 {/* Congratulations message */}
-                <div className="text-center">
-                  <h3 className="font-display text-2xl text-deco-gold mb-2 tracking-wide" style={{ textShadow: '0 0 20px rgba(196,151,49,0.4)' }}>
+                <div className="text-center space-y-2">
+                  <h3 className="font-display text-4xl sm:text-5xl text-deco-gold tracking-tight" style={{ textShadow: '0 0 30px rgba(196,151,49,0.6)' }}>
                     Congratulations!
                   </h3>
-                  <p className="text-deco-cream text-lg">
-                    You finished in <span className="text-deco-gold font-bold">{gameResult.moves || validConnectionsCount}</span> moves!
+                  <p className="text-deco-cream text-xl font-light tracking-wide">
+                    You bridged the gap in <span className="text-deco-gold font-bold">{gameResult.moves || validConnectionsCount}</span> moves
                   </p>
                 </div>
-                
+
                 {/* Share buttons */}
-                <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+                <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
                   <Button
                     onClick={handleShare}
-                    size="sm"
-                    className="bg-transparent border-2 border-deco-gold text-deco-gold hover:bg-deco-gold hover:text-deco-black uppercase tracking-wider transition-all duration-200"
+                    className="h-12 px-8 bg-deco-gold text-deco-charcoal hover:bg-white hover:text-black font-bold uppercase tracking-widest transition-all duration-300 shadow-[0_0_20px_rgba(196,151,49,0.4)]"
                   >
-                    <Share className="w-4 h-4 mr-2" />
+                    <Share className="w-5 h-5 mr-3" />
                     Share Victory
                   </Button>
                   <Button
                     onClick={handleShareMovies}
-                    size="sm"
-                    className="bg-transparent border-2 border-deco-bronze text-deco-cream hover:bg-deco-bronze hover:text-deco-black uppercase tracking-wider transition-all duration-200"
+                    variant="outline"
+                    className="h-12 px-8 border-2 border-deco-gold/30 text-deco-gold hover:border-deco-gold hover:bg-deco-gold/10 font-bold uppercase tracking-widest transition-all duration-300"
                   >
-                    <Film className="w-4 h-4 mr-2" />
-                    Share Movies
+                    <Film className="w-5 h-5 mr-3" />
+                    Share Path
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="flex justify-center items-center py-2">
+              <div className="relative z-10 flex justify-center items-center">
                 {gameResult.valid ? (
                   <div className="flex items-center text-game-success">
                     <CheckCircle className="w-5 h-5 mr-3" />
-                    <span className="text-lg">{gameResult.message}</span>
+                    <span className="text-lg font-medium tracking-wide">{gameResult.message}</span>
                   </div>
                 ) : (
                   <div className="flex items-center text-game-error">
                     <XCircle className="w-5 h-5 mr-3" />
-                    <span className="text-lg font-medium">Try harder you bum</span>
+                    <span className="text-lg font-medium tracking-wide">Keep exploring the connections</span>
                   </div>
                 )}
               </div>
