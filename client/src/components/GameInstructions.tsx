@@ -43,21 +43,21 @@ export default function GameInstructions() {
           <div>
             <h4 className="font-display text-lg text-deco-gold mb-4 tracking-wide">Example Chain</h4>
             <div className="space-y-2 text-sm">
-              <div className="bg-deco-black/50 border border-deco-gold/30 p-3 transition-all duration-200 hover:border-deco-gold/60 hover:bg-deco-gold/5">
+              <div className="bg-black/30 border border-white/5 p-3 rounded transition-all duration-200 hover:bg-white/5">
                 <span className="font-medium text-deco-gold">Jack Black</span>
                 <span className="text-deco-pewter"> in </span>
                 <span className="font-medium text-deco-cream">Tropic Thunder</span>
                 <span className="text-deco-pewter"> with </span>
                 <span className="font-medium text-deco-gold">Ben Stiller</span>
               </div>
-              <div className="bg-deco-black/50 border border-deco-gold/30 p-3 transition-all duration-200 hover:border-deco-gold/60 hover:bg-deco-gold/5">
+              <div className="bg-black/30 border border-white/5 p-3 rounded transition-all duration-200 hover:bg-white/5">
                 <span className="font-medium text-deco-gold">Ben Stiller</span>
                 <span className="text-deco-pewter"> in </span>
                 <span className="font-medium text-deco-cream">Meet the Parents</span>
                 <span className="text-deco-pewter"> with </span>
                 <span className="font-medium text-deco-gold">Robert De Niro</span>
               </div>
-              <div className="bg-deco-black/50 border border-deco-gold/30 p-3 transition-all duration-200 hover:border-deco-gold/60 hover:bg-deco-gold/5">
+              <div className="bg-black/30 border border-white/5 p-3 rounded transition-all duration-200 hover:bg-white/5">
                 <span className="font-medium text-deco-gold">Robert De Niro</span>
                 <span className="text-deco-pewter"> in </span>
                 <span className="font-medium text-deco-cream">Heat</span>
