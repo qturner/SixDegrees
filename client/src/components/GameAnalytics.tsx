@@ -38,8 +38,8 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
   // Find the minimum number of moves (best completion)
   const bestCompletion = analytics.moveDistribution && analytics.moveDistribution.length > 0
     ? analytics.moveDistribution
-        .filter(item => item.count > 0)
-        .reduce((min, curr) => curr.moves < min ? curr.moves : min, 6)
+      .filter(item => item.count > 0)
+      .reduce((min, curr) => curr.moves < min ? curr.moves : min, 6)
     : 6;
 
   // Only show if there's actual data
@@ -49,26 +49,20 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
 
   return (
     <div className="mt-6 group relative">
-      {/* Glow effect behind card */}
-      <div className="absolute -inset-1 bg-gradient-to-br from-deco-gold/30 via-deco-bronze/20 to-transparent rounded blur-md opacity-60" />
-      
       {/* Main card */}
-      <div className="relative bg-gradient-to-br from-deco-charcoal via-deco-onyx to-deco-black border border-deco-gold/40 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-        {/* Corner accents */}
-        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-deco-gold" />
-        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-deco-gold" />
-        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-deco-gold" />
-        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-deco-gold" />
-        
+      <div className="deco-card p-6 sm:p-8 relative overflow-hidden backdrop-blur-md bg-deco-black/40 border border-white/10">
+        {/* Subtle background effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-transparent to-amber-900/20 pointer-events-none" />
+
         {/* Header */}
-        <div className="flex items-center justify-center gap-2 mb-6">
+        <div className="relative z-10 flex items-center justify-center gap-2 mb-6">
           <Users className="h-5 w-5 text-deco-gold" />
           <h3 className="font-display text-xl text-deco-gold tracking-wide">Today's Challenge Stats</h3>
         </div>
-        
+
         {/* Stats grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="text-center p-3 bg-deco-black/30 border border-deco-gold/20">
+        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="text-center p-3 bg-black/30 border border-white/5 rounded">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Target className="h-4 w-4 text-game-success" />
               <span className="text-sm font-medium text-deco-cream/70">Best Completion</span>
@@ -77,8 +71,8 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
               {analytics.completedAttempts > 0 ? `${bestCompletion} moves` : 'None yet'}
             </div>
           </div>
-          
-          <div className="text-center p-3 bg-deco-black/30 border border-deco-gold/20">
+
+          <div className="text-center p-3 bg-black/30 border border-white/5 rounded">
             <div className="flex items-center justify-center gap-2 mb-1">
               <TrendingUp className="h-4 w-4 text-deco-gold" />
               <span className="text-sm font-medium text-deco-cream/70">Average Moves</span>
@@ -88,7 +82,7 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
             </div>
           </div>
 
-          <div className="text-center p-3 bg-deco-black/30 border border-deco-gold/20">
+          <div className="text-center p-3 bg-black/30 border border-white/5 rounded">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Users className="h-4 w-4 text-deco-champagne" />
               <span className="text-sm font-medium text-deco-cream/70">Players</span>
@@ -101,7 +95,7 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
         </div>
 
         {analytics.completedAttempts > 0 && (
-          <div className="mt-4 pt-3 border-t border-deco-gold/20">
+          <div className="relative z-10 mt-4 pt-3 border-t border-white/10">
             <p className="text-xs text-center text-deco-cream/60">
               {analytics.completionRate}% success rate • Anonymous player data
             </p>
@@ -110,7 +104,7 @@ export default function GameAnalytics({ challengeId, show }: GameAnalyticsProps)
 
         {/* Most Used Movies and Actors */}
         {(analytics.mostUsedMovies?.length > 0 || analytics.mostUsedActors?.length > 0) && (
-          <div className="mt-4 pt-4 border-t border-deco-gold/20 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="relative z-10 mt-4 pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6">
             {analytics.mostUsedMovies && analytics.mostUsedMovies.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
