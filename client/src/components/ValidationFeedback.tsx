@@ -232,7 +232,7 @@ export default function ValidationFeedback({ validationResults, gameResult, conn
       <Dialog open={isModalOpen} onOpenChange={(open) => {
         if (!open) setIsModalDismissed(true);
       }}>
-        <DialogContent className="max-w-4xl p-0 bg-transparent border-none shadow-none">
+        <DialogContent className="max-w-4xl p-0 bg-transparent border-none shadow-none [&>button]:hidden">
           <DialogTitle className="sr-only">Challenge Completed</DialogTitle>
           {renderCongratulationsCard(true)}
         </DialogContent>
