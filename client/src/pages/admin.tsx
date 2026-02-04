@@ -505,7 +505,7 @@ export default function AdminPanel() {
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-deco-gold" />
             <div>
-              <h1 className="text-3xl font-bold text-deco-gold">Admin Panel</h1>
+              <h1 className="text-3xl font-bold text-deco-gold">Admin Panel (v2)</h1>
               <p className="text-deco-cream/60">Six Degrees Game Management</p>
             </div>
           </div>

@@ -26,18 +26,18 @@ export default function ContactSubmissions() {
       if (!token) {
         throw new Error('No admin token found');
       }
-      
+
       const response = await fetch('/api/admin/contacts', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
   });
@@ -48,7 +48,7 @@ export default function ContactSubmissions() {
       if (!token) {
         throw new Error('No admin token found');
       }
-      
+
       const response = await fetch(`/api/admin/contacts/${id}`, {
         method: 'PATCH',
         headers: {
@@ -57,7 +57,7 @@ export default function ContactSubmissions() {
         },
         body: JSON.stringify({ status }),
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to update status");
       }
@@ -91,13 +91,13 @@ export default function ContactSubmissions() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "new":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+        return "bg-deco-gold/20 text-deco-gold border-deco-gold/30";
       case "read":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+        return "bg-black/40 text-deco-cream/60 border-deco-cream/20";
       case "responded":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+        return "bg-green-900/40 text-green-300 border-green-800/50";
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+        return "bg-black/40 text-deco-cream/60 border-deco-cream/20";
     }
   };
 
