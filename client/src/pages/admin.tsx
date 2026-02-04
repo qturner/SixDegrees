@@ -93,13 +93,13 @@ function DiagnosticsCard() {
   });
 
   return (
-    <Card>
+    <Card className="bg-black/40 border-deco-gold/20 text-deco-cream">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-deco-gold">
           <BarChart3 className="h-5 w-5" />
           System Diagnostics (Debug)
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-deco-cream/60">
           Live view of database state and environment variables
         </CardDescription>
       </CardHeader>
@@ -107,25 +107,25 @@ function DiagnosticsCard() {
         {isLoading ? (
           <p>Loading diagnostics...</p>
         ) : error ? (
-          <p className="text-red-500">Error loading diagnostics: {error.message}</p>
+          <p className="text-red-400">Error loading diagnostics: {error.message}</p>
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-gray-100 rounded">
-                <p className="text-sm font-bold">TMDB Key:</p>
-                <p className={debugInfo?.env?.hasTmdbKey ? "text-green-600" : "text-red-600"}>
+              <div className="p-3 bg-black/60 rounded border border-white/10">
+                <p className="text-sm font-bold text-deco-gold">TMDB Key:</p>
+                <p className={debugInfo?.env?.hasTmdbKey ? "text-game-success" : "text-red-400"}>
                   {debugInfo?.env?.hasTmdbKey ? "Configured" : "MISSING"}
                 </p>
               </div>
-              <div className="p-3 bg-gray-100 rounded">
-                <p className="text-sm font-bold">Database:</p>
-                <p className={debugInfo?.env?.hasDbUrl ? "text-green-600" : "text-red-600"}>
+              <div className="p-3 bg-black/60 rounded border border-white/10">
+                <p className="text-sm font-bold text-deco-gold">Database:</p>
+                <p className={debugInfo?.env?.hasDbUrl ? "text-game-success" : "text-red-400"}>
                   {debugInfo?.env?.hasDbUrl ? "Configured" : "MISSING"}
                 </p>
               </div>
             </div>
 
-            <div className="p-3 bg-slate-900 text-slate-50 rounded overflow-auto max-h-60 text-xs font-mono">
+            <div className="p-3 bg-black/80 text-deco-cream/80 rounded border border-white/10 overflow-auto max-h-60 text-xs font-mono">
               <pre>{JSON.stringify(debugInfo?.db, null, 2)}</pre>
             </div>
           </div>
@@ -155,20 +155,20 @@ function UserList() {
   if (error) return <div className="p-4 text-center text-red-500">Error loading users</div>;
 
   return (
-    <Card>
+    <Card className="bg-black/40 border-deco-gold/20 text-deco-cream">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-deco-gold">
           <Users className="h-5 w-5" />
           Registered Users ({users?.length || 0})
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-deco-cream/60">
           List of all registered accounts by name and email
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border h-[400px] overflow-auto">
+        <div className="rounded-md border border-deco-gold/10 h-[400px] overflow-auto">
           <table className="w-full text-sm text-left relative">
-            <thead className="bg-muted/50 text-muted-foreground sticky top-0 md:static">
+            <thead className="bg-black/60 text-deco-gold sticky top-0 md:static">
               <tr>
                 <th className="p-4 font-medium">Name</th>
                 <th className="p-4 font-medium">Username</th>
@@ -177,20 +177,20 @@ function UserList() {
                 <th className="p-4 font-medium">Joined</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-deco-gold/10">
               {users?.map((user) => (
-                <tr key={user.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="p-4 font-medium">
+                <tr key={user.id} className="hover:bg-deco-gold/5 transition-colors">
+                  <td className="p-4 font-medium text-deco-cream">
                     {user.firstName ? `${user.firstName} ${user.lastName || ''}` : '-'}
                   </td>
-                  <td className="p-4">{user.username}</td>
-                  <td className="p-4">{user.email}</td>
+                  <td className="p-4 text-deco-cream/80">{user.username}</td>
+                  <td className="p-4 text-deco-cream/80">{user.email}</td>
                   <td className="p-4">
-                    <Badge variant={user.googleId ? "secondary" : "outline"}>
+                    <Badge variant={user.googleId ? "secondary" : "outline"} className={user.googleId ? "bg-deco-gold/20 text-deco-gold border-deco-gold/30 hover:bg-deco-gold/30" : "border-deco-gold/30 text-deco-cream/60"}>
                       {user.googleId ? "Google" : "Email"}
                     </Badge>
                   </td>
-                  <td className="p-4 max-w-[150px] truncate text-muted-foreground">
+                  <td className="p-4 max-w-[150px] truncate text-deco-cream/60">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                 </tr>
@@ -498,31 +498,31 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen bg-deco-charcoal text-deco-cream p-4 dark">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-blue-600" />
+            <Shield className="h-8 w-8 text-deco-gold" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Admin Panel</h1>
-              <p className="text-gray-600 dark:text-gray-400">Six Degrees Game Management</p>
+              <h1 className="text-3xl font-bold text-deco-gold">Admin Panel</h1>
+              <p className="text-deco-cream/60">Six Degrees Game Management</p>
             </div>
           </div>
-          <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2 text-gray-800 dark:text-gray-200">
+          <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2 border-deco-gold/30 text-deco-gold hover:bg-deco-gold/10">
             <LogOut className="h-4 w-4" />
             Logout
           </Button>
         </div>
 
         {/* Quick Navigation */}
-        <Card>
+        <Card className="bg-black/40 border-deco-gold/20 text-deco-cream">
           <CardHeader>
-            <CardTitle>Quick Navigation</CardTitle>
+            <CardTitle className="text-deco-gold">Quick Navigation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
-              <Button onClick={() => setLocation("/")} variant="outline">
+              <Button onClick={() => setLocation("/")} variant="outline" className="border-deco-gold/30 text-deco-gold hover:bg-deco-gold/10">
                 <Users className="h-4 w-4 mr-2" />
                 Game View
               </Button>
@@ -531,43 +531,43 @@ export default function AdminPanel() {
         </Card>
 
         {/* Current Challenge Card */}
-        <Card>
+        <Card className="bg-black/40 border-deco-gold/20 text-deco-cream">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-deco-gold">
               <Calendar className="h-5 w-5" />
               Current Daily Challenge (Active)
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-deco-cream/60">
               Today's actor pairing and usage statistics
             </CardDescription>
           </CardHeader>
           <CardContent>
             {challengeLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-8 text-deco-gold">
                 <RefreshCw className="h-6 w-6 animate-spin" />
                 <span className="ml-2">Loading challenge...</span>
               </div>
             ) : challenge ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <h3 className="font-semibold text-blue-900">Start Actor</h3>
-                    <p className="text-lg font-medium text-black">{challenge.startActorName}</p>
+                  <div className="p-4 bg-black/30 rounded-lg border border-deco-gold/20">
+                    <h3 className="font-semibold text-deco-gold">Start Actor</h3>
+                    <p className="text-lg font-medium text-deco-cream">{challenge.startActorName}</p>
                   </div>
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-                    <h3 className="font-semibold text-green-900">End Actor</h3>
-                    <p className="text-lg font-medium text-black">{challenge.endActorName}</p>
+                  <div className="p-4 bg-black/30 rounded-lg border border-deco-gold/20">
+                    <h3 className="font-semibold text-deco-gold">End Actor</h3>
+                    <p className="text-lg font-medium text-deco-cream">{challenge.endActorName}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="bg-deco-gold/20 text-deco-gold">
                     Hints Used: {challenge.hintsUsed}/2
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="border-deco-gold/30 text-deco-cream/60">
                     Date: {challenge.date}
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="border-deco-gold/30 text-deco-cream/60">
                     Created: {new Date(challenge.createdAt).toLocaleTimeString()}
                   </Badge>
                 </div>
@@ -579,50 +579,50 @@ export default function AdminPanel() {
         </Card>
 
         {/* Next Challenge Card */}
-        <Card>
+        <Card className="bg-black/40 border-deco-gold/20 text-deco-cream">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-deco-gold">
               <Calendar className="h-5 w-5" />
               Next Daily Challenge
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-deco-cream/60">
               Preview of next actor pairing (24 hours in advance - becomes current at midnight)
             </CardDescription>
           </CardHeader>
           <CardContent>
             {nextChallengeLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-8 text-deco-gold">
                 <RefreshCw className="h-6 w-6 animate-spin" />
                 <span className="ml-2">Loading next challenge...</span>
               </div>
             ) : nextChallenge ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
-                    <h3 className="font-semibold text-purple-900">Start Actor</h3>
-                    <p className="text-lg font-medium text-black">{nextChallenge.startActorName}</p>
+                  <div className="p-4 bg-black/30 rounded-lg border border-deco-gold/20">
+                    <h3 className="font-semibold text-deco-gold">Start Actor</h3>
+                    <p className="text-lg font-medium text-deco-cream">{nextChallenge.startActorName}</p>
                   </div>
-                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
-                    <h3 className="font-semibold text-orange-900">End Actor</h3>
-                    <p className="text-lg font-medium text-black">{nextChallenge.endActorName}</p>
+                  <div className="p-4 bg-black/30 rounded-lg border border-deco-gold/20">
+                    <h3 className="font-semibold text-deco-gold">End Actor</h3>
+                    <p className="text-lg font-medium text-deco-cream">{nextChallenge.endActorName}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                  <Badge variant="secondary" className="bg-deco-gold/10 text-deco-gold/80">
                     Status: Next
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="border-deco-gold/30 text-deco-cream/60">
                     Date: {nextChallenge.date}
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="border-deco-gold/30 text-deco-cream/60">
                     Created: {new Date(nextChallenge.createdAt).toLocaleTimeString()}
                   </Badge>
                 </div>
               </div>
             ) : (
-              <div className="p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
-                <p className="text-yellow-800 dark:text-yellow-200">
+              <div className="p-4 border border-deco-gold/20 rounded-lg bg-black/30">
+                <p className="text-deco-gold/80">
                   No next challenge scheduled. One will be automatically generated.
                 </p>
               </div>
@@ -634,21 +634,21 @@ export default function AdminPanel() {
         <DiagnosticsCard />
 
         {/* Actions Card */}
-        <Card>
+        <Card className="bg-black/40 border-deco-gold/20 text-deco-cream">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-deco-gold">
               <RefreshCw className="h-5 w-5" />
               Challenge Management
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-deco-cream/60">
               Administrative actions for managing daily challenges
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Reset Daily Challenge</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              <div className="p-4 border border-deco-gold/20 rounded-lg bg-black/30">
+                <h3 className="font-semibold mb-2 text-deco-gold">Reset Daily Challenge</h3>
+                <p className="text-sm text-deco-cream/60 mb-3">
                   This will delete the current challenge and generate a new one with different actors.
                   All hints will be reset to 0.
                 </p>
@@ -683,9 +683,9 @@ export default function AdminPanel() {
                 </AlertDialog>
               </div>
 
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Reset Next Challenge</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              <div className="p-4 border border-deco-gold/20 rounded-lg bg-black/30">
+                <h3 className="font-semibold mb-2 text-deco-gold">Reset Next Challenge</h3>
+                <p className="text-sm text-deco-cream/60 mb-3">
                   Generate a new challenge for the next daily challenge (24 hours in advance). The current next challenge will be replaced.
                 </p>
                 <AlertDialog open={isResetTomorrowDialogOpen} onOpenChange={setIsResetTomorrowDialogOpen}>
@@ -719,9 +719,9 @@ export default function AdminPanel() {
                 </AlertDialog>
               </div>
 
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Set Custom Next Challenge</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              <div className="p-4 border border-deco-gold/20 rounded-lg bg-black/30">
+                <h3 className="font-semibold mb-2 text-deco-gold">Set Custom Next Challenge</h3>
+                <p className="text-sm text-deco-cream/60 mb-3">
                   Manually select two specific actors for tomorrow's challenge.
                   This will override the automatic generation and become active at midnight.
                 </p>
@@ -730,37 +730,37 @@ export default function AdminPanel() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Start Actor Search */}
                     <div className="space-y-2">
-                      <Label htmlFor="start-actor">Start Actor</Label>
+                      <Label htmlFor="start-actor" className="text-deco-gold">Start Actor</Label>
                       <div className="relative">
                         <Input
                           id="start-actor"
                           placeholder="Search for start actor..."
                           value={startActorSearch}
                           onChange={(e) => setStartActorSearch(e.target.value)}
-                          className="pr-8"
+                          className="pr-8 bg-black/50 border-deco-gold/30 text-deco-cream placeholder-deco-cream/30 focus:border-deco-gold"
                         />
-                        <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                        <Search className="absolute right-2 top-2.5 h-4 w-4 text-deco-gold/50" />
                       </div>
                       {selectedStartActor && (
-                        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border flex items-center space-x-3">
+                        <div className="p-2 bg-deco-gold/10 border-deco-gold/20 rounded border flex items-center space-x-3">
                           {selectedStartActor.profile_path ? (
                             <img
                               src={`https://image.tmdb.org/t/p/w92${selectedStartActor.profile_path}`}
                               alt={selectedStartActor.name}
-                              className="w-8 h-8 rounded-full object-cover"
+                              className="w-8 h-8 rounded-full object-cover border border-deco-gold/30"
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-700 flex items-center justify-center">
-                              <span className="text-xs font-medium text-blue-600 dark:text-blue-300">
+                            <div className="w-8 h-8 rounded-full bg-deco-gold/20 flex items-center justify-center border border-deco-gold/30">
+                              <span className="text-xs font-medium text-deco-gold">
                                 {selectedStartActor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                               </span>
                             </div>
                           )}
-                          <span className="text-sm font-medium">{selectedStartActor.name}</span>
+                          <span className="text-sm font-medium text-deco-gold">{selectedStartActor.name}</span>
                         </div>
                       )}
                       {startActorResults.length > 0 && !selectedStartActor && startActorSearch.length >= 2 && (
-                        <div className="max-h-32 overflow-y-auto border rounded bg-white dark:bg-gray-800 shadow-lg">
+                        <div className="max-h-32 overflow-y-auto border border-deco-gold/20 rounded bg-black/95 shadow-lg z-10">
                           {startActorResults.map((actor) => (
                             <button
                               key={actor.id}
@@ -769,17 +769,17 @@ export default function AdminPanel() {
                                 setStartActorSearch("");
                                 setStartActorResults([]);
                               }}
-                              className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center space-x-3"
+                              className="w-full text-left p-2 hover:bg-deco-gold/10 text-sm flex items-center space-x-3 text-deco-cream transition-colors"
                             >
                               {actor.profile_path ? (
                                 <img
                                   src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
                                   alt={actor.name}
-                                  className="w-8 h-8 rounded-full object-cover"
+                                  className="w-8 h-8 rounded-full object-cover border border-deco-gold/30"
                                 />
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                <div className="w-8 h-8 rounded-full bg-deco-gold/10 flex items-center justify-center border border-deco-gold/20">
+                                  <span className="text-xs font-medium text-deco-gold">
                                     {actor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                                   </span>
                                 </div>
@@ -793,37 +793,37 @@ export default function AdminPanel() {
 
                     {/* End Actor Search */}
                     <div className="space-y-2">
-                      <Label htmlFor="end-actor">End Actor</Label>
+                      <Label htmlFor="end-actor" className="text-deco-gold">End Actor</Label>
                       <div className="relative">
                         <Input
                           id="end-actor"
                           placeholder="Search for end actor..."
                           value={endActorSearch}
                           onChange={(e) => setEndActorSearch(e.target.value)}
-                          className="pr-8"
+                          className="pr-8 bg-black/50 border-deco-gold/30 text-deco-cream placeholder-deco-cream/30 focus:border-deco-gold"
                         />
-                        <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                        <Search className="absolute right-2 top-2.5 h-4 w-4 text-deco-gold/50" />
                       </div>
                       {selectedEndActor && (
-                        <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded border flex items-center space-x-3">
+                        <div className="p-2 bg-deco-gold/10 border-deco-gold/20 rounded border flex items-center space-x-3">
                           {selectedEndActor.profile_path ? (
                             <img
                               src={`https://image.tmdb.org/t/p/w92${selectedEndActor.profile_path}`}
                               alt={selectedEndActor.name}
-                              className="w-8 h-8 rounded-full object-cover"
+                              className="w-8 h-8 rounded-full object-cover border border-deco-gold/30"
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-green-200 dark:bg-green-700 flex items-center justify-center">
-                              <span className="text-xs font-medium text-green-600 dark:text-green-300">
+                            <div className="w-8 h-8 rounded-full bg-deco-gold/20 flex items-center justify-center border border-deco-gold/30">
+                              <span className="text-xs font-medium text-deco-gold">
                                 {selectedEndActor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                               </span>
                             </div>
                           )}
-                          <span className="text-sm font-medium">{selectedEndActor.name}</span>
+                          <span className="text-sm font-medium text-deco-gold">{selectedEndActor.name}</span>
                         </div>
                       )}
                       {endActorResults.length > 0 && !selectedEndActor && endActorSearch.length >= 2 && (
-                        <div className="max-h-32 overflow-y-auto border rounded bg-white dark:bg-gray-800 shadow-lg">
+                        <div className="max-h-32 overflow-y-auto border border-deco-gold/20 rounded bg-black/95 shadow-lg z-10">
                           {endActorResults.map((actor) => (
                             <button
                               key={actor.id}
@@ -832,17 +832,17 @@ export default function AdminPanel() {
                                 setEndActorSearch("");
                                 setEndActorResults([]);
                               }}
-                              className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm flex items-center space-x-3"
+                              className="w-full text-left p-2 hover:bg-deco-gold/10 text-sm flex items-center space-x-3 text-deco-cream transition-colors"
                             >
                               {actor.profile_path ? (
                                 <img
                                   src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
                                   alt={actor.name}
-                                  className="w-8 h-8 rounded-full object-cover"
+                                  className="w-8 h-8 rounded-full object-cover border border-deco-gold/30"
                                 />
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                <div className="w-8 h-8 rounded-full bg-deco-gold/10 flex items-center justify-center border border-deco-gold/20">
+                                  <span className="text-xs font-medium text-deco-gold">
                                     {actor.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                                   </span>
                                 </div>
@@ -904,13 +904,13 @@ export default function AdminPanel() {
         )}
 
         {/* Referral Analytics Dashboard */}
-        <Card>
+        <Card className="bg-black/40 border-deco-gold/20 text-deco-cream">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-deco-gold">
               <BarChart3 className="h-5 w-5" />
               Traffic Sources & Google Referral Analysis
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-deco-cream/60">
               Understanding your 692 Google referrals and comprehensive traffic analysis
             </CardDescription>
           </CardHeader>
@@ -920,7 +920,7 @@ export default function AdminPanel() {
         </Card>
 
         {/* Contact Submissions */}
-        <Card>
+        <Card className="bg-black/40 border-deco-gold/20 text-deco-cream">
           <CardContent className="p-6">
             <ContactSubmissions />
           </CardContent>
