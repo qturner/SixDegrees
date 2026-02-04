@@ -7,9 +7,10 @@ interface PageMetaOptions {
   image?: string;
   canonical?: string;
   noIndex?: boolean;
+  structuredData?: Record<string, any> | null;
 }
 
-export function usePageMeta({ title, description, keywords, image, canonical, noIndex }: PageMetaOptions) {
+export function usePageMeta({ title, description, keywords, image, canonical, noIndex, structuredData }: PageMetaOptions) {
   useEffect(() => {
     const previousTitle = document.title;
     const baseTitle = 'Six Degrees of Separation';
@@ -39,10 +40,33 @@ export function usePageMeta({ title, description, keywords, image, canonical, no
       return { element, previousHref };
     };
 
+    // Helper to inject/update structured data
+    const updateStructuredData = (data: Record<string, any> | null | undefined) => {
+      if (!data) return null;
+
+      const scriptId = 'dynamic-structured-data';
+      let element = document.getElementById(scriptId) as HTMLScriptElement;
+      let created = false;
+
+      if (!element) {
+        element = document.createElement('script');
+        element.id = scriptId;
+        element.type = 'application/ld+json';
+        document.head.appendChild(element);
+        created = true;
+      }
+
+      const previousContent = element.text;
+      element.text = JSON.stringify(data);
+
+      return { element, previousContent, created };
+    };
+
     const cleanupDescription = updateMeta('description', description);
     const cleanupKeywords = updateMeta('keywords', keywords);
     const cleanupRobots = noIndex ? updateMeta('robots', 'noindex, nofollow') : null;
     const cleanupCanonical = updateLink('canonical', canonical);
+    const cleanupStructuredData = updateStructuredData(structuredData);
 
     // OG Tags
     const cleanupOgTitle = updateMeta('og:title', title, true);
@@ -61,6 +85,14 @@ export function usePageMeta({ title, description, keywords, image, canonical, no
       if (cleanupRobots?.element) cleanupRobots.element.setAttribute('content', cleanupRobots.previousContent);
       if (cleanupCanonical?.element) cleanupCanonical.element.setAttribute('href', cleanupCanonical.previousHref);
 
+      if (cleanupStructuredData?.element) {
+        if (cleanupStructuredData.created) {
+          cleanupStructuredData.element.remove();
+        } else {
+          cleanupStructuredData.element.text = cleanupStructuredData.previousContent;
+        }
+      }
+
       if (cleanupOgTitle?.element) cleanupOgTitle.element.setAttribute('content', cleanupOgTitle.previousContent);
       if (cleanupOgDescription?.element) cleanupOgDescription.element.setAttribute('content', cleanupOgDescription.previousContent);
       if (cleanupOgImage?.element) cleanupOgImage.element.setAttribute('content', cleanupOgImage.previousContent);
@@ -69,5 +101,5 @@ export function usePageMeta({ title, description, keywords, image, canonical, no
       if (cleanupTwitterDescription?.element) cleanupTwitterDescription.element.setAttribute('content', cleanupTwitterDescription.previousContent);
       if (cleanupTwitterImage?.element) cleanupTwitterImage.element.setAttribute('content', cleanupTwitterImage.previousContent);
     };
-  }, [title, description, keywords, image, canonical, noIndex]);
+  }, [title, description, keywords, image, canonical, noIndex, structuredData]);
 }

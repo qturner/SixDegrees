@@ -76,10 +76,41 @@ export default function Game() {
     ? `Today's Challenge: Connect ${challenge.startActorName} and ${challenge.endActorName} in 6 moves or less! Play the daily Six Degrees of Separation movie trivia game.`
     : "Play today's Six Degrees of Separation challenge! Connect two Hollywood actors through movies in 6 moves or less. New daily challenges with hints and analytics.";
 
+  const structuredData = challenge ? {
+    "@context": "https://schema.org",
+    "@type": "Quiz",
+    "name": `Daily Connection: ${challenge.startActorName} to ${challenge.endActorName}`,
+    "about": {
+      "@type": "Thing",
+      "name": "Movie Trivia"
+    },
+    "educationalUse": "Brain Training",
+    "learningResourceType": "Quiz",
+    "assesses": "Film Knowledge",
+    "author": {
+      "@type": "Organization",
+      "name": "Six Degrees"
+    },
+    "datePublished": challenge.date,
+    "hasPart": {
+      "@type": "Question",
+      "name": `Connect ${challenge.startActorName} to ${challenge.endActorName}`,
+      "text": `Find a connection between ${challenge.startActorName} and ${challenge.endActorName} through movies they have co-starred in.`,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Correct connection path found in 6 degrees or less."
+      }
+    }
+  } : null;
+
   usePageMeta({
     title: pageTitle,
     description: pageDescription,
+    keywords: challenge
+      ? `six degrees, ${challenge.startActorName}, ${challenge.endActorName}, movie trivia, movie connection, kevin bacon game, film puzzle`
+      : "six degrees separation, movie game, actor connection, film trivia, Hollywood game",
     canonical: "https://sixdegrees.app/",
+    structuredData
   });
 
   useEffect(() => {
