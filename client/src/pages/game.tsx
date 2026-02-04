@@ -56,9 +56,29 @@ export default function Game() {
   const queryClient = useQueryClient();
   const previousChallengeIdRef = useRef<string | null>(null);
 
+  const { data: challenge, isLoading, error, refetch } = useQuery<DailyChallenge>({
+    queryKey: ["/api/daily-challenge"],
+    retry: (failureCount, error: any) => {
+      // Retry up to 3 times for 503 errors (database temporarily unavailable)
+      if (error?.status === 503 && failureCount < 3) {
+        return true;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+
+  const pageTitle = challenge
+    ? `Connect ${challenge.startActorName} & ${challenge.endActorName}`
+    : "Play Today's Challenge";
+
+  const pageDescription = challenge
+    ? `Today's Challenge: Connect ${challenge.startActorName} and ${challenge.endActorName} in 6 moves or less! Play the daily Six Degrees of Separation movie trivia game.`
+    : "Play today's Six Degrees of Separation challenge! Connect two Hollywood actors through movies in 6 moves or less. New daily challenges with hints and analytics.";
+
   usePageMeta({
-    title: "Play Today's Challenge",
-    description: "Play today's Six Degrees of Separation challenge! Connect two Hollywood actors through movies in 6 moves or less. New daily challenges with hints and analytics.",
+    title: pageTitle,
+    description: pageDescription,
     canonical: "https://sixdegrees.app/",
   });
 
@@ -94,18 +114,6 @@ export default function Game() {
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const { data: challenge, isLoading, error, refetch } = useQuery<DailyChallenge>({
-    queryKey: ["/api/daily-challenge"],
-    retry: (failureCount, error: any) => {
-      // Retry up to 3 times for 503 errors (database temporarily unavailable)
-      if (error?.status === 503 && failureCount < 3) {
-        return true;
-      }
-      return false;
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-  });
 
   const {
     startActorHint,
@@ -365,29 +373,7 @@ export default function Game() {
 
       <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
 
-      {/* Admin Login - Bottom right, only visible when scrolled to bottom */}
-      {/* Admin Login - Bottom right, only visible when scrolled to bottom */}
-      <Portal>
-        {isAtBottom && (
-          <div className="fixed bottom-4 right-4 z-50 transition-opacity duration-300">
-            {currentUser ? (
-              <UserMenu />
-            ) : (
-              <Link href="/admin-login">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 bg-deco-charcoal/90 backdrop-blur-sm border-deco-gold/30 shadow-lg hover:border-deco-gold text-deco-gold hover:text-deco-gold-light transition-all duration-200"
-                  data-testid="button-admin"
-                >
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
-            )}
-          </div>
-        )}
-      </Portal>
+
 
       <GameHeader
         challenge={challenge}

@@ -847,6 +847,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get best completion users (leaderboard)
+  app.get("/api/analytics/best-users", async (req, res) => {
+    try {
+      let challengeId = req.query.challengeId as string;
+
+      if (!challengeId) {
+        const today = getESTDateString();
+        const challenge = await storage.getDailyChallenge(today);
+
+        if (!challenge) {
+          return res.status(404).json({ message: "No challenge found for today" });
+        }
+        challengeId = challenge.id;
+      }
+
+      const result = await storage.getBestCompletionUsers(challengeId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error getting best users:", error);
+      res.status(500).json({ message: "Failed to get best users" });
+    }
+  });
+
   // Get current user info
   app.get("/api/user/me", isAuthenticated, async (req, res) => {
     try {
@@ -1437,6 +1460,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Status updated successfully" });
     } catch (error) {
       console.error("Error updating contact submission status:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Admin endpoint to view registered users
+  app.get("/api/admin/users", async (req, res) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ message: "Admin authentication required" });
+    }
+
+    const adminUser = await validateAdminSession(token);
+    if (!adminUser) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error getting users:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

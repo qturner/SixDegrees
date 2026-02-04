@@ -42,6 +42,16 @@ interface DailyChallenge {
   createdAt: string;
 }
 
+interface UserData {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string | null;
+  lastName: string | null;
+  createdAt: string;
+  googleId: string | null;
+}
+
 function useAdminAuth() {
   const [_, setLocation] = useLocation();
 
@@ -120,6 +130,74 @@ function DiagnosticsCard() {
             </div>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
+function UserList() {
+  const { data: users, isLoading, error } = useQuery<UserData[]>({
+    queryKey: ["/api/admin/users"],
+    queryFn: async () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) throw new Error('No admin token');
+
+      const response = await fetch("/api/admin/users", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error("Failed to fetch users");
+      return response.json();
+    },
+  });
+
+  if (isLoading) return <div className="p-4 text-center">Loading users...</div>;
+  if (error) return <div className="p-4 text-center text-red-500">Error loading users</div>;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Registered Users ({users?.length || 0})
+        </CardTitle>
+        <CardDescription>
+          List of all registered accounts by name and email
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border h-[400px] overflow-auto">
+          <table className="w-full text-sm text-left relative">
+            <thead className="bg-muted/50 text-muted-foreground sticky top-0 md:static">
+              <tr>
+                <th className="p-4 font-medium">Name</th>
+                <th className="p-4 font-medium">Username</th>
+                <th className="p-4 font-medium">Email</th>
+                <th className="p-4 font-medium">Auth Method</th>
+                <th className="p-4 font-medium">Joined</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {users?.map((user) => (
+                <tr key={user.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="p-4 font-medium">
+                    {user.firstName ? `${user.firstName} ${user.lastName || ''}` : '-'}
+                  </td>
+                  <td className="p-4">{user.username}</td>
+                  <td className="p-4">{user.email}</td>
+                  <td className="p-4">
+                    <Badge variant={user.googleId ? "secondary" : "outline"}>
+                      {user.googleId ? "Google" : "Email"}
+                    </Badge>
+                  </td>
+                  <td className="p-4 max-w-[150px] truncate text-muted-foreground">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -847,6 +925,8 @@ export default function AdminPanel() {
             <ContactSubmissions />
           </CardContent>
         </Card>
+        {/* User List */}
+        <UserList />
       </div>
     </div>
   );

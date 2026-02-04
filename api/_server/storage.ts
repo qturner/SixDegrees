@@ -30,11 +30,17 @@ export interface IStorage {
     mostUsedActors: { id: string; name: string; count: number }[];
   }>;
 
+  getBestCompletionUsers(challengeId: string): Promise<{
+    moves: number;
+    users: { id: string; username: string; firstName: string | null; picture: string | null }[];
+  }>;
+
   // User methods (email/password)
   getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByGoogleId(googleId: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
 
   // User stats methods
@@ -280,6 +286,42 @@ export class DatabaseStorage implements IStorage {
         moveDistribution,
         mostUsedMovies,
         mostUsedActors,
+      };
+    });
+  }
+
+  async getBestCompletionUsers(challengeId: string) {
+    return await withRetry(async () => {
+      // 1. Find the best score (minimum moves) for this challenge
+      const [bestScore] = await db
+        .select({ minMoves: sql<number>`MIN(${userChallengeCompletions.moves})` })
+        .from(userChallengeCompletions)
+        .where(eq(userChallengeCompletions.challengeId, challengeId));
+
+      if (!bestScore || bestScore.minMoves === null) {
+        return { moves: 0, users: [] };
+      }
+
+      const minMoves = bestScore.minMoves;
+
+      // 2. Get users who achieved this score
+      const bestUsers = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          firstName: users.firstName,
+          picture: users.picture,
+        })
+        .from(userChallengeCompletions)
+        .innerJoin(users, eq(userChallengeCompletions.userId, users.id))
+        .where(and(
+          eq(userChallengeCompletions.challengeId, challengeId),
+          eq(userChallengeCompletions.moves, minMoves)
+        ));
+
+      return {
+        moves: minMoves,
+        users: bestUsers
       };
     });
   }
@@ -532,6 +574,12 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
       return user || undefined;
+    });
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await withRetry(async () => {
+      return await db.select().from(users).orderBy(desc(users.createdAt));
     });
   }
 

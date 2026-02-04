@@ -3,54 +3,71 @@ import { useEffect } from 'react';
 interface PageMetaOptions {
   title: string;
   description?: string;
+  keywords?: string;
+  image?: string;
   canonical?: string;
   noIndex?: boolean;
 }
 
-export function usePageMeta({ title, description, canonical, noIndex }: PageMetaOptions) {
+export function usePageMeta({ title, description, keywords, image, canonical, noIndex }: PageMetaOptions) {
   useEffect(() => {
     const previousTitle = document.title;
     const baseTitle = 'Six Degrees of Separation';
-    
+
     document.title = title === baseTitle ? title : `${title} | ${baseTitle}`;
 
-    const metaDescription = document.querySelector('meta[name="description"]');
-    const previousDescription = metaDescription?.getAttribute('content') || '';
-    if (description && metaDescription) {
-      metaDescription.setAttribute('content', description);
-    }
+    // Helper to update meta tags
+    const updateMeta = (name: string, content: string | undefined, isProperty = false) => {
+      if (!content) return null;
+      const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      const element = document.querySelector(selector);
+      const previousContent = element?.getAttribute('content') || '';
+      if (element) {
+        element.setAttribute('content', content);
+      }
+      return { element, previousContent };
+    };
 
-    const metaRobots = document.querySelector('meta[name="robots"]');
-    const previousRobots = metaRobots?.getAttribute('content') || '';
-    if (noIndex && metaRobots) {
-      metaRobots.setAttribute('content', 'noindex, nofollow');
-    }
+    // Helper to update link tags
+    const updateLink = (rel: string, href: string | undefined) => {
+      if (!href) return null;
+      const element = document.querySelector(`link[rel="${rel}"]`);
+      const previousHref = element?.getAttribute('href') || '';
+      if (element) {
+        element.setAttribute('href', href);
+      }
+      return { element, previousHref };
+    };
 
-    const linkCanonical = document.querySelector('link[rel="canonical"]');
-    const previousCanonical = linkCanonical?.getAttribute('href') || '';
-    if (canonical && linkCanonical) {
-      linkCanonical.setAttribute('href', canonical);
-    }
+    const cleanupDescription = updateMeta('description', description);
+    const cleanupKeywords = updateMeta('keywords', keywords);
+    const cleanupRobots = noIndex ? updateMeta('robots', 'noindex, nofollow') : null;
+    const cleanupCanonical = updateLink('canonical', canonical);
 
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    const previousOgTitle = ogTitle?.getAttribute('content') || '';
-    if (ogTitle) {
-      ogTitle.setAttribute('content', title);
-    }
+    // OG Tags
+    const cleanupOgTitle = updateMeta('og:title', title, true);
+    const cleanupOgDescription = updateMeta('og:description', description, true);
+    const cleanupOgImage = updateMeta('og:image', image, true);
 
-    const ogDescription = document.querySelector('meta[property="og:description"]');
-    const previousOgDescription = ogDescription?.getAttribute('content') || '';
-    if (description && ogDescription) {
-      ogDescription.setAttribute('content', description);
-    }
+    // Twitter Tags
+    const cleanupTwitterTitle = updateMeta('twitter:title', title);
+    const cleanupTwitterDescription = updateMeta('twitter:description', description);
+    const cleanupTwitterImage = updateMeta('twitter:image', image);
 
     return () => {
       document.title = previousTitle;
-      if (metaDescription) metaDescription.setAttribute('content', previousDescription);
-      if (metaRobots) metaRobots.setAttribute('content', previousRobots);
-      if (linkCanonical) linkCanonical.setAttribute('href', previousCanonical);
-      if (ogTitle) ogTitle.setAttribute('content', previousOgTitle);
-      if (ogDescription) ogDescription.setAttribute('content', previousOgDescription);
+      if (cleanupDescription?.element) cleanupDescription.element.setAttribute('content', cleanupDescription.previousContent);
+      if (cleanupKeywords?.element) cleanupKeywords.element.setAttribute('content', cleanupKeywords.previousContent);
+      if (cleanupRobots?.element) cleanupRobots.element.setAttribute('content', cleanupRobots.previousContent);
+      if (cleanupCanonical?.element) cleanupCanonical.element.setAttribute('href', cleanupCanonical.previousHref);
+
+      if (cleanupOgTitle?.element) cleanupOgTitle.element.setAttribute('content', cleanupOgTitle.previousContent);
+      if (cleanupOgDescription?.element) cleanupOgDescription.element.setAttribute('content', cleanupOgDescription.previousContent);
+      if (cleanupOgImage?.element) cleanupOgImage.element.setAttribute('content', cleanupOgImage.previousContent);
+
+      if (cleanupTwitterTitle?.element) cleanupTwitterTitle.element.setAttribute('content', cleanupTwitterTitle.previousContent);
+      if (cleanupTwitterDescription?.element) cleanupTwitterDescription.element.setAttribute('content', cleanupTwitterDescription.previousContent);
+      if (cleanupTwitterImage?.element) cleanupTwitterImage.element.setAttribute('content', cleanupTwitterImage.previousContent);
     };
-  }, [title, description, canonical, noIndex]);
+  }, [title, description, keywords, image, canonical, noIndex]);
 }
