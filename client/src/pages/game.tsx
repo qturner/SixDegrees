@@ -107,8 +107,8 @@ export default function Game() {
     title: pageTitle,
     description: pageDescription,
     keywords: challenge
-      ? `six degrees, ${challenge.startActorName}, ${challenge.endActorName}, movie trivia, movie connection, kevin bacon game, film puzzle`
-      : "six degrees separation, movie game, actor connection, film trivia, Hollywood game",
+      ? `six degrees, ${challenge.startActorName}, ${challenge.endActorName}, movie trivia, movie connection, kevin bacon game, film puzzle, movie connection trivia, interactive actor trivia`
+      : "six degrees separation, movie game, actor connection, film trivia, Hollywood game, movie connection trivia, interactive actor trivia",
     canonical: "https://sixdegrees.app/",
     structuredData
   });
