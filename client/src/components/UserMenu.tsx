@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, BarChart3, LogOut, History, TrendingUp, Award } from "lucide-react";
+import { User, BarChart3, LogOut, History, TrendingUp, Award, Flame } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { DailyChallenge } from "@shared/schema";
 
@@ -160,8 +160,19 @@ export function UserMenu({ onPlayChallenge }: UserMenuProps) {
 
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-amber-500">
-                      {userStats.currentStreak || 0}
+                    <div className="flex items-center justify-center gap-1">
+                      <div className={`text-2xl font-bold ${(userStats.currentStreak || 0) >= 20 ? "text-red-500" : "text-amber-500"
+                        }`}>
+                        {userStats.currentStreak || 0}
+                      </div>
+                      {(userStats.currentStreak || 0) >= 5 && (
+                        <Flame
+                          className={`h-6 w-6 ${(userStats.currentStreak || 0) >= 20
+                              ? "text-red-600 animate-pulse fill-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                              : "text-orange-500 fill-orange-500"
+                            }`}
+                        />
+                      )}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Current Streak
