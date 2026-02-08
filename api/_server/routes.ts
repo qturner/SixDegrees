@@ -784,15 +784,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
 
-      // Save ALL attempts (both completed and failed) - ALWAYS save, even if validation had errors
-      // Send response immediately to avoid UI hanging
-      res.json(validationResult);
-
-      // Save attempt in background - use current request scope but don't await response
-      // In serverless, we must be careful. Vercel waits for async work in "Serverless Function" 
-      // but if we want to be safe we should await it OR use waitUntil if available (Next.js/Cloudflare)
-      // Since this is Express on Vercel, we should actually await it BUT with a timeout race
-      // so we don't block the user for more than 500ms for stats.
+      // Save attempt - we await this BEFORE sending response to ensure
+      // 1. Data consistency (analytics will be fresh when client fetches them)
+      // 2. Execution reliability (serverless functions might freeze after response)
       try {
         const today = getESTDateString();
         const savePromise = (async () => {
@@ -807,16 +801,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         })();
 
-        // Race between save and 500ms timeout
-        // We log error but don't fail the request
+        // Race between save and 2000ms timeout
+        // We log error but don't fail the request if stats saving fails
         await Promise.race([
           savePromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Stats save timeout")), 500))
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Stats save timeout")), 2000))
         ]);
       } catch (dbError) {
         // Silently fail stats saving if it takes too long
-        console.error("Background stats save error/timeout:", dbError);
+        console.error("Stats save error/timeout:", dbError);
       }
+
+      // Send response after stats are ideally saved
+      res.json(validationResult);
+
     } catch (error) {
       console.error("Error validating game:", error);
       res.status(500).json({ message: "Internal server error" });
