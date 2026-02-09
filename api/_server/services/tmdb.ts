@@ -613,20 +613,33 @@ class TMDbService {
 
   async getPopularActors(): Promise<Actor[]> {
     try {
-      // Get popular actors from many more pages to have much larger pool
-      // TMDB popular endpoint typically returns 20 actors per page
+      // Get popular actors from random pages deep in the pool (Top 100 pages = 2000 actors)
+      // This ensures variety while maintaining "star power"
       const pages = [];
-      const totalPages = 5; // Fetch 100 actors to ensure enough valid ones remain
+      const pagesToFetch = 5; // Fetch 100 raw actors
+      const maxPage = 100;    // Limit of "popular" definition
 
-      console.log(`Fetching ${totalPages} pages of popular actors (${totalPages * 20} total)...`);
+      // Generate 5 unique random page numbers
+      const randomPages = new Set<number>();
+      while (randomPages.size < pagesToFetch) {
+        // Skew slightly towards top 50 for guaranteed recognizability, but allow full range
+        // weightedRandom: square root method favors lower numbers slightly
+        const weightedPage = Math.floor(1 + (maxPage * Math.pow(Math.random(), 1.5)));
+        randomPages.add(Math.min(Math.max(1, weightedPage), maxPage));
+      }
 
-      for (let i = 1; i <= totalPages; i++) {
-        const page = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: i.toString() });
-        pages.push(page);
+      const sortedPages = Array.from(randomPages).sort((a, b) => a - b);
+      console.log(`Fetching random popular actor pages: ${sortedPages.join(', ')}`);
 
-        // Add small delay between API calls to be respectful
-        if (i < totalPages) {
+      for (const pageNum of sortedPages) {
+        try {
+          const page = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: pageNum.toString() });
+          pages.push(page);
+
+          // Add delay between calls
           await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (e) {
+          console.error(`Failed to fetch page ${pageNum}`, e);
         }
       }
 
@@ -641,7 +654,7 @@ class TMDbService {
           known_for_department: person.known_for_department,
         }));
 
-      console.log(`Found ${actors.length} actors from ${totalPages} pages, applying career activity filtering...`);
+      console.log(`Found ${actors.length} actors from ${pagesToFetch} pages, applying career activity filtering...`);
 
       // Apply strict filtering to ALL fetched actors
       // We process in batches of 5 within filterActorsByGenre
