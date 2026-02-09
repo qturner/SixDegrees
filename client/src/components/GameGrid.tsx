@@ -244,8 +244,8 @@ export default function GameGrid({
                 <div className={`relative md:w-1/3 ${index % 2 === 0 ? 'md:mr-auto md:ml-0' : 'md:ml-auto md:mr-0'}`}>
                   {/* Glow effect behind card */}
                   {/* Glow effect behind card */}
-                  <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-60 blur-md transition-opacity duration-500" />
-                  <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-0 transition-opacity duration-300" />
+                  <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-500 opacity-0 group-hover:opacity-60 blur-md transition-opacity duration-500 pointer-events-none" />
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-deco-gold/20 via-deco-bronze/10 to-transparent rounded blur-sm opacity-40 group-hover:opacity-0 transition-opacity duration-300 pointer-events-none" />
 
 
                   {/* Main card - Updated border to gradient ring style */}
@@ -261,7 +261,7 @@ export default function GameGrid({
                       </div>
                     )}
 
-                    <div className={`absolute inset-0 bg-gradient-to-br from-deco-gold via-deco-bronze to-transparent rounded-lg transition-opacity duration-300 
+                    <div className={`absolute inset-0 bg-gradient-to-br from-deco-gold via-deco-bronze to-transparent rounded-lg transition-opacity duration-300 pointer-events-none 
                     ${validationResult?.valid ? 'opacity-20' : 'opacity-40 group-hover:opacity-60'}
                   `} />
 
