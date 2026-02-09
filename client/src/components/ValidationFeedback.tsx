@@ -192,7 +192,7 @@ export default function ValidationFeedback({ validationResults, gameResult, conn
             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
               <Button
                 onClick={handleShare}
-                className="h-12 px-8 bg-deco-gold text-deco-charcoal hover:bg-white hover:text-black font-bold uppercase tracking-widest transition-all duration-300 shadow-[0_0_20px_rgba(196,151,49,0.4)]"
+                className="w-full sm:w-56 h-12 px-8 bg-deco-gold text-deco-charcoal hover:bg-white hover:text-black font-bold uppercase tracking-widest transition-all duration-300 shadow-[0_0_20px_rgba(196,151,49,0.4)]"
               >
                 <Share className="w-5 h-5 mr-3" />
                 Share Victory
@@ -200,7 +200,7 @@ export default function ValidationFeedback({ validationResults, gameResult, conn
               <Button
                 onClick={handleShareMovies}
                 variant="outline"
-                className="h-12 px-8 border-2 border-deco-gold/30 text-deco-gold hover:border-deco-gold hover:bg-deco-gold/10 hover:text-deco-gold-bright font-bold uppercase tracking-widest transition-all duration-300"
+                className="w-full sm:w-56 h-12 px-8 border-2 border-deco-gold/30 text-deco-gold hover:border-deco-gold hover:!bg-deco-gold hover:!text-deco-charcoal font-bold uppercase tracking-widest transition-all duration-300"
               >
                 <Film className="w-5 h-5 mr-3" />
                 Share Path
