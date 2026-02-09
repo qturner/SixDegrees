@@ -200,7 +200,7 @@ export default function ValidationFeedback({ validationResults, gameResult, conn
               <Button
                 onClick={handleShareMovies}
                 variant="outline"
-                className="h-12 px-8 border-2 border-deco-gold/30 text-deco-gold hover:border-deco-gold hover:bg-deco-gold/10 font-bold uppercase tracking-widest transition-all duration-300"
+                className="h-12 px-8 border-2 border-deco-gold/30 text-deco-gold hover:border-deco-gold hover:bg-deco-gold/10 hover:text-deco-gold-bright font-bold uppercase tracking-widest transition-all duration-300"
               >
                 <Film className="w-5 h-5 mr-3" />
                 Share Path
