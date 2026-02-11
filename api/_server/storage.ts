@@ -40,8 +40,10 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByGoogleId(googleId: string): Promise<User | undefined>;
+  getUserByAppleId(appleId: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<User>): Promise<User>;
 
   // User stats methods
   getUserStats(userId: string): Promise<UserStats | undefined>;
@@ -577,6 +579,13 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getUserByAppleId(appleId: string): Promise<User | undefined> {
+    return await withRetry(async () => {
+      const [user] = await db.select().from(users).where(eq(users.appleId, appleId));
+      return user || undefined;
+    });
+  }
+
   async getAllUsers(): Promise<User[]> {
     return await withRetry(async () => {
       return await db.select().from(users).orderBy(desc(users.createdAt));
@@ -586,6 +595,16 @@ export class DatabaseStorage implements IStorage {
   async createUser(userData: InsertUser): Promise<User> {
     return await withRetry(async () => {
       const [user] = await db.insert(users).values(userData).returning();
+      return user;
+    });
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    return await withRetry(async () => {
+      const [user] = await db.update(users)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(users.id, id))
+        .returning();
       return user;
     });
   }

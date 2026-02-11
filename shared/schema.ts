@@ -189,6 +189,7 @@ export const users = pgTable("users", {
   username: varchar("username").unique().notNull(),
   password: varchar("password"), // Nullable for Google auth users
   googleId: varchar("google_id").unique(), // For Google auth
+  appleId: varchar("apple_id").unique(), // For Apple auth
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   picture: text("picture"), // Google profile picture

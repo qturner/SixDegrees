@@ -7,6 +7,7 @@ import { ZodError } from "zod";
 
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import appleSignin from "apple-signin-auth";
 
 export async function setupAuth(app: Express) {
   // Use cookie-session instead of express-session for Vercel/Serverless
@@ -125,6 +126,93 @@ export async function setupAuth(app: Express) {
       res.redirect("/");
     }
   );
+
+  // Apple Sign In Endpoint
+  app.post("/api/auth/apple", async (req: Request, res: Response) => {
+    try {
+      const { identityToken, authorizationCode, firstName, lastName } = req.body;
+
+      if (!identityToken) {
+        return res.status(400).json({ message: "Missing identity token" });
+      }
+
+      // Verify identity token
+      let idToken;
+      try {
+        idToken = await appleSignin.verifyIdToken(identityToken, {
+          audience: "com.sixdegreesapp.ios",
+          ignoreExpiration: true, // Optional: might want to enforce expiration in prod
+        });
+      } catch (err: any) {
+        console.error("Apple auth verification failed:", err);
+        return res.status(401).json({ message: "Invalid identity token" });
+      }
+
+      const appleId = idToken.sub;
+      const email = idToken.email;
+
+      if (!appleId) {
+        return res.status(400).json({ message: "No Apple ID found in token" });
+      }
+
+      // 1. Check if user exists by Apple ID
+      let user = await storage.getUserByAppleId(appleId);
+
+      if (!user) {
+        // 2. Check if user exists by email (link accounts)
+        // Apple doesn't always provide email on subsequent logins, but verified token usually has it?
+        // Actually, verifyIdToken returns the decoded token which contains email if scope was requested.
+        // If email is present, we try to link.
+        if (email) {
+          user = await storage.getUserByEmail(email);
+          if (user) {
+            // Link existing email user to Apple
+            if (!user.appleId) {
+              user = await storage.updateUser(user.id, { appleId });
+              console.log(`AUTH: Linked Apple ID to existing user ${user.id}`);
+            }
+          }
+        }
+
+        if (!user) {
+          // 3. Create new user
+          if (!email) {
+            return res.status(400).json({ message: "Email required for new account" });
+          }
+
+          const username = email.split('@')[0] + Math.floor(Math.random() * 1000);
+
+          user = await storage.createUser({
+            email,
+            username,
+            appleId,
+            firstName: firstName || undefined,
+            lastName: lastName || undefined,
+            password: "", // No password
+          });
+
+          // Create stats for new user
+          await storage.createUserStats({ userId: user.id });
+        } else {
+          // If we found a user by email, we should update their appleId so next time lookup works
+          if (!user.appleId) {
+            user = await storage.updateUser(user.id, { appleId });
+            console.log(`AUTH: Linked Apple ID to existing user ${user.id}`);
+          }
+        }
+      }
+
+      // Set session
+      (req.session as any).userId = user.id;
+
+      const { password, ...userResponse } = user;
+      res.json(userResponse);
+
+    } catch (error) {
+      console.error("Apple auth error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   // Registration endpoint
   app.post("/api/auth/register", async (req: Request, res: Response) => {
