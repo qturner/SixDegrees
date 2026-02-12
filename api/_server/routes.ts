@@ -868,59 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current user info
-  app.get("/api/user/me", isAuthenticated, async (req, res) => {
-    try {
-      const user = (req as any).user;
-      if (!user || !user.claims) {
-        return res.status(401).json({ message: "User not authenticated" });
-      }
 
-      const userData = {
-        id: user.claims.sub,
-        email: user.claims.email,
-        firstName: user.claims.given_name,
-        lastName: user.claims.family_name,
-        profileImageUrl: user.claims.picture,
-      };
-
-      res.json(userData);
-    } catch (error) {
-      console.error("Error getting user info:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Get user stats
-  app.get("/api/user/stats", isAuthenticated, async (req, res) => {
-    try {
-      const user = (req as any).user;
-      const userId = user.claims.sub;
-
-      const completions = await storage.getUserCompletions(userId);
-      const moveDistribution = await storage.getUserMoveDistribution(userId);
-
-      const totalChallenges = completions.length;
-      const completedChallenges = completions.filter(c => c.moves <= 6).length;
-      const averageMoves = completions.length > 0
-        ? Math.round((completions.reduce((sum, c) => sum + c.moves, 0) / completions.length) * 10) / 10
-        : 0;
-      const bestScore = completions.length > 0
-        ? Math.min(...completions.map(c => c.moves))
-        : null;
-
-      res.json({
-        totalChallenges,
-        completedChallenges,
-        averageMoves,
-        bestScore,
-        moveDistribution,
-      });
-    } catch (error) {
-      console.error("Error getting user stats:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
 
   // Get incomplete challenges from past 5 days
   app.get("/api/user/incomplete-challenges", isAuthenticated, async (req, res) => {

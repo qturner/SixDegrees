@@ -329,6 +329,24 @@ export async function setupAuth(app: Express) {
     res.status(200).json({ message: "Logged out successfully" });
   });
 
+  // Delete account endpoint
+  app.delete("/api/user/me", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any).userId;
+      await storage.deleteUserAccount(userId);
+
+      // Clear session
+      req.session = null as any;
+      res.clearCookie("session");
+      res.clearCookie("session.sig");
+
+      res.status(200).json({ message: "Account deleted" });
+    } catch (error) {
+      console.error("Delete account error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Get current user endpoint
   app.get("/api/user/me", isAuthenticated, async (req: Request, res: Response) => {
     try {

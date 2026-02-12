@@ -44,6 +44,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<User>): Promise<User>;
+  deleteUserAccount(userId: string): Promise<void>;
 
   // User stats methods
   getUserStats(userId: string): Promise<UserStats | undefined>;
@@ -701,6 +702,16 @@ export class DatabaseStorage implements IStorage {
       }
 
       return results;
+    });
+  }
+
+  async deleteUserAccount(userId: string): Promise<void> {
+    await withRetry(async () => {
+      // Delete children first - manual cascade for safety
+      await db.delete(userChallengeCompletions).where(eq(userChallengeCompletions.userId, userId));
+      await db.delete(userStats).where(eq(userStats.userId, userId));
+      // Finally delete the user
+      await db.delete(users).where(eq(users.id, userId));
     });
   }
 }
