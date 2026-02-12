@@ -110,7 +110,16 @@ export async function setupAuth(app: Express) {
   });
 
   // Google Auth Routes
-  app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+  app.get("/api/auth/google", (req: Request, res: Response, next: NextFunction) => {
+    // Check if coming from mobile app
+    const isMobile = req.query.platform === 'ios';
+    const state = isMobile ? 'mobile' : undefined;
+
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+      state
+    })(req, res, next);
+  });
 
   app.get("/api/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/" }),
@@ -122,6 +131,14 @@ export async function setupAuth(app: Express) {
       }
 
       console.log('AUTH: Google login successful. Session set.');
+
+      // Check state to see if we should redirect to mobile app
+      if (req.query.state === 'mobile') {
+        console.log('AUTH: Redirecting to mobile app scheme');
+        // We include success=true just in case the app needs to parse it
+        return res.redirect("sixdegrees://auth/callback?success=true");
+      }
+
       // cookie-session saves automatically when response ends
       res.redirect("/");
     }
