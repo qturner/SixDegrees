@@ -153,17 +153,19 @@ export async function setupAuth(app: Express) {
         // Check state to see if we should redirect to mobile app
         if (req.query.state === 'mobile') {
           console.log('AUTH: Redirecting to mobile app scheme');
-          // Pass session cookies from the request to the redirect URL since
-          // ASWebAuthenticationSession doesn't share cookies with URLSession
-          const sessionCookie = (req.headers.cookie || '').split(';')
-            .map((c: string) => c.trim())
-            .reduce((acc: Record<string, string>, c: string) => {
-              const [key, ...val] = c.split('=');
-              acc[key] = val.join('=');
-              return acc;
-            }, {});
-          const session = encodeURIComponent(sessionCookie['session'] || '');
-          const sessionSig = encodeURIComponent(sessionCookie['session.sig'] || '');
+          // Construct session cookie from req.session (not req.headers.cookie,
+          // which may have stale cookies from a deleted user). Sign with the
+          // same HMAC-SHA1 + URL-safe base64 that cookie-session/keygrip uses.
+          const sessionData = JSON.stringify(req.session);
+          const sessionValue = Buffer.from(sessionData).toString('base64');
+          const sessionKey = process.env.SESSION_SECRET || 'fallback-secret-for-development';
+          const sig = crypto
+            .createHmac('sha1', sessionKey)
+            .update('session=' + sessionValue)
+            .digest('base64')
+            .replace(/\/|\+|=/g, (x: string) => ({ '/': '_', '+': '-', '=': '' })[x] || '');
+          const session = encodeURIComponent(sessionValue);
+          const sessionSig = encodeURIComponent(sig);
           return res.redirect(`sixdegrees://auth/callback?success=true&session=${session}&session_sig=${sessionSig}`);
         }
 
