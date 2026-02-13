@@ -78,6 +78,10 @@ class TMDbService {
 
   // Actors to exclude (primarily voice actors, stand-up comedians, or those not suitable for the game)
   private readonly EXCLUDED_ACTORS = new Set([
+    // Specific exclusions based on user feedback
+    'Brahmanandam', // Prolific Indian actor, high credit count but mostly non-English
+    'Amitabh Bachchan', // Bollywood legend, not primarily English
+
     // Voice actors
     'Cree Summer',
     'Tara Strong',
@@ -516,12 +520,8 @@ class TMDbService {
   }
 
   /**
-   * Check if an actor has career activity after 1980 (includes deceased actors with modern careers)
-   */
-
-
-  /**
    * Consolidated filter: career activity, genre, and mainstream appeal
+   * Now includes English credit ratio check to filter out prolific non-English actors
    */
   private async filterActorsByGenre(actors: Actor[]): Promise<Actor[]> {
     const validActors: Actor[] = [];
@@ -569,9 +569,32 @@ class TMDbService {
             }
           }
 
-          if (animatedCount / (animatedCount + liveActionCount) > 0.6) return null;
-          if (englishLiveActionCount < 5) return null;
-          if (post1990EnglishLiveActionCount < 3) return null;
+          // Ratio calculation
+          const totalCredits = animatedCount + liveActionCount; // Or strictly credits.length, but this filters genres too
+          if (totalCredits === 0) return null;
+
+          const englishRatio = englishLiveActionCount / totalCredits;
+
+          // 1. Basic Animation Filter
+          if (animatedCount / totalCredits > 0.6) return null;
+
+          // 2. Tiered English Filter
+          // High English Ratio (> 50%): Standard Hollywood actor
+          if (englishRatio > 0.5) {
+            if (englishLiveActionCount < 5) return null;
+            if (post1990EnglishLiveActionCount < 3) return null;
+          }
+          // Medium English Ratio (10-50%): Crossover stars (e.g., Jackie Chan, Marion Cotillard)
+          // Require much higher absolute count to filter "noise" from non-English actors
+          else if (englishRatio >= 0.1) {
+            if (englishLiveActionCount < 15) return null;
+            // Still require recency
+            if (post1990EnglishLiveActionCount < 5) return null;
+          }
+          // Low English Ratio (< 10%): Primarily non-English actor (e.g., Brahmanandam)
+          else {
+            return null;
+          }
 
           return actor;
         } catch (e) {
