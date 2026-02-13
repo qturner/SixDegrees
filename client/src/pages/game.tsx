@@ -22,7 +22,8 @@ import { trackGameEvent, trackPageView } from "@/lib/analytics";
 import { useHints } from "@/hooks/useHints";
 
 // Helper functions for localStorage persistence
-const saveGameState = (connections: Connection[], validationResults: ValidationResult[], gameResult: ValidationResult | null, isFlipped: boolean, challengeDate?: string) => {
+// Helper functions for localStorage persistence
+const saveGameState = (difficulty: string, connections: Connection[], validationResults: ValidationResult[], gameResult: ValidationResult | null, isFlipped: boolean, challengeDate?: string) => {
   const gameState = {
     connections,
     validationResults,
@@ -31,12 +32,12 @@ const saveGameState = (connections: Connection[], validationResults: ValidationR
     challengeDate,
     savedAt: Date.now()
   };
-  localStorage.setItem('gameState', JSON.stringify(gameState));
+  localStorage.setItem(`gameState_${difficulty}`, JSON.stringify(gameState));
 };
 
-const loadGameState = (currentChallengeDate?: string) => {
+const loadGameState = (difficulty: string, currentChallengeDate?: string) => {
   try {
-    const saved = localStorage.getItem('gameState');
+    const saved = localStorage.getItem(`gameState_${difficulty}`);
     if (saved) {
       const state = JSON.parse(saved);
       // Only load if saved within last 24 hours to avoid stale state
@@ -55,9 +56,10 @@ const loadGameState = (currentChallengeDate?: string) => {
 export default function Game() {
   const queryClient = useQueryClient();
   const previousChallengeIdRef = useRef<string | null>(null);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
 
-  const { data: challenge, isLoading, error, refetch } = useQuery<DailyChallenge>({
-    queryKey: ["/api/daily-challenge"],
+  const { data: challenges, isLoading, error, refetch } = useQuery<DailyChallenge[]>({
+    queryKey: ["/api/daily-challenges"],
     retry: (failureCount, error: any) => {
       // Retry up to 3 times for 503 errors (database temporarily unavailable)
       if (error?.status === 503 && failureCount < 3) {
@@ -68,18 +70,20 @@ export default function Game() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
+  const challenge = challenges?.find(c => c.difficulty === difficulty);
+
   const pageTitle = challenge
-    ? `Connect ${challenge.startActorName} & ${challenge.endActorName}`
+    ? `Connect ${challenge.startActorName} & ${challenge.endActorName} (${difficulty})`
     : "Play Today's Challenge";
 
   const pageDescription = challenge
-    ? `Today's Challenge: Connect ${challenge.startActorName} and ${challenge.endActorName} in 6 moves or less! Play the daily Six Degrees of Separation movie trivia game.`
+    ? `Today's ${difficulty} Challenge: Connect ${challenge.startActorName} and ${challenge.endActorName} in 6 moves or less! Play the daily Six Degrees of Separation movie trivia game.`
     : "Play today's Six Degrees of Separation challenge! Connect two Hollywood actors through movies in 6 moves or less. New daily challenges with hints and analytics.";
 
   const structuredData = challenge ? {
     "@context": "https://schema.org",
     "@type": "Quiz",
-    "name": `Daily Connection: ${challenge.startActorName} to ${challenge.endActorName}`,
+    "name": `Daily Connection (${difficulty}): ${challenge.startActorName} to ${challenge.endActorName}`,
     "about": {
       "@type": "Thing",
       "name": "Movie Trivia"
@@ -202,7 +206,7 @@ export default function Game() {
   // Initialize or reset game state when challenge loads
   useEffect(() => {
     if (challenge && !gameStateInitialized) {
-      const saved = loadGameState(challenge.date);
+      const saved = loadGameState(difficulty, challenge.date);
       if (saved) {
         // Load saved state if it's for the current challenge
         setConnections(saved.connections || []);
@@ -211,18 +215,18 @@ export default function Game() {
         setIsFlipped(saved.isFlipped || false);
       } else {
         // Reset to clean state if no valid saved state or new challenge
-        resetGame();
+        resetGame(false, true);
       }
       setGameStateInitialized(true);
     }
-  }, [challenge, gameStateInitialized]);
+  }, [challenge, gameStateInitialized, difficulty]);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
     if (challenge) {
-      saveGameState(connections, validationResults, gameResult, isFlipped, challenge.date);
+      saveGameState(difficulty, connections, validationResults, gameResult, isFlipped, challenge.date);
     }
-  }, [connections, validationResults, gameResult, isFlipped, challenge]);
+  }, [connections, validationResults, gameResult, isFlipped, challenge, difficulty]);
 
   const handleConnectionUpdate = (index: number, connection: Partial<Connection>) => {
     setConnections(prev => {
@@ -263,14 +267,16 @@ export default function Game() {
     }
   };
 
-  const resetGame = (preserveFlip = false) => {
+  const resetGame = (preserveFlip = false, skipStorageClear = false) => {
     setConnections([]);
     setValidationResults([]);
     setGameResult(null);
     if (!preserveFlip) {
       setIsFlipped(false);
     }
-    localStorage.removeItem('gameState');
+    if (!skipStorageClear) {
+      localStorage.removeItem(`gameState_${difficulty}`);
+    }
     trackGameEvent.resetGame();
   };
 
@@ -283,7 +289,8 @@ export default function Game() {
       month: '2-digit',
       day: '2-digit'
     }).format(new Date()).replace(/\//g, '-');
-    localStorage.removeItem('gameState');
+
+    ['easy', 'medium', 'hard'].forEach(d => localStorage.removeItem(`gameState_${d}`));
     localStorage.removeItem(`hints-${challengeDate}`);
 
     // Reset all state
@@ -405,6 +412,22 @@ export default function Game() {
       <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
 
 
+      <div className="bg-gradient-to-r from-deco-charcoal to-black relative z-20 pt-4 pb-2 text-center">
+        <div className="inline-flex items-center justify-center p-1 bg-deco-charcoal/50 rounded-lg border border-deco-gold/20 backdrop-blur-sm">
+          {(['easy', 'medium', 'hard'] as const).map((lvl) => (
+            <button
+              key={lvl}
+              onClick={() => setDifficulty(lvl)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium tracking-wider uppercase transition-all duration-300 ${difficulty === lvl
+                  ? 'bg-deco-gold text-deco-charcoal shadow-[0_0_10px_rgba(255,215,0,0.3)]'
+                  : 'text-deco-gold/60 hover:text-deco-gold hover:bg-deco-gold/10'
+                }`}
+            >
+              {lvl.charAt(0).toUpperCase() + lvl.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <GameHeader
         challenge={challenge}

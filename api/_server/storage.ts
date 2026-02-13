@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 export interface IStorage {
   // Daily Challenge methods
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
+  getDailyChallenges(date: string): Promise<DailyChallenge[]>;
   getDailyChallengeById(id: string): Promise<DailyChallenge | undefined>;
   getChallengeByStatus(status: string): Promise<DailyChallenge | undefined>;
   getAllChallengesByStatus(status: string): Promise<DailyChallenge[]>;
@@ -94,8 +95,18 @@ export class DatabaseStorage implements IStorage {
   // Daily Challenge methods
   async getDailyChallenge(date: string): Promise<DailyChallenge | undefined> {
     return await withRetry(async () => {
-      const [challenge] = await db.select().from(dailyChallenges).where(eq(dailyChallenges.date, date));
-      return challenge || undefined;
+      // Prefer 'medium' difficulty if multiple exist for the date
+      const challenges = await db.select().from(dailyChallenges).where(eq(dailyChallenges.date, date));
+      if (challenges.length === 0) return undefined;
+
+      const medium = challenges.find((c: DailyChallenge) => c.difficulty === 'medium');
+      return medium || challenges[0];
+    });
+  }
+
+  async getDailyChallenges(date: string): Promise<DailyChallenge[]> {
+    return await withRetry(async () => {
+      return await db.select().from(dailyChallenges).where(eq(dailyChallenges.date, date));
     });
   }
 
@@ -108,8 +119,12 @@ export class DatabaseStorage implements IStorage {
 
   async getChallengeByStatus(status: string): Promise<DailyChallenge | undefined> {
     return await withRetry(async () => {
-      const [challenge] = await db.select().from(dailyChallenges).where(eq(dailyChallenges.status, status));
-      return challenge || undefined;
+      // Prefer medium for single-challenge lookups by status
+      const challenges = await db.select().from(dailyChallenges).where(eq(dailyChallenges.status, status));
+      if (challenges.length === 0) return undefined;
+
+      const medium = challenges.find((c: DailyChallenge) => c.difficulty === 'medium');
+      return medium || challenges[0];
     });
   }
 

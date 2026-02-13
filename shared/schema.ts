@@ -1,13 +1,14 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, index, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, index, json, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 export const dailyChallenges = pgTable("daily_challenges", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  date: text("date").notNull().unique(), // YYYY-MM-DD format
+  date: text("date").notNull(), // YYYY-MM-DD format
   status: text("status").notNull().default("active"), // "active", "upcoming", "archived"
+  difficulty: text("difficulty").notNull().default("medium"), // "easy", "medium", "hard"
   startActorId: integer("start_actor_id").notNull(),
   startActorName: text("start_actor_name").notNull(),
   startActorProfilePath: text("start_actor_profile_path"),
@@ -18,7 +19,9 @@ export const dailyChallenges = pgTable("daily_challenges", {
   startActorHint: text("start_actor_hint"), // JSON string of hint movies
   endActorHint: text("end_actor_hint"),     // JSON string of hint movies
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  unique("daily_challenges_date_difficulty_key").on(table.date, table.difficulty),
+]); // Composite unique key replaces simple unique on date
 
 export const gameAttempts = pgTable("game_attempts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -219,6 +222,9 @@ export const userStats = pgTable("user_stats", {
   currentStreak: integer("current_streak").default(0),
   maxStreak: integer("max_streak").default(0),
   lastPlayedDate: text("last_played_date"), // YYYY-MM-DD to track daily streaks
+  easyCompletions: integer("easy_completions").default(0),
+  mediumCompletions: integer("medium_completions").default(0),
+  hardCompletions: integer("hard_completions").default(0),
   completionsAt1Move: integer("completions_at_1_move").default(0),
   completionsAt2Moves: integer("completions_at_2_moves").default(0),
   completionsAt3Moves: integer("completions_at_3_moves").default(0),

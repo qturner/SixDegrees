@@ -611,33 +611,45 @@ class TMDbService {
     }
   }
 
-  async getPopularActors(): Promise<Actor[]> {
+  async getActorsByTier(tier: 'easy' | 'medium' | 'hard'): Promise<Actor[]> {
     try {
-      // Get popular actors from random pages deep in the pool (Top 100 pages = 2000 actors)
-      // This ensures variety while maintaining "star power"
-      const pages = [];
-      const pagesToFetch = 5; // Fetch 100 raw actors
-      const maxPage = 100;    // Limit of "popular" definition
+      let minPage: number;
+      let maxPage: number;
 
-      // Generate 5 unique random page numbers
-      const randomPages = new Set<number>();
-      while (randomPages.size < pagesToFetch) {
-        // Skew slightly towards top 50 for guaranteed recognizability, but allow full range
-        // weightedRandom: square root method favors lower numbers slightly
-        const weightedPage = Math.floor(1 + (maxPage * Math.pow(Math.random(), 1.5)));
-        randomPages.add(Math.min(Math.max(1, weightedPage), maxPage));
+      switch (tier) {
+        case 'easy':
+          // A-List: Top 100 actors (Pages 1-5)
+          minPage = 1;
+          maxPage = 5;
+          break;
+        case 'medium':
+          // Mid-Tier: Rank ~200-500 (Pages 10-25)
+          minPage = 10;
+          maxPage = 25;
+          break;
+        case 'hard':
+          // Niche: Rank ~1000-2000 (Pages 50-100)
+          minPage = 50;
+          maxPage = 100;
+          break;
       }
 
-      const sortedPages = Array.from(randomPages).sort((a, b) => a - b);
-      console.log(`Fetching random popular actor pages: ${sortedPages.join(', ')}`);
+      const pages: TMDbResponse<TMDbActor>[] = [];
+      const distinctPages = new Set<number>();
 
-      for (const pageNum of sortedPages) {
+      // Fetch 5 random pages from the specified range
+      while (distinctPages.size < 5) {
+        const page = Math.floor(Math.random() * (maxPage - minPage + 1)) + minPage;
+        distinctPages.add(page);
+      }
+
+      console.log(`Fetching ${tier} tier actors from pages: ${Array.from(distinctPages).join(', ')}`);
+
+      for (const pageNum of distinctPages) {
         try {
           const page = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: pageNum.toString() });
           pages.push(page);
-
-          // Add delay between calls
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise(resolve => setTimeout(resolve, 50)); // Rate limit buffer
         } catch (e) {
           console.error(`Failed to fetch page ${pageNum}`, e);
         }
@@ -654,19 +666,20 @@ class TMDbService {
           known_for_department: person.known_for_department,
         }));
 
-      console.log(`Found ${actors.length} actors from ${pagesToFetch} pages, applying career activity filtering...`);
+      // Apply strict filtering (must have profile path, English movies, etc.)
+      const filteredActors = await this.filterActorsByGenre(actors);
 
-      // Apply strict filtering to ALL fetched actors
-      // We process in batches of 5 within filterActorsByGenre
-      const finalFilteredActors = await this.filterActorsByGenre(actors);
-      console.log(`Final filtered actors: ${finalFilteredActors.length} (out of ${actors.length} candidates)`);
-
-      // Ensure we have at least 2 actors
-      return finalFilteredActors.length >= 2 ? finalFilteredActors : [];
+      console.log(`Found ${filteredActors.length} valid ${tier} actors`);
+      return filteredActors;
     } catch (error) {
-      console.error("Error getting popular actors:", error);
+      console.error(`Error getting ${tier} actors:`, error);
       return [];
     }
+  }
+
+  // Legacy support for random popular actors (used by backup logic)
+  async getPopularActors(): Promise<Actor[]> {
+    return this.getActorsByTier('easy');
   }
 
   async getRandomTopActors(): Promise<{ actor1: Actor; actor2: Actor } | null> {

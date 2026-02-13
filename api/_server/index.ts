@@ -213,7 +213,7 @@ function setupDailyChallengeReset(port: number) {
             log(`Excluding actors from previous challenge: ${previousChallenge.startActorName} (${previousChallenge.startActorId}) and ${previousChallenge.endActorName} (${previousChallenge.endActorId})`);
           }
 
-          const actors = await gameLogicService.generateDailyActors(excludeActorIds);
+          const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
 
           if (actors) {
             const newNextChallenge = await storage.createDailyChallenge({

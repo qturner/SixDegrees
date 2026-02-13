@@ -297,90 +297,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     `);
   });
   // Force reset daily challenge (used by cron job and admin)
+  // Helper to generate challenges for a specific date
+  const generateChallengesForDate = async (date: string) => {
+    try {
+      // Get yesterday's challenges to exclude actors
+      const yesterday = getYesterdayDateString();
+      const previousChallenges = await storage.getDailyChallenges(yesterday);
+      const excludeActorIds: number[] = previousChallenges.flatMap(c => [c.startActorId, c.endActorId]);
+
+      console.log(`Generating challenges for ${date}, excluding ${excludeActorIds.length} actors`);
+
+      const difficulties = ['easy', 'medium', 'hard'] as const;
+      const generatedChallenges = [];
+
+      for (const difficulty of difficulties) {
+        // Generate pair
+        const actors = await gameLogicService.generateDailyActors(difficulty, excludeActorIds);
+
+        if (actors) {
+          // Add to exclusion list for subsequent generations this day
+          excludeActorIds.push(actors.actor1.id, actors.actor2.id);
+
+          const newChallenge = await storage.createDailyChallenge({
+            date,
+            status: "active",
+            difficulty,
+            startActorId: actors.actor1.id,
+            startActorName: actors.actor1.name,
+            startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
+            endActorId: actors.actor2.id,
+            endActorName: actors.actor2.name,
+            endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
+            hintsUsed: 0,
+          });
+          generatedChallenges.push(newChallenge);
+          console.log(`Created ${difficulty} challenge: ${actors.actor1.name} -> ${actors.actor2.name}`);
+        } else {
+          console.error(`Failed to generate ${difficulty} challenge for ${date}`);
+        }
+      }
+      return generatedChallenges;
+    } catch (error) {
+      console.error("Error generating challenges:", error);
+      return [];
+    }
+  };
+
   app.post("/api/daily-challenge", async (req, res) => {
     try {
       const { date, forceNew } = req.body;
       const today = date || getESTDateString();
 
       if (forceNew) {
-        console.log(`Force generating new challenge for ${today}`);
-        // Delete existing challenge if it exists
-        const existingChallenge = await storage.getDailyChallenge(today);
-        if (existingChallenge) {
-          console.log(`Deleting existing challenge: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
-          await storage.deleteDailyChallenge(today);
-        }
+        console.log(`Force generating new challenges for ${today}`);
+        // Delete existing challenges
+        await storage.deleteDailyChallenge(today); // deletes all for date? No, logic needs update in storage
+        // usage of deleteDailyChallenge(date) deletes ALL challenges for that date? 
+        // Let's verify storage implementation. 
+        // Yes: db.delete(dailyChallenges).where(eq(dailyChallenges.date, date));
 
-        // Generate new challenge with exclusion logic
-        // Get yesterday's challenge to exclude those actors
-        let excludeActorIds: number[] = [];
-        try {
-          const yesterday = getYesterdayDateString();
-          const previousChallenge = await storage.getDailyChallenge(yesterday);
-          if (previousChallenge) {
-            excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
-            console.log(`Excluding actors from yesterday's challenge: ${previousChallenge.startActorName} and ${previousChallenge.endActorName}`);
-          }
-        } catch (exclusionError) {
-          console.log("Could not check for actors to exclude, proceeding with normal generation");
-        }
-
-        const actors = await gameLogicService.generateDailyActors(excludeActorIds);
-        if (!actors) {
-          return res.status(500).json({ message: "Unable to generate daily challenge" });
-        }
-
-        const newChallenge = await storage.createDailyChallenge({
-          date: today,
-          status: "active",
-          startActorId: actors.actor1.id,
-          startActorName: actors.actor1.name,
-          startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
-          endActorId: actors.actor2.id,
-          endActorName: actors.actor2.name,
-          endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
-          hintsUsed: 0,
-        });
-
-        console.log(`Force-created new challenge for ${today}: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
-        return res.json(newChallenge);
+        const newChallenges = await generateChallengesForDate(today);
+        return res.json(newChallenges);
       }
 
-      // Regular generation logic (same as GET)
-      let challenge = await storage.getDailyChallenge(today);
-      if (!challenge) {
-        // Get yesterday's challenge to exclude those actors
-        let excludeActorIds: number[] = [];
-        try {
-          const yesterday = getYesterdayDateString();
-          const previousChallenge = await storage.getDailyChallenge(yesterday);
-          if (previousChallenge) {
-            excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
-            console.log(`Excluding actors from yesterday's challenge: ${previousChallenge.startActorName} and ${previousChallenge.endActorName}`);
-          }
-        } catch (exclusionError) {
-          console.log("Could not check for actors to exclude, proceeding with normal generation");
-        }
-
-        const actors = await gameLogicService.generateDailyActors(excludeActorIds);
-        if (!actors) {
-          return res.status(500).json({ message: "Unable to generate daily challenge" });
-        }
-
-        challenge = await storage.createDailyChallenge({
-          date: today,
-          status: "active",
-          startActorId: actors.actor1.id,
-          startActorName: actors.actor1.name,
-          startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
-          endActorId: actors.actor2.id,
-          endActorName: actors.actor2.name,
-          endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
-          hintsUsed: 0,
-        });
+      // Check for existing
+      const existing = await storage.getDailyChallenges(today);
+      if (existing.length === 0) {
+        const newChallenges = await generateChallengesForDate(today);
+        return res.json(newChallenges);
       }
 
-      res.json(challenge);
+      res.json(existing);
     } catch (error) {
       console.error("Error in POST daily challenge:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -392,177 +379,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", message: "pong", timestamp: new Date().toISOString() });
   });
 
-  // Get today's daily challenge
+  // Get today's daily challenges (plural)
+  app.get("/api/daily-challenges", async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
+      const today = getESTDateString();
+      let challenges = await storage.getDailyChallenges(today);
+
+      if (challenges.length === 0) {
+        // Generate if missing
+        challenges = await generateChallengesForDate(today);
+      }
+
+      res.json(challenges);
+    } catch (error) {
+      console.error("Error getting daily challenges:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Legacy endpoint for backward compatibility (returns Medium or single)
   app.get("/api/daily-challenge", async (req, res) => {
     try {
-      // Prevent caching of this endpoint to ensure fresh data and prevent "Brad Pitt" persistence
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('Surrogate-Control', 'no-store');
 
-      const today = getESTDateString(); // Use EST date, not UTC
-
-      // Try to get challenge with longer timeout for better resilience
-      let challenge;
-      try {
-        challenge = await storage.getDailyChallenge(today);
-      } catch (dbError) {
-        console.error("Database error when fetching challenge:", dbError);
-        // Return a fallback error that doesn't block the UI completely
-        return res.status(503).json({
-          message: "Database temporarily unavailable. Please refresh in a moment.",
-          retry: true
-        });
-      }
-
-      // FALLBACK: If no challenge for today, check if there's a "next" challenge that should be promoted
-      // This handles the case when the midnight cron job didn't run (server was down)
-      if (!challenge) {
-        console.log(`No challenge found for ${today}, checking for pending 'next' challenge to promote...`);
-
-        try {
-          const nextChallenge = await storage.getChallengeByStatus('next');
-
-          if (nextChallenge) {
-            console.log(`Found pending 'next' challenge: ${nextChallenge.startActorName} to ${nextChallenge.endActorName} - promoting to active`);
-
-            // Archive old active challenge(s) if any exist
-            const activeChallenge = await storage.getChallengeByStatus('active');
-            if (activeChallenge) {
-              await storage.deleteDailyChallenge(activeChallenge.date);
-              console.log(`Archived old active challenge: ${activeChallenge.startActorName} to ${activeChallenge.endActorName}`);
-            }
-
-            // Delete the next challenge and recreate as active with today's date
-            await storage.deleteDailyChallenge(nextChallenge.date);
-
-            challenge = await storage.createDailyChallenge({
-              date: today,
-              status: 'active',
-              startActorId: nextChallenge.startActorId,
-              startActorName: nextChallenge.startActorName,
-              startActorProfilePath: nextChallenge.startActorProfilePath || null,
-              endActorId: nextChallenge.endActorId,
-              endActorName: nextChallenge.endActorName,
-              endActorProfilePath: nextChallenge.endActorProfilePath || null,
-              hintsUsed: 0,
-            });
-
-            console.log(`Successfully promoted 'next' to 'active': ${challenge.startActorName} to ${challenge.endActorName} for ${today}`);
-
-            // Generate a new "next" challenge for tomorrow
-            const tomorrow = getTomorrowDateString();
-            try {
-              const excludeActorIds = [challenge.startActorId, challenge.endActorId];
-              const actors = await gameLogicService.generateDailyActors(excludeActorIds);
-
-              if (actors) {
-                await storage.createDailyChallenge({
-                  date: tomorrow,
-                  status: "next",
-                  startActorId: actors.actor1.id,
-                  startActorName: actors.actor1.name,
-                  startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
-                  endActorId: actors.actor2.id,
-                  endActorName: actors.actor2.name,
-                  endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
-                  hintsUsed: 0,
-                });
-                console.log(`Generated new 'next' challenge for ${tomorrow}: ${actors.actor1.name} to ${actors.actor2.name}`);
-              }
-            } catch (nextGenError) {
-              console.error("Error generating next challenge:", nextGenError);
-              // Continue even if next challenge generation fails
-            }
-          }
-        } catch (promotionError: any) {
-          console.error("Error checking/promoting next challenge:", promotionError?.message || promotionError);
-          if (promotionError?.stack) console.error(promotionError.stack);
-          // Continue to fallback generation below
-        }
-      }
+      const today = getESTDateString();
+      let challenge = await storage.getDailyChallenge(today);
 
       if (!challenge) {
-        console.log(`No challenge found for ${today}, generating new challenge...`);
-
-        // Use a shared promise only for GENERATION to prevent race conditions
-        // Do NOT cache the result permanently - allow subsequent requests to hit the DB
-
-        if (!challengeCreationPromise) {
-          challengeCreationPromise = (async () => {
-            try {
-              // Double-check if challenge was created while we were waiting
-              const existingChallenge = await withRetry(() => storage.getDailyChallenge(today), 5);
-              if (existingChallenge) {
-                console.log(`Challenge was created by another request: ${existingChallenge.startActorName} to ${existingChallenge.endActorName}`);
-                return existingChallenge;
-              }
-
-              // Generate new challenge for today with exclusion logic
-              // Get yesterday's challenge to exclude those actors
-              let excludeActorIds: number[] = [];
-              try {
-                const yesterday = getYesterdayDateString();
-                const previousChallenge = await storage.getDailyChallenge(yesterday);
-                if (previousChallenge) {
-                  excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
-                }
-              } catch (exclusionError) {
-                console.log("Could not check for actors to exclude, proceeding with normal generation");
-              }
-
-              const actors = await gameLogicService.generateDailyActors(excludeActorIds);
-              if (!actors) {
-                throw new Error("Unable to generate daily challenge");
-              }
-
-              const newChallenge = await withRetry(() => storage.createDailyChallenge({
-                date: today,
-                status: "active",
-                startActorId: actors.actor1.id,
-                startActorName: actors.actor1.name,
-                startActorProfilePath: sanitizeImagePath(actors.actor1.profile_path),
-                endActorId: actors.actor2.id,
-                endActorName: actors.actor2.name,
-                endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
-                hintsUsed: 0,
-              }), 5);
-              console.log(`Created new challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
-              return newChallenge;
-            } finally {
-              // Vital: Clear the promise so future requests check the DB again
-              // This ensures that if the challenge is deleted (Reset), we don't serve a stale cached version
-              challengeCreationPromise = null;
-            }
-          })();
-        }
-
-        try {
-          challenge = await challengeCreationPromise;
-        } catch (creationError: any) {
-          console.error("Error creating new challenge:", creationError?.message || creationError);
-          if (creationError?.stack) console.error(creationError.stack);
-          return res.status(503).json({
-            message: "Unable to generate daily challenge due to database issues. Please refresh in a moment.",
-            retry: true
-          });
-        }
-
-        if (!challenge) {
-          return res.status(500).json({ message: "Unable to generate daily challenge" });
-        }
+        // Generate all if missing
+        const challenges = await generateChallengesForDate(today);
+        challenge = challenges.find(c => c.difficulty === 'medium') || challenges[0];
       }
 
       res.json(challenge);
-    } catch (error: any) {
-      console.error("CRITICAL error getting daily challenge:", error?.message || error);
-      if (error?.stack) console.error(error.stack);
-      res.status(500).json({
-        message: "Internal server error",
-        error: error?.message || "Unknown error",
-        path: "/api/daily-challenge"
-      });
+    } catch (error) {
+      console.error("Get daily challenge error:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -1012,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Could not check for actors to exclude, proceeding with normal generation");
       }
 
-      const actors = await gameLogicService.generateDailyActors(excludeActorIds);
+      const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
       if (!actors) {
         return res.status(500).json({ message: "Unable to generate challenge" });
       }
@@ -1152,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // NOW generate a NEW Next challenge for tomorrow
         const excludeActorIds = [nextChallenge.startActorId, nextChallenge.endActorId];
-        const actors = await gameLogicService.generateDailyActors(excludeActorIds);
+        const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
 
         if (actors) {
           const newNextChallenge = await storage.createDailyChallenge({
@@ -1173,7 +1027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("No next challenge found. Generating entirely fresh pipeline.");
 
         // 1. Generate Active
-        const activeActors = await gameLogicService.generateDailyActors([]);
+        const activeActors = await gameLogicService.generateDailyActors('medium', []);
         if (activeActors) {
           await storage.createDailyChallenge({
             date: today,
@@ -1190,7 +1044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // 2. Generate Next
         const exclude = activeActors ? [activeActors.actor1.id, activeActors.actor2.id] : [];
-        const nextActors = await gameLogicService.generateDailyActors(exclude);
+        const nextActors = await gameLogicService.generateDailyActors('medium', exclude);
         if (nextActors) {
           await storage.createDailyChallenge({
             date: tomorrow,
@@ -1265,7 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const currentActive = await storage.getChallengeByStatus('active');
         const excludeIds = currentActive ? [currentActive.startActorId, currentActive.endActorId] : [];
 
-        const actors = await gameLogicService.generateDailyActors(excludeIds);
+        const actors = await gameLogicService.generateDailyActors('medium', excludeIds);
 
         if (actors) {
           const newNextChallenge = await storage.createDailyChallenge({
@@ -1308,7 +1162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate new next challenge (24 hours in advance)
-      const actors = await gameLogicService.generateDailyActors();
+      const actors = await gameLogicService.generateDailyActors('medium');
       if (!actors) {
         return res.status(500).json({ message: "Unable to generate next challenge" });
       }
@@ -1702,66 +1556,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = getESTDateString();
       const tomorrow = getTomorrowDateString();
 
-      // Transition 'next' to 'active'
-      const nextChallenge = await storage.getChallengeByStatus('next');
-      if (nextChallenge) {
-        console.log(`Promoting next challenge: ${nextChallenge.startActorName} to ${nextChallenge.endActorName}`);
-
-        const activeChallenge = await storage.getChallengeByStatus('active');
-        if (activeChallenge) {
-          console.log(`Archiving former active challenge: ${activeChallenge.date}`);
-          await storage.updateChallengeStatus(activeChallenge.id, 'archived');
-        }
-
-        await storage.deleteDailyChallenge(nextChallenge.date);
-        await storage.createDailyChallenge({
-          date: today,
-          status: 'active',
-          startActorId: nextChallenge.startActorId,
-          startActorName: nextChallenge.startActorName,
-          startActorProfilePath: nextChallenge.startActorProfilePath,
-          endActorId: nextChallenge.endActorId,
-          endActorName: nextChallenge.endActorName,
-          endActorProfilePath: nextChallenge.endActorProfilePath,
-          hintsUsed: 0,
-        });
-      } else {
-        // Fallback: Generate if no 'next' exists
-        console.log("No next challenge found, generating new one for today");
-        const actors = await gameLogicService.generateDailyActors([]);
-        if (actors) {
-          await storage.createDailyChallenge({
-            date: today,
-            status: "active",
-            startActorId: actors.actor1.id,
-            startActorName: actors.actor1.name,
-            startActorProfilePath: actors.actor1.profile_path,
-            endActorId: actors.actor2.id,
-            endActorName: actors.actor2.name,
-            endActorProfilePath: actors.actor2.profile_path,
-            hintsUsed: 0,
-          });
+      // Archive any stale 'active' challenges (from yesterday or earlier)
+      const activeChallenges = await storage.getAllChallengesByStatus('active');
+      for (const challenge of activeChallenges) {
+        if (challenge.date !== today) {
+          await storage.updateChallengeStatus(challenge.id, 'archived');
+          console.log(`Archived old challenge: ${challenge.date} (${challenge.difficulty})`);
         }
       }
 
-      // Generate new 'next' for tomorrow
-      const currentActive = await storage.getChallengeByStatus('active');
-      if (currentActive) {
-        const excludeIds = [currentActive.startActorId, currentActive.endActorId];
-        const nextActors = await gameLogicService.generateDailyActors(excludeIds);
-        if (nextActors) {
-          await storage.createDailyChallenge({
-            date: tomorrow,
-            status: "next",
-            startActorId: nextActors.actor1.id,
-            startActorName: nextActors.actor1.name,
-            startActorProfilePath: nextActors.actor1.profile_path,
-            endActorId: nextActors.actor2.id,
-            endActorName: nextActors.actor2.name,
-            endActorProfilePath: nextActors.actor2.profile_path,
-            hintsUsed: 0,
-          });
-        }
+      // Ensure today has challenges (Easy, Medium, Hard)
+      const todayChallenges = await storage.getDailyChallenges(today);
+      if (todayChallenges.length === 0) {
+        console.log(`Generating daily challenges for ${today}`);
+        await generateChallengesForDate(today);
+      } else {
+        console.log(`Daily challenges for ${today} already exist`);
       }
 
       res.json({ message: "Daily challenge reset completed successfully", date: today });
