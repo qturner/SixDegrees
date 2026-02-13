@@ -160,11 +160,12 @@ export async function setupAuth(app: Express) {
           const sessionData = JSON.stringify(req.session);
           const sessionValue = Buffer.from(sessionData).toString('base64');
           const key = process.env.SESSION_SECRET || 'fallback-secret-for-development';
+          // Must match keygrip's URL-safe base64 encoding: / → _, + → -, strip =
           const sessionSig = crypto
             .createHmac('sha1', key)
             .update('session=' + sessionValue)
             .digest('base64')
-            .replace(/=+$/, '');
+            .replace(/\/|\+|=/g, (x: string) => ({ '/': '_', '+': '-', '=': '' })[x] || '');
           const session = encodeURIComponent(sessionValue);
           const sig = encodeURIComponent(sessionSig);
           return res.redirect(`sixdegrees://auth/callback?success=true&session=${session}&session_sig=${sig}`);
