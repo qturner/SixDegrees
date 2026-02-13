@@ -152,18 +152,22 @@ export async function setupAuth(app: Express) {
         // Check state to see if we should redirect to mobile app
         if (req.query.state === 'mobile') {
           console.log('AUTH: Redirecting to mobile app scheme');
-          // Pass session cookies in the redirect URL since ASWebAuthenticationSession
-          // on iOS doesn't share cookies with the app's URLSession
-          const sessionCookie = (req.headers.cookie || '').split(';')
-            .map((c: string) => c.trim())
-            .reduce((acc: Record<string, string>, c: string) => {
-              const [key, ...val] = c.split('=');
-              acc[key] = val.join('=');
-              return acc;
-            }, {});
-          const session = encodeURIComponent(sessionCookie['session'] || '');
-          const sessionSig = encodeURIComponent(sessionCookie['session.sig'] || '');
-          return res.redirect(`sixdegrees://auth/callback?success=true&session=${session}&session_sig=${sessionSig}`);
+          // Construct session cookie value directly from the session object.
+          // Can't read req.headers.cookie because ASWebAuthenticationSession in
+          // ephemeral mode sends no incoming cookies — the session only exists
+          // on the response side via cookie-session middleware.
+          const crypto = require('crypto');
+          const sessionData = JSON.stringify(req.session);
+          const sessionValue = Buffer.from(sessionData).toString('base64');
+          const key = process.env.SESSION_SECRET || 'fallback-secret-for-development';
+          const sessionSig = crypto
+            .createHmac('sha1', key)
+            .update('session=' + sessionValue)
+            .digest('base64')
+            .replace(/=+$/, '');
+          const session = encodeURIComponent(sessionValue);
+          const sig = encodeURIComponent(sessionSig);
+          return res.redirect(`sixdegrees://auth/callback?success=true&session=${session}&session_sig=${sig}`);
         }
 
         // cookie-session saves automatically when response ends
