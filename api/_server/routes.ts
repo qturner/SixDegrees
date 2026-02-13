@@ -502,10 +502,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get stored hints for daily challenge
   app.get("/api/daily-challenge/hints", async (req, res) => {
     try {
+      const challengeId = typeof req.query.challengeId === "string" ? req.query.challengeId : undefined;
       const today = getESTDateString();
-      const challenge = await storage.getDailyChallenge(today);
+      const challenge = challengeId
+        ? await storage.getDailyChallengeById(challengeId)
+        : await storage.getDailyChallenge(today);
 
       if (!challenge) {
+        if (challengeId) {
+          return res.status(404).json({ message: "Challenge not found" });
+        }
         return res.status(404).json({ message: "No challenge found" });
       }
 
@@ -547,14 +553,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/daily-challenge/hint", async (req, res) => {
     try {
-      const { actorType } = req.body; // 'start' or 'end'
+      const { challengeId, actorType } = req.body; // 'start' or 'end'
 
       if (!actorType || (actorType !== 'start' && actorType !== 'end')) {
         return res.status(400).json({ message: "Actor type must be 'start' or 'end'" });
       }
 
+      if (challengeId && typeof challengeId !== "string") {
+        return res.status(400).json({ message: "Challenge ID must be a string" });
+      }
+
       const today = getESTDateString();
-      const challenge = await storage.getDailyChallenge(today);
+      const challenge = challengeId
+        ? await storage.getDailyChallengeById(challengeId)
+        : await storage.getDailyChallenge(today);
 
       console.log(`Hint request for ${today}, challenge found: ${challenge ? 'YES' : 'NO'}`);
       if (challenge) {
@@ -619,8 +631,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      connections = parseResult.data.connections;
-      const { startActorId, endActorId } = parseResult.data;
+      const { challengeId, connections: parsedConnections, startActorId, endActorId } = parseResult.data;
+      connections = parsedConnections;
 
       try {
         validationResult = await gameLogicService.validateCompleteChain({
@@ -643,11 +655,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 2. Execution reliability (serverless functions might freeze after response)
       try {
         const today = getESTDateString();
+
         const savePromise = (async () => {
-          const challenge = await storage.getDailyChallenge(today);
-          if (challenge) {
+          let challengeIdForAttempt: string | undefined;
+
+          if (challengeId) {
+            const selectedChallenge = await storage.getDailyChallengeById(challengeId);
+            challengeIdForAttempt = selectedChallenge?.id;
+          }
+
+          if (!challengeIdForAttempt) {
+            const todayChallenge = await storage.getDailyChallenge(today);
+            challengeIdForAttempt = todayChallenge?.id;
+          }
+
+          if (challengeIdForAttempt) {
             await storage.createGameAttempt({
-              challengeId: challenge.id,
+              challengeId: challengeIdForAttempt,
               moves: connections.length,
               completed: validationResult.completed || false,
               connections: JSON.stringify(connections),
@@ -1460,6 +1484,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Challenge already completed" });
       }
 
+      const challenge = await storage.getDailyChallengeById(parseResult.data.challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
       // Record the completion
       const completion = await storage.createUserChallengeCompletion({
         ...parseResult.data,
@@ -1508,6 +1537,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (moves === 5) statUpdates.completionsAt5Moves = (currentStats.completionsAt5Moves || 0) + 1;
         else if (moves === 6) statUpdates.completionsAt6Moves = (currentStats.completionsAt6Moves || 0) + 1;
 
+        if (challenge.difficulty === 'easy') {
+          statUpdates.easyCompletions = (currentStats.easyCompletions || 0) + 1;
+        } else if (challenge.difficulty === 'medium') {
+          statUpdates.mediumCompletions = (currentStats.mediumCompletions || 0) + 1;
+        } else if (challenge.difficulty === 'hard') {
+          statUpdates.hardCompletions = (currentStats.hardCompletions || 0) + 1;
+        }
+
         await storage.updateUserStats(userId, statUpdates);
       }
 
@@ -1526,6 +1563,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(recentChallenges);
     } catch (error) {
       console.error("Error getting recent challenges:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get user completion status for a given day (for difficulty badges)
+  app.get("/api/user/daily-completions", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const dateParam = req.query.date as string | undefined;
+
+      if (dateParam && !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+        return res.status(400).json({ message: "Date must be in YYYY-MM-DD format" });
+      }
+
+      const date = dateParam || getESTDateString();
+      const challenges = await storage.getDailyChallenges(date);
+      const difficultyOrder: Record<string, number> = {
+        easy: 0,
+        medium: 1,
+        hard: 2,
+      };
+
+      const sortedChallenges = [...challenges].sort((a, b) => {
+        const aRank = difficultyOrder[a.difficulty] ?? Number.MAX_SAFE_INTEGER;
+        const bRank = difficultyOrder[b.difficulty] ?? Number.MAX_SAFE_INTEGER;
+        return aRank - bRank;
+      });
+
+      const completions = await Promise.all(
+        sortedChallenges.map(async challenge => {
+          const completion = await storage.getUserChallengeCompletion(userId, challenge.id);
+          return {
+            challengeId: challenge.id,
+            difficulty: challenge.difficulty,
+            completed: !!completion,
+            moves: completion?.moves ?? null,
+          };
+        })
+      );
+
+      res.json({
+        date,
+        completions,
+      });
+    } catch (error) {
+      console.error("Error getting user daily completions:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

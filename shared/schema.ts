@@ -77,6 +77,7 @@ export const connectionSchema = z.object({
 
 export const gameConnectionSchema = z.object({
   connections: z.array(connectionSchema),
+  challengeId: z.string().uuid().optional(),
   startActorId: z.number(),
   endActorId: z.number(),
 });
