@@ -8,6 +8,7 @@ import { ZodError } from "zod";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import appleSignin from "apple-signin-auth";
+import crypto from "crypto";
 
 export async function setupAuth(app: Express) {
   // Use cookie-session instead of express-session for Vercel/Serverless
@@ -156,7 +157,6 @@ export async function setupAuth(app: Express) {
           // Can't read req.headers.cookie because ASWebAuthenticationSession in
           // ephemeral mode sends no incoming cookies — the session only exists
           // on the response side via cookie-session middleware.
-          const crypto = require('crypto');
           const sessionData = JSON.stringify(req.session);
           const sessionValue = Buffer.from(sessionData).toString('base64');
           const key = process.env.SESSION_SECRET || 'fallback-secret-for-development';
