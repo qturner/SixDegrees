@@ -136,6 +136,7 @@ class TMDbService {
   private actorDetailsCache = new Map<number, any>();
   private CACHE_TTL = 3600000; // 1 hour
   private movieCreditsCache = new Map<number, { data: Actor[], timestamp: number }>();
+  private actorMoviesCache = new Map<number, { data: Movie[], timestamp: number }>();
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
     const url = new URL(`${this.config.baseUrl}${endpoint}`);
@@ -282,6 +283,11 @@ class TMDbService {
   }
 
   async getActorMovies(actorId: number): Promise<Movie[]> {
+    const cached = this.actorMoviesCache.get(actorId);
+    if (cached && (Date.now() - cached.timestamp < this.CACHE_TTL)) {
+      return cached.data;
+    }
+
     try {
       const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
 
@@ -306,6 +312,7 @@ class TMDbService {
 
       // For hint selection, we need to enhance popular movies with full details
       // This method will be used by hint system to get accurate popularity data
+      this.actorMoviesCache.set(actorId, { data: movies, timestamp: Date.now() });
       return movies;
     } catch (error) {
       console.error("Error getting actor movies:", error);
@@ -641,27 +648,30 @@ class TMDbService {
 
       switch (tier) {
         case 'easy':
-          // A-List: Top 100 actors (Pages 1-5)
+          // A-List: Top-ranked mainstream actors
           minPage = 1;
-          maxPage = 5;
+          maxPage = 4;
           break;
         case 'medium':
-          // Mid-Tier: Rank ~200-500 (Pages 10-25)
-          minPage = 10;
-          maxPage = 25;
+          // Mid-Tier: less mainstream, still recognizable
+          minPage = 9;
+          maxPage = 30;
           break;
         case 'hard':
-          // Niche: Rank ~1000-2000 (Pages 50-100)
-          minPage = 50;
-          maxPage = 100;
+          // Niche: long-tail actors
+          minPage = 45;
+          maxPage = 140;
           break;
       }
 
       const pages: TMDbResponse<TMDbActor>[] = [];
       const distinctPages = new Set<number>();
 
-      // Fetch 5 random pages from the specified range
-      while (distinctPages.size < 5) {
+      const pageRangeSize = maxPage - minPage + 1;
+      const pagesToFetch = Math.min(5, pageRangeSize);
+
+      // Fetch random pages from the specified range
+      while (distinctPages.size < pagesToFetch) {
         const page = Math.floor(Math.random() * (maxPage - minPage + 1)) + minPage;
         distinctPages.add(page);
       }
