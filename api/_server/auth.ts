@@ -103,7 +103,9 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUserById(id);
-      done(null, user);
+      // Return false if user was deleted so passport clears the stale session
+      // instead of crashing with "Failed to deserialize user"
+      done(null, user || false);
     } catch (error) {
       done(error, null);
     }
@@ -121,38 +123,54 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/auth/google/callback",
-    passport.authenticate("google", { failureRedirect: "/" }),
-    (req, res) => {
-      // Manually set userId for our custom isAuthenticated middleware
-      // (Passport sets req.user, but our app uses req.session.userId elsewhere)
-      if (req.user) {
+  app.get("/api/auth/google/callback", (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate("google", (err: Error | null, user: any) => {
+      if (err || !user) {
+        console.error('AUTH: Google callback failed', err?.message || 'No user returned');
+        // Redirect mobile app with error so ASWebAuthenticationSession completes
+        if (req.query.state === 'mobile') {
+          const errorMsg = encodeURIComponent(err?.message || 'Authentication failed');
+          return res.redirect(`sixdegrees://auth/callback?error=${errorMsg}`);
+        }
+        return res.redirect("/");
+      }
+
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          console.error('AUTH: Google login session error', loginErr.message);
+          if (req.query.state === 'mobile') {
+            return res.redirect(`sixdegrees://auth/callback?error=${encodeURIComponent(loginErr.message)}`);
+          }
+          return res.redirect("/");
+        }
+
+        // Manually set userId for our custom isAuthenticated middleware
         (req.session as any).userId = (req.user as any).id;
-      }
 
-      console.log('AUTH: Google login successful. Session set.');
+        console.log('AUTH: Google login successful. Session set.');
 
-      // Check state to see if we should redirect to mobile app
-      if (req.query.state === 'mobile') {
-        console.log('AUTH: Redirecting to mobile app scheme');
-        // Pass session cookies in the redirect URL since ASWebAuthenticationSession
-        // on iOS doesn't share cookies with the app's URLSession
-        const sessionCookie = (req.headers.cookie || '').split(';')
-          .map((c: string) => c.trim())
-          .reduce((acc: Record<string, string>, c: string) => {
-            const [key, ...val] = c.split('=');
-            acc[key] = val.join('=');
-            return acc;
-          }, {});
-        const session = encodeURIComponent(sessionCookie['session'] || '');
-        const sessionSig = encodeURIComponent(sessionCookie['session.sig'] || '');
-        return res.redirect(`sixdegrees://auth/callback?success=true&session=${session}&session_sig=${sessionSig}`);
-      }
+        // Check state to see if we should redirect to mobile app
+        if (req.query.state === 'mobile') {
+          console.log('AUTH: Redirecting to mobile app scheme');
+          // Pass session cookies in the redirect URL since ASWebAuthenticationSession
+          // on iOS doesn't share cookies with the app's URLSession
+          const sessionCookie = (req.headers.cookie || '').split(';')
+            .map((c: string) => c.trim())
+            .reduce((acc: Record<string, string>, c: string) => {
+              const [key, ...val] = c.split('=');
+              acc[key] = val.join('=');
+              return acc;
+            }, {});
+          const session = encodeURIComponent(sessionCookie['session'] || '');
+          const sessionSig = encodeURIComponent(sessionCookie['session.sig'] || '');
+          return res.redirect(`sixdegrees://auth/callback?success=true&session=${session}&session_sig=${sessionSig}`);
+        }
 
-      // cookie-session saves automatically when response ends
-      res.redirect("/");
-    }
-  );
+        // cookie-session saves automatically when response ends
+        res.redirect("/");
+      });
+    })(req, res, next);
+  });
 
   // Apple Sign In Endpoint
   app.post("/api/auth/apple", async (req: Request, res: Response) => {
