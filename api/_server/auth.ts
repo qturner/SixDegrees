@@ -135,8 +135,18 @@ export async function setupAuth(app: Express) {
       // Check state to see if we should redirect to mobile app
       if (req.query.state === 'mobile') {
         console.log('AUTH: Redirecting to mobile app scheme');
-        // We include success=true just in case the app needs to parse it
-        return res.redirect("sixdegrees://auth/callback?success=true");
+        // Pass session cookies in the redirect URL since ASWebAuthenticationSession
+        // on iOS doesn't share cookies with the app's URLSession
+        const sessionCookie = (req.headers.cookie || '').split(';')
+          .map((c: string) => c.trim())
+          .reduce((acc: Record<string, string>, c: string) => {
+            const [key, ...val] = c.split('=');
+            acc[key] = val.join('=');
+            return acc;
+          }, {});
+        const session = encodeURIComponent(sessionCookie['session'] || '');
+        const sessionSig = encodeURIComponent(sessionCookie['session.sig'] || '');
+        return res.redirect(`sixdegrees://auth/callback?success=true&session=${session}&session_sig=${sessionSig}`);
       }
 
       // cookie-session saves automatically when response ends
