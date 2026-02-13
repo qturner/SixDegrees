@@ -1,5 +1,5 @@
 import { tmdbService } from "./tmdb.js";
-import { Connection, ValidationResult } from "../../../shared/schema.js";
+import { Actor, Connection, Movie, ValidationResult } from "../../../shared/schema.js";
 
 interface GameValidationContext {
   startActorId: number;
@@ -7,7 +7,71 @@ interface GameValidationContext {
   connections: Connection[];
 }
 
+type DifficultyLevel = "easy" | "medium" | "hard";
+type ActorTier = DifficultyLevel;
+
+interface TierPairTemplate {
+  left: ActorTier;
+  right: ActorTier;
+  weight: number;
+}
+
+interface DifficultySelectionConfig {
+  minDistance: number;
+  maxDistance: number;
+  maxSearchDepth: number;
+  maxPairAttempts: number;
+  templates: TierPairTemplate[];
+}
+
+interface CandidateScore {
+  actor1: Actor;
+  actor2: Actor;
+  distance: number;
+  score: number;
+}
+
+interface SearchBudget {
+  remainingActorExpansions: number;
+}
+
 class GameLogicService {
+  private readonly bannedActorNames = new Set(["Brad Pitt"]);
+  private readonly maxActorsPerExpansion = 3;
+  private readonly maxMoviesPerActor = 6;
+  private readonly maxCastPerMovie = 8;
+  private readonly maxFrontierSize = 32;
+
+  private readonly difficultyConfigs: Record<DifficultyLevel, DifficultySelectionConfig> = {
+    easy: {
+      minDistance: 1,
+      maxDistance: 3,
+      maxSearchDepth: 3,
+      maxPairAttempts: 12,
+      templates: [{ left: "easy", right: "easy", weight: 1 }],
+    },
+    medium: {
+      minDistance: 2,
+      maxDistance: 4,
+      maxSearchDepth: 4,
+      maxPairAttempts: 16,
+      templates: [
+        { left: "easy", right: "medium", weight: 3 },
+        { left: "medium", right: "medium", weight: 1 },
+      ],
+    },
+    hard: {
+      minDistance: 3,
+      maxDistance: 6,
+      maxSearchDepth: 6,
+      maxPairAttempts: 20,
+      templates: [
+        { left: "medium", right: "hard", weight: 3 },
+        { left: "hard", right: "hard", weight: 2 },
+      ],
+    },
+  };
+
   async validateConnection(
     actorId: number,
     movieId: number,
@@ -181,156 +245,306 @@ class GameLogicService {
    * Uses bidirectional BFS to find a connection.
    */
   async findPath(startId: number, endId: number, maxDepth: number = 6): Promise<boolean> {
-    // Basic optimization: simple BFS from both sides
-    // To prevent API rate limits and timeouts, we'll limit the width of the search
-    // and just try to find *any* path, not necessarily the absolute shortest if it's deep.
-
-    // For now, due to API limitations, we will do a depth-2 check from both sides (meet in middle = 4)
-    // If they don't connect in ~4 hops, we assume they might still connect in 6, 
-    // but verifying 6 degrees purely via API is too slow (millions of nodes).
-    // Most solvable games are 2-4 degrees. 
-
-    const visitedStart = new Set<number>([startId]);
-    const visitedEnd = new Set<number>([endId]);
-
-    // Level 0: Actors
-    let startLayer = [startId];
-    let endLayer = [endId];
-
-    let depth = 0;
-
-    // Helper to get connected actors for a layer
-    const expandLayer = async (actorIds: number[]): Promise<number[]> => {
-      const nextLayer = new Set<number>();
-
-      // Limit expansion to prevent explosion
-      const actorsToExpand = actorIds.slice(0, 5); // Check top 5 actors in this layer
-
-      for (const actorId of actorsToExpand) {
-        const movies = await tmdbService.getActorMovies(actorId);
-        // Sort by popularity to find "likely" bridges
-        const topMovies = movies.sort((a, b) => (b.popularity || 0) - (a.popularity || 0)).slice(0, 10);
-
-        for (const movie of topMovies) {
-          const credits = await tmdbService.getMovieCredits(movie.id);
-          // Only look at top billed cast
-          const topCast = credits.slice(0, 10);
-
-          for (const castMember of topCast) {
-            nextLayer.add(castMember.id);
-          }
-        }
-      }
-      return Array.from(nextLayer);
-    };
-
-    while (depth < maxDepth / 2) { // 3 iterations from each side = 6 degrees
-      // Check intersection
-      const intersection = startLayer.filter(id => visitedEnd.has(id));
-      if (intersection.length > 0) return true;
-
-      // Expand Start
-      const nextStart = await expandLayer(startLayer);
-      nextStart.forEach(id => visitedStart.add(id));
-      startLayer = nextStart;
-
-      // Check intersection again
-      if (startLayer.some(id => visitedEnd.has(id))) return true;
-
-      // Expand End
-      const nextEnd = await expandLayer(endLayer);
-      nextEnd.forEach(id => visitedEnd.add(id));
-      endLayer = nextEnd;
-
-      // Check intersection again
-      if (endLayer.some(id => visitedStart.has(id))) return true;
-
-      depth++;
-    }
-
-    // If we haven't found a path after checking top connections for 3 levels,
-    // it's either > 6 moves or just obscure.
-    // For the sake of the game, we want paths that ARE finding-able, so strict validation is good.
-    return false;
+    const distance = await this.findPathDistance(startId, endId, maxDepth);
+    return distance !== null;
   }
 
-  async generateDailyActors(difficulty: 'easy' | 'medium' | 'hard' = 'medium', excludeActorIds: number[] = []): Promise<{ actor1: any; actor2: any } | null> {
+  async generateDailyActors(
+    difficulty: DifficultyLevel = "medium",
+    excludeActorIds: number[] = [],
+  ): Promise<{ actor1: Actor; actor2: Actor } | null> {
     try {
-      let actor1Pool: any[] = [];
-      let actor2Pool: any[] = [];
+      const config = this.difficultyConfigs[difficulty];
+      const tiersToLoad = Array.from(
+        new Set(config.templates.flatMap((template) => [template.left, template.right])),
+      );
+      const poolEntries = await Promise.all(
+        tiersToLoad.map(async (tier) => [tier, await tmdbService.getActorsByTier(tier)] as const),
+      );
 
-      // Logic:
-      // Easy: A-List <-> A-List
-      // Medium: A-List <-> Mid-Tier 
-      // Hard: Mid-Tier <-> Niche
-
-      switch (difficulty) {
-        case 'easy':
-          actor1Pool = await tmdbService.getActorsByTier('easy');
-          actor2Pool = actor1Pool; // Connects to same pool
-          break;
-        case 'medium':
-          const [easy, mid] = await Promise.all([
-            tmdbService.getActorsByTier('easy'),
-            tmdbService.getActorsByTier('medium')
-          ]);
-          actor1Pool = easy;
-          actor2Pool = mid;
-          break;
-        case 'hard':
-          const [mid2, niche] = await Promise.all([
-            tmdbService.getActorsByTier('medium'),
-            tmdbService.getActorsByTier('hard')
-          ]);
-          actor1Pool = mid2;
-          actor2Pool = niche;
-          break;
+      const tierPools: Record<ActorTier, Actor[]> = {
+        easy: [],
+        medium: [],
+        hard: [],
+      };
+      for (const [tier, pool] of poolEntries) {
+        tierPools[tier] = pool;
       }
 
-      if (actor1Pool.length === 0 || actor2Pool.length === 0) {
-        console.error("Failed to fetch actor pools for generation");
+      if (tiersToLoad.some((tier) => tierPools[tier].length === 0)) {
+        console.error(`Failed to fetch actor pools for ${difficulty} generation`);
         return null;
       }
 
-      // Try up to 5 times to find a valid pair
-      for (let i = 0; i < 5; i++) {
-        const actor1 = actor1Pool[Math.floor(Math.random() * actor1Pool.length)];
-        const actor2 = actor2Pool[Math.floor(Math.random() * actor2Pool.length)];
+      let bestFallback: CandidateScore | null = null;
 
-        // Basic checks
-        if (actor1.id === actor2.id) continue;
-        if (excludeActorIds.includes(actor1.id) || excludeActorIds.includes(actor2.id)) continue;
-        if (actor1.name === "Brad Pitt" || actor2.name === "Brad Pitt") continue; // Banned
+      for (let attempt = 0; attempt < config.maxPairAttempts; attempt++) {
+        const template = this.pickTemplate(config.templates);
+        const actor1 = this.pickRandomActor(tierPools[template.left]);
+        const actor2 = this.pickRandomActor(tierPools[template.right]);
 
-        console.log(`Verifying connection for ${difficulty}: ${actor1.name} <-> ${actor2.name}`);
+        if (!actor1 || !actor2) {
+          continue;
+        }
+        if (!this.isEligiblePair(actor1, actor2, excludeActorIds)) {
+          continue;
+        }
 
-        // Validate path exists (soft validation)
-        // We'll trust that popular actors usually connect. 
-        // But for Hard mode, we should be careful.
-        try {
-          // Skip expensive verification for Easy mode as A-listers always connect
-          // For Medium/Hard, we do a quick check
-          if (difficulty === 'easy') {
-            return { actor1, actor2 };
-          }
+        const distance = await this.findPathDistance(
+          actor1.id,
+          actor2.id,
+          config.maxSearchDepth,
+        );
+        if (distance === null) {
+          continue;
+        }
 
-          // For others, we assume connectivity if they have enough credits
-          // Full BFS is too heavy for standard generation flow without a graph DB
-          // Returning the pair and letting users find the path is the game!
-          // But we ensure they are real actors with credits.
+        const score = this.scoreCandidate(distance, config);
+        if (this.isDistanceInRange(distance, config)) {
+          console.log(
+            `Selected ${difficulty} pair (${distance} move target): ${actor1.name} <-> ${actor2.name}`,
+          );
           return { actor1, actor2 };
+        }
 
-        } catch (e) {
-          console.warn("Path validation failed, retrying...");
+        if (!bestFallback || score < bestFallback.score) {
+          bestFallback = { actor1, actor2, distance, score };
+        }
+
+        const attemptsBeforeShortCircuit = Math.floor(config.maxPairAttempts * 0.6);
+        if (attempt >= attemptsBeforeShortCircuit && bestFallback && bestFallback.score <= 100) {
+          break;
         }
       }
 
-      console.warn("Could not generate valid pair after retries");
+      if (bestFallback) {
+        console.warn(
+          `Using fallback ${difficulty} pair (${bestFallback.distance} moves): ${bestFallback.actor1.name} <-> ${bestFallback.actor2.name}`,
+        );
+        return { actor1: bestFallback.actor1, actor2: bestFallback.actor2 };
+      }
+
+      console.warn(`Could not generate ${difficulty} pair after ${config.maxPairAttempts} attempts`);
       return null;
     } catch (error) {
       console.error("Error generating daily actors:", error);
       return null;
     }
+  }
+
+  private pickTemplate(templates: TierPairTemplate[]): TierPairTemplate {
+    const totalWeight = templates.reduce((sum, template) => sum + template.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const template of templates) {
+      random -= template.weight;
+      if (random <= 0) {
+        return template;
+      }
+    }
+
+    return templates[templates.length - 1];
+  }
+
+  private pickRandomActor(pool: Actor[]): Actor | null {
+    if (pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)] ?? null;
+  }
+
+  private isEligiblePair(actor1: Actor, actor2: Actor, excludeActorIds: number[]): boolean {
+    if (actor1.id === actor2.id) return false;
+    if (excludeActorIds.includes(actor1.id) || excludeActorIds.includes(actor2.id)) return false;
+    if (this.bannedActorNames.has(actor1.name) || this.bannedActorNames.has(actor2.name)) return false;
+    return true;
+  }
+
+  private isDistanceInRange(distance: number, config: DifficultySelectionConfig): boolean {
+    return distance >= config.minDistance && distance <= config.maxDistance;
+  }
+
+  private scoreCandidate(distance: number, config: DifficultySelectionConfig): number {
+    const midpoint = (config.minDistance + config.maxDistance) / 2;
+    let outsidePenalty = 0;
+    if (distance < config.minDistance) {
+      outsidePenalty = config.minDistance - distance;
+    } else if (distance > config.maxDistance) {
+      outsidePenalty = distance - config.maxDistance;
+    }
+
+    return outsidePenalty * 100 + Math.abs(distance - midpoint);
+  }
+
+  private async findPathDistance(
+    startId: number,
+    endId: number,
+    maxDepth: number,
+  ): Promise<number | null> {
+    if (startId === endId) return 0;
+
+    const startDepth = new Map<number, number>([[startId, 0]]);
+    const endDepth = new Map<number, number>([[endId, 0]]);
+    let startFrontier: number[] = [startId];
+    let endFrontier: number[] = [endId];
+    const neighborsCache = new Map<number, number[]>();
+    const budget = this.createSearchBudget(maxDepth);
+
+    let expansionCount = 0;
+    const maxExpansions = Math.max(1, maxDepth * 3);
+
+    while (
+      startFrontier.length > 0 &&
+      endFrontier.length > 0 &&
+      expansionCount < maxExpansions
+    ) {
+      const canExpandStart = this.frontierCanExpand(startFrontier, startDepth, maxDepth);
+      const canExpandEnd = this.frontierCanExpand(endFrontier, endDepth, maxDepth);
+      if (!canExpandStart && !canExpandEnd) {
+        break;
+      }
+
+      const expandStart =
+        canExpandStart && (!canExpandEnd || startFrontier.length <= endFrontier.length);
+
+      if (expandStart) {
+        const result = await this.expandFrontier(
+          startFrontier,
+          startDepth,
+          endDepth,
+          maxDepth,
+          neighborsCache,
+          budget,
+        );
+        if (result.matchDistance !== null) {
+          return result.matchDistance;
+        }
+        startFrontier = result.nextFrontier;
+      } else {
+        const result = await this.expandFrontier(
+          endFrontier,
+          endDepth,
+          startDepth,
+          maxDepth,
+          neighborsCache,
+          budget,
+        );
+        if (result.matchDistance !== null) {
+          return result.matchDistance;
+        }
+        endFrontier = result.nextFrontier;
+      }
+
+      expansionCount++;
+    }
+
+    return null;
+  }
+
+  private createSearchBudget(maxDepth: number): SearchBudget {
+    if (maxDepth <= 3) {
+      return { remainingActorExpansions: 16 };
+    }
+    if (maxDepth <= 4) {
+      return { remainingActorExpansions: 22 };
+    }
+    return { remainingActorExpansions: 30 };
+  }
+
+  private frontierCanExpand(
+    frontier: number[],
+    depthMap: Map<number, number>,
+    maxDepth: number,
+  ): boolean {
+    return frontier.some((actorId) => (depthMap.get(actorId) ?? maxDepth) < maxDepth);
+  }
+
+  private async expandFrontier(
+    frontier: number[],
+    thisDepthMap: Map<number, number>,
+    otherDepthMap: Map<number, number>,
+    maxDepth: number,
+    neighborsCache: Map<number, number[]>,
+    budget: SearchBudget,
+  ): Promise<{ nextFrontier: number[]; matchDistance: number | null }> {
+    const nextFrontier: number[] = [];
+    const queued = new Set<number>();
+    const actorsToExpand = frontier.slice(0, this.maxActorsPerExpansion);
+
+    for (const actorId of actorsToExpand) {
+      if (budget.remainingActorExpansions <= 0) {
+        return { nextFrontier, matchDistance: null };
+      }
+
+      const currentDepth = thisDepthMap.get(actorId);
+      if (currentDepth === undefined || currentDepth >= maxDepth) {
+        continue;
+      }
+      budget.remainingActorExpansions--;
+
+      const neighbors = await this.getConnectedActors(actorId, neighborsCache);
+      for (const neighborId of neighbors) {
+        if (thisDepthMap.has(neighborId)) {
+          continue;
+        }
+
+        const nextDepth = currentDepth + 1;
+        if (nextDepth > maxDepth) {
+          continue;
+        }
+
+        thisDepthMap.set(neighborId, nextDepth);
+        const otherDepth = otherDepthMap.get(neighborId);
+        if (otherDepth !== undefined) {
+          const totalDistance = nextDepth + otherDepth;
+          if (totalDistance <= maxDepth) {
+            return { nextFrontier, matchDistance: totalDistance };
+          }
+        }
+
+        if (nextDepth < maxDepth && !queued.has(neighborId)) {
+          nextFrontier.push(neighborId);
+          queued.add(neighborId);
+
+          if (nextFrontier.length >= this.maxFrontierSize) {
+            return { nextFrontier, matchDistance: null };
+          }
+        }
+      }
+    }
+
+    return { nextFrontier, matchDistance: null };
+  }
+
+  private async getConnectedActors(
+    actorId: number,
+    neighborsCache: Map<number, number[]>,
+  ): Promise<number[]> {
+    const cached = neighborsCache.get(actorId);
+    if (cached) {
+      return cached;
+    }
+
+    const movies = await tmdbService.getActorMovies(actorId);
+    const topMovies = [...movies]
+      .sort((a: Movie, b: Movie) => (b.popularity ?? 0) - (a.popularity ?? 0))
+      .slice(0, this.maxMoviesPerActor);
+
+    const creditsByMovie = await Promise.all(
+      topMovies.map((movie) => tmdbService.getMovieCredits(movie.id)),
+    );
+
+    const neighbors = new Set<number>();
+    for (const credits of creditsByMovie) {
+      const castSlice = credits.slice(0, this.maxCastPerMovie);
+      for (const castMember of castSlice) {
+        if (castMember.id !== actorId) {
+          neighbors.add(castMember.id);
+        }
+      }
+    }
+
+    const neighborIds = Array.from(neighbors);
+    neighborsCache.set(actorId, neighborIds);
+    return neighborIds;
   }
 }
 
