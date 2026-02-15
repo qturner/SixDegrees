@@ -538,6 +538,7 @@ class TMDbService {
       const results = await Promise.all(batch.map(async (actor) => {
         try {
           if (this.EXCLUDED_ACTORS.has(actor.name)) return null;
+          if (!actor.profile_path) return null;
 
           // Fetch details (for deathday) and movie credits in parallel
           const [details, creditsRes] = await Promise.all([
