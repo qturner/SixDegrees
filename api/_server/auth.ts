@@ -68,10 +68,11 @@ export async function setupAuth(app: Express) {
         user = await storage.getUserByEmail(email);
 
         if (user) {
-          // Link existing email user to Google
-          // We can't update using storage interface yet easily without expanding it
-          // For now, we'll assume new user or strict google match
-          // TODO: Implement linking if separate update method exists
+          // Link Google ID to existing email user
+          if (!user.googleId) {
+            user = await storage.updateUser(user.id, { googleId });
+            console.log(`AUTH: Linked Google ID to existing user ${user.id}`);
+          }
         } else {
           // 3. Create new user
           const username = email.split('@')[0] + Math.floor(Math.random() * 1000); // Generate unique-ish username
