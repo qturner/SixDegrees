@@ -720,6 +720,69 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // Merge a duplicate account into the primary account, preserving all stats and completions
+  async mergeUserAccounts(primaryUserId: string, duplicateUserId: string, updates: Partial<User>): Promise<User> {
+    return await withRetry(async () => {
+      // 1. Move challenge completions from duplicate to primary
+      //    Skip any that would conflict (same user+challenge)
+      const dupCompletions = await db.select().from(userChallengeCompletions)
+        .where(eq(userChallengeCompletions.userId, duplicateUserId));
+      for (const comp of dupCompletions) {
+        const [existing] = await db.select().from(userChallengeCompletions)
+          .where(and(
+            eq(userChallengeCompletions.userId, primaryUserId),
+            eq(userChallengeCompletions.challengeId, comp.challengeId)
+          ));
+        if (!existing) {
+          await db.update(userChallengeCompletions)
+            .set({ userId: primaryUserId })
+            .where(eq(userChallengeCompletions.id, comp.id));
+        }
+      }
+
+      // 2. Merge user stats (sum counters, take max of streaks)
+      const [primaryStats] = await db.select().from(userStats).where(eq(userStats.userId, primaryUserId));
+      const [dupStats] = await db.select().from(userStats).where(eq(userStats.userId, duplicateUserId));
+      if (primaryStats && dupStats) {
+        await db.update(userStats).set({
+          totalCompletions: (primaryStats.totalCompletions ?? 0) + (dupStats.totalCompletions ?? 0),
+          totalMoves: (primaryStats.totalMoves ?? 0) + (dupStats.totalMoves ?? 0),
+          currentStreak: Math.max(primaryStats.currentStreak ?? 0, dupStats.currentStreak ?? 0),
+          maxStreak: Math.max(primaryStats.maxStreak ?? 0, dupStats.maxStreak ?? 0),
+          lastPlayedDate: [primaryStats.lastPlayedDate, dupStats.lastPlayedDate]
+            .filter(Boolean).sort().pop() ?? primaryStats.lastPlayedDate,
+          easyCompletions: (primaryStats.easyCompletions ?? 0) + (dupStats.easyCompletions ?? 0),
+          mediumCompletions: (primaryStats.mediumCompletions ?? 0) + (dupStats.mediumCompletions ?? 0),
+          hardCompletions: (primaryStats.hardCompletions ?? 0) + (dupStats.hardCompletions ?? 0),
+          completionsAt1Move: (primaryStats.completionsAt1Move ?? 0) + (dupStats.completionsAt1Move ?? 0),
+          completionsAt2Moves: (primaryStats.completionsAt2Moves ?? 0) + (dupStats.completionsAt2Moves ?? 0),
+          completionsAt3Moves: (primaryStats.completionsAt3Moves ?? 0) + (dupStats.completionsAt3Moves ?? 0),
+          completionsAt4Moves: (primaryStats.completionsAt4Moves ?? 0) + (dupStats.completionsAt4Moves ?? 0),
+          completionsAt5Moves: (primaryStats.completionsAt5Moves ?? 0) + (dupStats.completionsAt5Moves ?? 0),
+          completionsAt6Moves: (primaryStats.completionsAt6Moves ?? 0) + (dupStats.completionsAt6Moves ?? 0),
+          updatedAt: new Date(),
+        }).where(eq(userStats.userId, primaryUserId));
+      } else if (!primaryStats && dupStats) {
+        // Primary has no stats — reassign duplicate's stats
+        await db.update(userStats).set({ userId: primaryUserId, updatedAt: new Date() })
+          .where(eq(userStats.userId, duplicateUserId));
+      }
+
+      // 3. Update the primary user with new provider IDs
+      const [updatedUser] = await db.update(users)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(users.id, primaryUserId))
+        .returning();
+
+      // 4. Delete the duplicate (remaining completions that were skipped + stats + user)
+      await db.delete(userChallengeCompletions).where(eq(userChallengeCompletions.userId, duplicateUserId));
+      await db.delete(userStats).where(eq(userStats.userId, duplicateUserId));
+      await db.delete(users).where(eq(users.id, duplicateUserId));
+
+      return updatedUser;
+    });
+  }
+
   async deleteUserAccount(userId: string): Promise<void> {
     await withRetry(async () => {
       // Delete children first - manual cascade for safety

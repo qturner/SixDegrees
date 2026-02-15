@@ -63,7 +63,18 @@ export async function setupAuth(app: Express) {
       // 1. Check if user exists by Google ID
       let user = await storage.getUserByGoogleId(googleId);
 
-      if (!user) {
+      if (user) {
+        // Check for a separate account with the same email that has appleId (duplicate from before linking fix)
+        if (email && !user.appleId) {
+          const emailUser = await storage.getUserByEmail(email);
+          if (emailUser && emailUser.id !== user.id && emailUser.appleId) {
+            // Merge: move stats/completions to primary Apple account, delete the duplicate
+            const duplicateId = user.id;
+            user = await storage.mergeUserAccounts(emailUser.id, duplicateId, { googleId });
+            console.log(`AUTH: Merged duplicate Google account ${duplicateId} into Apple account ${user.id}`);
+          }
+        }
+      } else {
         // 2. Check if user exists by email (link accounts)
         user = await storage.getUserByEmail(email);
 
