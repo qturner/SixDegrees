@@ -4,7 +4,7 @@ import { storage } from "./storage.js";
 import { tmdbService } from "./services/tmdb.js";
 import { gameLogicService } from "./services/gameLogic.js";
 import { withRetry } from "./db.js";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema } from "../../shared/schema.js";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema } from "../../shared/schema.js";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth.js";
 import { setupAuth, isAuthenticated } from "./auth.js";
 import { emailService } from "./services/email.js";
@@ -1683,6 +1683,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(moveDistribution);
     } catch (error) {
       console.error("Error getting user move distribution:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // ===== Movie Lists Routes =====
+
+  // GET /api/user/lists - Get all user's lists with entries
+  app.get("/api/user/lists", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const lists = await storage.getMovieListsByUser(userId);
+
+      // Fetch entries for each list
+      const listsWithEntries = await Promise.all(
+        lists.map(async (list) => {
+          const entries = await storage.getMovieListEntries(list.id);
+          return { ...list, entries };
+        })
+      );
+
+      res.json(listsWithEntries);
+    } catch (error) {
+      console.error("Error getting user lists:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/user/lists - Create new list
+  app.post("/api/user/lists", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const parseResult = insertMovieListSchema.safeParse({ ...req.body, userId });
+
+      if (!parseResult.success) {
+        return res.status(400).json({ errors: parseResult.error.errors });
+      }
+
+      const list = await storage.createMovieList(parseResult.data);
+      res.status(201).json(list);
+    } catch (error) {
+      console.error("Error creating list:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // GET /api/user/lists/:id - Get a specific list with entries
+  app.get("/api/user/lists/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const list = await storage.getMovieListWithEntries(req.params.id);
+
+      if (!list) {
+        return res.status(404).json({ message: "List not found" });
+      }
+
+      // Verify ownership
+      if (list.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      res.json(list);
+    } catch (error) {
+      console.error("Error getting list:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // PATCH /api/user/lists/:id - Update list (rename, reorder)
+  app.patch("/api/user/lists/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const existingList = await storage.getMovieList(req.params.id);
+
+      if (!existingList) {
+        return res.status(404).json({ message: "List not found" });
+      }
+
+      if (existingList.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { name, sortOrder } = req.body;
+      const updates: any = {};
+      if (name !== undefined) updates.name = name;
+      if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+
+      const list = await storage.updateMovieList(req.params.id, updates);
+      res.json(list);
+    } catch (error) {
+      console.error("Error updating list:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // DELETE /api/user/lists/:id - Delete list
+  app.delete("/api/user/lists/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const existingList = await storage.getMovieList(req.params.id);
+
+      if (!existingList) {
+        return res.status(404).json({ message: "List not found" });
+      }
+
+      if (existingList.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      await storage.deleteMovieList(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting list:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/user/lists/:id/movies - Add movie to list
+  app.post("/api/user/lists/:id/movies", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const existingList = await storage.getMovieList(req.params.id);
+
+      if (!existingList) {
+        return res.status(404).json({ message: "List not found" });
+      }
+
+      if (existingList.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const parseResult = insertMovieListEntrySchema.safeParse({
+        ...req.body,
+        listId: req.params.id,
+      });
+
+      if (!parseResult.success) {
+        return res.status(400).json({ errors: parseResult.error.errors });
+      }
+
+      const entry = await storage.addMovieToList(parseResult.data);
+      res.status(201).json(entry);
+    } catch (error: any) {
+      // Handle unique constraint violation (movie already in list)
+      if (error?.code === '23505') {
+        return res.status(409).json({ message: "Movie already in list" });
+      }
+      console.error("Error adding movie to list:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // DELETE /api/user/lists/:id/movies/:movieId - Remove movie from list
+  app.delete("/api/user/lists/:id/movies/:movieId", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const existingList = await storage.getMovieList(req.params.id);
+
+      if (!existingList) {
+        return res.status(404).json({ message: "List not found" });
+      }
+
+      if (existingList.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      await storage.removeMovieFromList(req.params.id, parseInt(req.params.movieId));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing movie from list:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // GET /api/movie/:id/watch-providers - Get streaming providers for a movie
+  app.get("/api/movie/:id/watch-providers", async (req, res) => {
+    try {
+      const movieId = parseInt(req.params.id);
+      const region = (req.query.region as string) || 'US';
+
+      const providers = await tmdbService.getWatchProviders(movieId, region);
+      res.json(providers || { link: null, flatrate: [], rent: [], buy: [] });
+    } catch (error) {
+      console.error("Error getting watch providers:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
