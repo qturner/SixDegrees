@@ -1,4 +1,4 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions } from "../../shared/schema.js";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries } from "../../shared/schema.js";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db.js";
 import { eq, and, gt, desc, sql, count } from "drizzle-orm";
@@ -89,6 +89,17 @@ export interface IStorage {
     geographicData: { country: string; count: number }[];
     deviceData: { userAgent: string; count: number }[];
   }>;
+
+  // Movie Lists methods
+  getMovieListsByUser(userId: string): Promise<MovieList[]>;
+  getMovieList(id: string): Promise<MovieList | undefined>;
+  createMovieList(data: InsertMovieList): Promise<MovieList>;
+  updateMovieList(id: string, updates: Partial<MovieList>): Promise<MovieList>;
+  deleteMovieList(id: string): Promise<void>;
+  getMovieListEntries(listId: string): Promise<MovieListEntry[]>;
+  addMovieToList(data: InsertMovieListEntry): Promise<MovieListEntry>;
+  removeMovieFromList(listId: string, tmdbMovieId: number): Promise<void>;
+  getMovieListWithEntries(id: string): Promise<(MovieList & { entries: MovieListEntry[] }) | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -788,8 +799,85 @@ export class DatabaseStorage implements IStorage {
       // Delete children first - manual cascade for safety
       await db.delete(userChallengeCompletions).where(eq(userChallengeCompletions.userId, userId));
       await db.delete(userStats).where(eq(userStats.userId, userId));
+      // Delete movie lists (entries cascade automatically)
+      await db.delete(movieLists).where(eq(movieLists.userId, userId));
       // Finally delete the user
       await db.delete(users).where(eq(users.id, userId));
+    });
+  }
+
+  // Movie Lists methods
+  async getMovieListsByUser(userId: string): Promise<MovieList[]> {
+    return await withRetry(async () => {
+      return await db.select().from(movieLists)
+        .where(eq(movieLists.userId, userId))
+        .orderBy(movieLists.sortOrder);
+    });
+  }
+
+  async getMovieList(id: string): Promise<MovieList | undefined> {
+    return await withRetry(async () => {
+      const [list] = await db.select().from(movieLists).where(eq(movieLists.id, id));
+      return list || undefined;
+    });
+  }
+
+  async createMovieList(data: InsertMovieList): Promise<MovieList> {
+    return await withRetry(async () => {
+      const [list] = await db.insert(movieLists).values(data).returning();
+      return list;
+    });
+  }
+
+  async updateMovieList(id: string, updates: Partial<MovieList>): Promise<MovieList> {
+    return await withRetry(async () => {
+      const [list] = await db.update(movieLists)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(movieLists.id, id))
+        .returning();
+      return list;
+    });
+  }
+
+  async deleteMovieList(id: string): Promise<void> {
+    await withRetry(async () => {
+      // Entries cascade automatically due to onDelete: 'cascade'
+      await db.delete(movieLists).where(eq(movieLists.id, id));
+    });
+  }
+
+  async getMovieListEntries(listId: string): Promise<MovieListEntry[]> {
+    return await withRetry(async () => {
+      return await db.select().from(movieListEntries)
+        .where(eq(movieListEntries.listId, listId))
+        .orderBy(desc(movieListEntries.addedAt));
+    });
+  }
+
+  async addMovieToList(data: InsertMovieListEntry): Promise<MovieListEntry> {
+    return await withRetry(async () => {
+      const [entry] = await db.insert(movieListEntries).values(data).returning();
+      return entry;
+    });
+  }
+
+  async removeMovieFromList(listId: string, tmdbMovieId: number): Promise<void> {
+    await withRetry(async () => {
+      await db.delete(movieListEntries)
+        .where(and(
+          eq(movieListEntries.listId, listId),
+          eq(movieListEntries.tmdbMovieId, tmdbMovieId)
+        ));
+    });
+  }
+
+  async getMovieListWithEntries(id: string): Promise<(MovieList & { entries: MovieListEntry[] }) | undefined> {
+    return await withRetry(async () => {
+      const list = await this.getMovieList(id);
+      if (!list) return undefined;
+
+      const entries = await this.getMovieListEntries(id);
+      return { ...list, entries };
     });
   }
 }

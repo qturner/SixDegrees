@@ -624,6 +624,40 @@ class TMDbService {
    * Enhanced check to identify if an actor is primarily a voice actor
    */
 
+  async getWatchProviders(movieId: number, region: string = 'US'): Promise<{
+    link: string | null;
+    flatrate: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+    rent: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+    buy: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+  } | null> {
+    try {
+      const response = await this.makeRequest<{
+        id: number;
+        results: Record<string, {
+          link?: string;
+          flatrate?: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+          rent?: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+          buy?: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+        }>;
+      }>(`/movie/${movieId}/watch/providers`);
+
+      const regionData = response.results?.[region];
+      if (!regionData) {
+        return { link: null, flatrate: [], rent: [], buy: [] };
+      }
+
+      return {
+        link: regionData.link || null,
+        flatrate: regionData.flatrate || [],
+        rent: regionData.rent || [],
+        buy: regionData.buy || [],
+      };
+    } catch (error) {
+      console.error(`Error getting watch providers for movie ${movieId}:`, error);
+      return null;
+    }
+  }
+
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {
     try {
       // Use actor's movie credits as it's typically a smaller dataset than a movie's full cast

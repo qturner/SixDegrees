@@ -243,6 +243,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.id],
     references: [userStats.userId],
   }),
+  movieLists: many(movieLists),
 }));
 
 export const userStatsRelations = relations(userStats, ({ one }) => ({
@@ -265,6 +266,37 @@ export const userChallengeCompletionsRelations = relations(userChallengeCompleti
 
 export const dailyChallengesRelations = relations(dailyChallenges, ({ many }) => ({
   completions: many(userChallengeCompletions),
+}));
+
+// Movie Lists tables
+export const movieLists = pgTable("movie_lists", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const movieListEntries = pgTable("movie_list_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  listId: varchar("list_id").notNull().references(() => movieLists.id, { onDelete: 'cascade' }),
+  tmdbMovieId: integer("tmdb_movie_id").notNull(),
+  movieTitle: text("movie_title").notNull(),
+  moviePosterPath: text("movie_poster_path"),
+  movieReleaseDate: text("movie_release_date"),
+  addedAt: timestamp("added_at").defaultNow(),
+}, (table) => [
+  unique("movie_list_entries_list_movie_unique").on(table.listId, table.tmdbMovieId),
+]);
+
+export const movieListsRelations = relations(movieLists, ({ one, many }) => ({
+  user: one(users, { fields: [movieLists.userId], references: [users.id] }),
+  entries: many(movieListEntries),
+}));
+
+export const movieListEntriesRelations = relations(movieListEntries, ({ one }) => ({
+  list: one(movieLists, { fields: [movieListEntries.listId], references: [movieLists.id] }),
 }));
 
 // Type definitions
@@ -308,3 +340,23 @@ export type InsertUserType = z.infer<typeof insertUserSchema>;
 export type LoginType = z.infer<typeof loginSchema>;
 export type RegisterType = z.infer<typeof registerSchema>;
 export type InsertUserStatsType = z.infer<typeof insertUserStatsSchema>;
+
+// Movie Lists types
+export type MovieList = typeof movieLists.$inferSelect;
+export type InsertMovieList = typeof movieLists.$inferInsert;
+export type MovieListEntry = typeof movieListEntries.$inferSelect;
+export type InsertMovieListEntry = typeof movieListEntries.$inferInsert;
+
+export const insertMovieListSchema = createInsertSchema(movieLists).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMovieListEntrySchema = createInsertSchema(movieListEntries).omit({
+  id: true,
+  addedAt: true,
+});
+
+export type InsertMovieListType = z.infer<typeof insertMovieListSchema>;
+export type InsertMovieListEntryType = z.infer<typeof insertMovieListEntrySchema>;
