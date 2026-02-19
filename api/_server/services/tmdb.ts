@@ -18,6 +18,7 @@ interface TMDbActor {
   name: string;
   profile_path: string | null;
   known_for_department?: string;
+  popularity?: number;
 }
 
 interface TMDbMovie {
@@ -725,6 +726,14 @@ class TMDbService {
 
       const allResults = pages.flatMap(page => page.results);
 
+      // Build a lookup of TMDB popularity scores by actor ID
+      const popularityByActorId = new Map<number, number>();
+      for (const person of allResults) {
+        if (person.popularity != null) {
+          popularityByActorId.set(person.id, person.popularity);
+        }
+      }
+
       const actors = allResults
         .filter(person => person.known_for_department === "Acting")
         .map(person => ({
@@ -737,8 +746,25 @@ class TMDbService {
       // Apply strict filtering (must have profile path, English movies, etc.)
       const filteredActors = await this.filterActorsByGenre(actors);
 
-      console.log(`Found ${filteredActors.length} valid ${tier} actors`);
-      return filteredActors;
+      // Apply minimum popularity score threshold per tier
+      const popularityThresholds: Record<string, number> = {
+        easy: 40,
+        medium: 10,
+        hard: 0,
+      };
+
+      const threshold = popularityThresholds[tier] ?? 0;
+      const qualifiedActors = threshold > 0
+        ? filteredActors.filter(a => (popularityByActorId.get(a.id) ?? 0) >= threshold)
+        : filteredActors;
+
+      const popularityFiltered = filteredActors.length - qualifiedActors.length;
+      if (popularityFiltered > 0) {
+        console.log(`${tier}: filtered out ${popularityFiltered} actors below popularity ${threshold}`);
+      }
+
+      console.log(`Found ${qualifiedActors.length} valid ${tier} actors`);
+      return qualifiedActors;
     } catch (error) {
       console.error(`Error getting ${tier} actors:`, error);
       return [];
