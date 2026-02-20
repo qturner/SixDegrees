@@ -7,21 +7,12 @@ interface GameValidationContext {
   connections: Connection[];
 }
 
-type DifficultyLevel = "easy" | "medium" | "hard";
-type ActorTier = DifficultyLevel;
+export type DifficultyLevel = "easy" | "medium" | "hard";
 
-interface TierPairTemplate {
-  left: ActorTier;
-  right: ActorTier;
-  weight: number;
-}
-
-interface DifficultySelectionConfig {
+interface DistanceBucket {
+  difficulty: DifficultyLevel;
   minDistance: number;
   maxDistance: number;
-  maxSearchDepth: number;
-  maxPairAttempts: number;
-  templates: TierPairTemplate[];
 }
 
 interface CandidateScore {
@@ -42,35 +33,13 @@ class GameLogicService {
   private readonly maxCastPerMovie = 8;
   private readonly maxFrontierSize = 32;
 
-  private readonly difficultyConfigs: Record<DifficultyLevel, DifficultySelectionConfig> = {
-    easy: {
-      minDistance: 1,
-      maxDistance: 3,
-      maxSearchDepth: 3,
-      maxPairAttempts: 12,
-      templates: [{ left: "easy", right: "easy", weight: 1 }],
-    },
-    medium: {
-      minDistance: 2,
-      maxDistance: 4,
-      maxSearchDepth: 4,
-      maxPairAttempts: 16,
-      templates: [
-        { left: "easy", right: "medium", weight: 3 },
-        { left: "medium", right: "medium", weight: 1 },
-      ],
-    },
-    hard: {
-      minDistance: 3,
-      maxDistance: 6,
-      maxSearchDepth: 6,
-      maxPairAttempts: 20,
-      templates: [
-        { left: "medium", right: "hard", weight: 3 },
-        { left: "hard", right: "hard", weight: 2 },
-      ],
-    },
-  };
+  private readonly distanceBuckets: DistanceBucket[] = [
+    { difficulty: "easy", minDistance: 1, maxDistance: 2 },
+    { difficulty: "medium", minDistance: 3, maxDistance: 4 },
+    { difficulty: "hard", minDistance: 5, maxDistance: 6 },
+  ];
+
+  private readonly maxUnifiedPairAttempts = 30;
 
   async validateConnection(
     actorId: number,
@@ -249,101 +218,170 @@ class GameLogicService {
     return distance !== null;
   }
 
+  /**
+   * Generate actor pairs for all three difficulties in a single pass.
+   * Uses one quality pool and BFS distance to bucket pairs into easy/medium/hard.
+   */
+  async generateAllDailyChallenges(
+    excludeActorIds: number[] = [],
+  ): Promise<Map<DifficultyLevel, { actor1: Actor; actor2: Actor }>> {
+    const results = new Map<DifficultyLevel, { actor1: Actor; actor2: Actor }>();
+    // Store multiple fallbacks per bucket, sorted by score at selection time
+    const fallbacks = new Map<DifficultyLevel, CandidateScore[]>();
+
+    try {
+      const pool = await tmdbService.getQualityActorPool();
+      if (pool.length < 2) {
+        console.error(`Quality actor pool too small: ${pool.length}`);
+        return results;
+      }
+
+      // Track actors already used in results to avoid reuse across difficulties
+      const usedActorIds = new Set<number>(excludeActorIds);
+
+      for (let attempt = 0; attempt < this.maxUnifiedPairAttempts; attempt++) {
+        // Stop early if all buckets filled
+        if (results.size === this.distanceBuckets.length) break;
+
+        const actor1 = this.pickRandomActor(pool);
+        const actor2 = this.pickRandomActor(pool);
+        if (!actor1 || !actor2) continue;
+        if (!this.isEligiblePair(actor1, actor2, [...usedActorIds])) continue;
+
+        const distance = await this.findPathDistance(actor1.id, actor2.id, 6);
+        if (distance === null) continue;
+
+        // Try to slot into an unfilled bucket
+        let slotted = false;
+        for (const bucket of this.distanceBuckets) {
+          if (results.has(bucket.difficulty)) continue;
+
+          if (distance >= bucket.minDistance && distance <= bucket.maxDistance) {
+            console.log(`Selected ${bucket.difficulty} pair (${distance} hops): ${actor1.name} <-> ${actor2.name} [attempt ${attempt + 1}]`);
+            results.set(bucket.difficulty, { actor1, actor2 });
+            usedActorIds.add(actor1.id);
+            usedActorIds.add(actor2.id);
+            slotted = true;
+            break;
+          }
+        }
+
+        // If not slotted into a primary bucket, track as fallback for all unfilled buckets
+        if (!slotted) {
+          for (const bucket of this.distanceBuckets) {
+            if (results.has(bucket.difficulty)) continue;
+
+            const midpoint = (bucket.minDistance + bucket.maxDistance) / 2;
+            let outsidePenalty = 0;
+            if (distance < bucket.minDistance) outsidePenalty = bucket.minDistance - distance;
+            else if (distance > bucket.maxDistance) outsidePenalty = distance - bucket.maxDistance;
+            const score = outsidePenalty * 100 + Math.abs(distance - midpoint);
+
+            if (!fallbacks.has(bucket.difficulty)) {
+              fallbacks.set(bucket.difficulty, []);
+            }
+            fallbacks.get(bucket.difficulty)!.push({ actor1, actor2, distance, score });
+          }
+        }
+      }
+
+      // Fill remaining buckets with fallbacks, enforcing cross-bucket uniqueness
+      for (const bucket of this.distanceBuckets) {
+        if (results.has(bucket.difficulty)) continue;
+
+        const candidates = fallbacks.get(bucket.difficulty);
+        if (!candidates || candidates.length === 0) {
+          console.warn(`No pair found for ${bucket.difficulty} difficulty`);
+          continue;
+        }
+
+        // Sort by score (best first), pick first that doesn't conflict with usedActorIds
+        candidates.sort((a, b) => a.score - b.score);
+        let picked = false;
+        for (const candidate of candidates) {
+          if (usedActorIds.has(candidate.actor1.id) || usedActorIds.has(candidate.actor2.id)) {
+            continue;
+          }
+          console.warn(`Using fallback ${bucket.difficulty} pair (${candidate.distance} hops): ${candidate.actor1.name} <-> ${candidate.actor2.name}`);
+          results.set(bucket.difficulty, { actor1: candidate.actor1, actor2: candidate.actor2 });
+          usedActorIds.add(candidate.actor1.id);
+          usedActorIds.add(candidate.actor2.id);
+          picked = true;
+          break;
+        }
+        if (!picked) {
+          console.warn(`No unique fallback pair for ${bucket.difficulty} difficulty`);
+        }
+      }
+
+      console.log(`Generated ${results.size}/${this.distanceBuckets.length} difficulty pairs`);
+      return results;
+    } catch (error) {
+      console.error("Error generating all daily challenges:", error);
+      return results;
+    }
+  }
+
+  /**
+   * Generate a single actor pair for a specific difficulty.
+   * Backward compatible with admin routes and single-difficulty generation.
+   */
   async generateDailyActors(
     difficulty: DifficultyLevel = "medium",
     excludeActorIds: number[] = [],
   ): Promise<{ actor1: Actor; actor2: Actor } | null> {
     try {
-      const config = this.difficultyConfigs[difficulty];
-      const tiersToLoad = Array.from(
-        new Set(config.templates.flatMap((template) => [template.left, template.right])),
-      );
-      const poolEntries = await Promise.all(
-        tiersToLoad.map(async (tier) => [tier, await tmdbService.getActorsByTier(tier)] as const),
-      );
-
-      const tierPools: Record<ActorTier, Actor[]> = {
-        easy: [],
-        medium: [],
-        hard: [],
-      };
-      for (const [tier, pool] of poolEntries) {
-        tierPools[tier] = pool;
+      const pool = await tmdbService.getQualityActorPool();
+      if (pool.length < 2) {
+        console.error(`Quality actor pool too small for ${difficulty}: ${pool.length}`);
+        return null;
       }
 
-      if (tiersToLoad.some((tier) => tierPools[tier].length === 0)) {
-        console.error(`Failed to fetch actor pools for ${difficulty} generation`);
+      const bucket = this.distanceBuckets.find(b => b.difficulty === difficulty);
+      if (!bucket) {
+        console.error(`Unknown difficulty: ${difficulty}`);
         return null;
       }
 
       let bestFallback: CandidateScore | null = null;
 
-      for (let attempt = 0; attempt < config.maxPairAttempts; attempt++) {
-        const template = this.pickTemplate(config.templates);
-        const actor1 = this.pickRandomActor(tierPools[template.left]);
-        const actor2 = this.pickRandomActor(tierPools[template.right]);
+      for (let attempt = 0; attempt < this.maxUnifiedPairAttempts; attempt++) {
+        const actor1 = this.pickRandomActor(pool);
+        const actor2 = this.pickRandomActor(pool);
+        if (!actor1 || !actor2) continue;
+        if (!this.isEligiblePair(actor1, actor2, excludeActorIds)) continue;
 
-        if (!actor1 || !actor2) {
-          continue;
-        }
-        if (!this.isEligiblePair(actor1, actor2, excludeActorIds)) {
-          continue;
-        }
+        const distance = await this.findPathDistance(actor1.id, actor2.id, 6);
+        if (distance === null) continue;
 
-        const distance = await this.findPathDistance(
-          actor1.id,
-          actor2.id,
-          config.maxSearchDepth,
-        );
-        if (distance === null) {
-          continue;
-        }
-
-        const score = this.scoreCandidate(distance, config);
-        if (this.isDistanceInRange(distance, config)) {
-          console.log(
-            `Selected ${difficulty} pair (${distance} move target): ${actor1.name} <-> ${actor2.name}`,
-          );
+        if (distance >= bucket.minDistance && distance <= bucket.maxDistance) {
+          console.log(`Selected ${difficulty} pair (${distance} hops): ${actor1.name} <-> ${actor2.name}`);
           return { actor1, actor2 };
         }
+
+        // Track fallback
+        const midpoint = (bucket.minDistance + bucket.maxDistance) / 2;
+        let outsidePenalty = 0;
+        if (distance < bucket.minDistance) outsidePenalty = bucket.minDistance - distance;
+        else if (distance > bucket.maxDistance) outsidePenalty = distance - bucket.maxDistance;
+        const score = outsidePenalty * 100 + Math.abs(distance - midpoint);
 
         if (!bestFallback || score < bestFallback.score) {
           bestFallback = { actor1, actor2, distance, score };
         }
-
-        const attemptsBeforeShortCircuit = Math.floor(config.maxPairAttempts * 0.6);
-        if (attempt >= attemptsBeforeShortCircuit && bestFallback && bestFallback.score <= 100) {
-          break;
-        }
       }
 
       if (bestFallback) {
-        console.warn(
-          `Using fallback ${difficulty} pair (${bestFallback.distance} moves): ${bestFallback.actor1.name} <-> ${bestFallback.actor2.name}`,
-        );
+        console.warn(`Using fallback ${difficulty} pair (${bestFallback.distance} hops): ${bestFallback.actor1.name} <-> ${bestFallback.actor2.name}`);
         return { actor1: bestFallback.actor1, actor2: bestFallback.actor2 };
       }
 
-      console.warn(`Could not generate ${difficulty} pair after ${config.maxPairAttempts} attempts`);
+      console.warn(`Could not generate ${difficulty} pair after ${this.maxUnifiedPairAttempts} attempts`);
       return null;
     } catch (error) {
       console.error("Error generating daily actors:", error);
       return null;
     }
-  }
-
-  private pickTemplate(templates: TierPairTemplate[]): TierPairTemplate {
-    const totalWeight = templates.reduce((sum, template) => sum + template.weight, 0);
-    let random = Math.random() * totalWeight;
-
-    for (const template of templates) {
-      random -= template.weight;
-      if (random <= 0) {
-        return template;
-      }
-    }
-
-    return templates[templates.length - 1];
   }
 
   private pickRandomActor(pool: Actor[]): Actor | null {
@@ -356,22 +394,6 @@ class GameLogicService {
     if (excludeActorIds.includes(actor1.id) || excludeActorIds.includes(actor2.id)) return false;
     if (this.bannedActorNames.has(actor1.name) || this.bannedActorNames.has(actor2.name)) return false;
     return true;
-  }
-
-  private isDistanceInRange(distance: number, config: DifficultySelectionConfig): boolean {
-    return distance >= config.minDistance && distance <= config.maxDistance;
-  }
-
-  private scoreCandidate(distance: number, config: DifficultySelectionConfig): number {
-    const midpoint = (config.minDistance + config.maxDistance) / 2;
-    let outsidePenalty = 0;
-    if (distance < config.minDistance) {
-      outsidePenalty = config.minDistance - distance;
-    } else if (distance > config.maxDistance) {
-      outsidePenalty = distance - config.maxDistance;
-    }
-
-    return outsidePenalty * 100 + Math.abs(distance - midpoint);
   }
 
   private async findPathDistance(

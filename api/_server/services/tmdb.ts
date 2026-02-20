@@ -771,9 +771,49 @@ class TMDbService {
     }
   }
 
+  /**
+   * Get a quality actor pool: pages 1-10 of TMDB popular, cap at 60 before deep filtering.
+   * No popularity threshold — difficulty is determined by BFS distance, not TMDB score.
+   */
+  async getQualityActorPool(): Promise<Actor[]> {
+    try {
+      const pages: TMDbResponse<TMDbActor>[] = [];
+
+      for (let pageNum = 1; pageNum <= 10; pageNum++) {
+        try {
+          const page = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: pageNum.toString() });
+          pages.push(page);
+          await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (e) {
+          console.error(`Failed to fetch popular actors page ${pageNum}`, e);
+        }
+      }
+
+      const allResults = pages.flatMap(page => page.results);
+
+      // Filter to actors only, cap at 60 before expensive genre filtering
+      const actors = allResults
+        .filter(person => person.known_for_department === "Acting")
+        .slice(0, 60)
+        .map(person => ({
+          id: person.id,
+          name: person.name,
+          profile_path: person.profile_path,
+          known_for_department: person.known_for_department,
+        }));
+
+      const filteredActors = await this.filterActorsByGenre(actors);
+      console.log(`Quality actor pool: ${allResults.length} raw -> ${actors.length} capped -> ${filteredActors.length} after filtering`);
+      return filteredActors;
+    } catch (error) {
+      console.error("Error getting quality actor pool:", error);
+      return [];
+    }
+  }
+
   // Legacy support for random popular actors (used by backup logic)
   async getPopularActors(): Promise<Actor[]> {
-    return this.getActorsByTier('easy');
+    return this.getQualityActorPool();
   }
 
   async getRandomTopActors(): Promise<{ actor1: Actor; actor2: Actor } | null> {
