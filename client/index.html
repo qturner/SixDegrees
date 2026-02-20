@@ -133,14 +133,37 @@
             min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
-            text-align: center;
             padding: 120px 24px 80px;
         }
-        .hero-content { max-width: 720px; }
+        .hero-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 48px;
+            width: 100%;
+        }
+        .hero-content {
+            flex: 1;
+            text-align: left;
+            max-width: 560px;
+        }
+        .hero-visual {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+        .iphone-mockup {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 40px;
+            box-shadow: 0 0 0 10px #1A1A2E, 0 20px 50px rgba(6, 182, 212, 0.2);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            z-index: 2;
+        }
         .hero h1 {
             font-family: 'Playfair Display', serif;
-            font-size: clamp(3rem, 8vw, 5rem);
+            font-size: clamp(3rem, 6vw, 5rem);
             font-weight: 800;
             line-height: 1.1;
             margin-bottom: 8px;
@@ -151,7 +174,7 @@
         }
         .hero .tagline {
             font-family: 'Playfair Display', serif;
-            font-size: clamp(1.1rem, 3vw, 1.5rem);
+            font-size: clamp(1.1rem, 2.5vw, 1.5rem);
             color: var(--cyan-glow);
             margin-bottom: 24px;
             font-weight: 600;
@@ -159,81 +182,8 @@
         .hero p {
             font-size: 1.15rem;
             color: var(--text-secondary);
-            max-width: 520px;
-            margin: 0 auto 40px;
+            margin: 0 0 40px;
             line-height: 1.7;
-        }
-
-        /* ── Matchup Card (Hero Visual) ── */
-        .matchup-card {
-            display: inline-flex;
-            align-items: center;
-            gap: 32px;
-            background: var(--card);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            border-radius: 20px;
-            padding: 32px 48px;
-            margin-bottom: 48px;
-            box-shadow: 0 0 40px rgba(6, 182, 212, 0.08), inset 0 1px 0 rgba(255,255,255,0.05);
-            position: relative;
-        }
-        .matchup-card::before {
-            content: '';
-            position: absolute;
-            inset: -1px;
-            border-radius: 20px;
-            padding: 1px;
-            background: linear-gradient(135deg, var(--cyan), transparent 50%, var(--gold));
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            pointer-events: none;
-        }
-        .actor {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
-        .actor-photo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: var(--surface);
-            border: 2px solid var(--cyan);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-        }
-        .actor-photo.gold { border-color: var(--gold); }
-        .actor-name {
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-        .actor-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-        .label-start { color: var(--cyan-glow); }
-        .label-end { color: var(--gold); }
-        .vs {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-        .vs-text {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.1rem;
-            color: var(--pink);
-            font-weight: 700;
-        }
-        .vs-icon {
-            color: var(--cyan);
-            font-size: 1.2rem;
         }
 
         /* ── CTA Buttons ── */
@@ -241,7 +191,6 @@
             display: flex;
             flex-wrap: wrap;
             gap: 16px;
-            justify-content: center;
         }
         .cta-primary {
             display: inline-flex;
@@ -351,6 +300,7 @@
             text-align: center;
             position: relative;
             overflow: hidden;
+            border-top: 4px solid transparent; /* Glowing top border added here */
         }
         .diff-card::before {
             content: '';
@@ -363,9 +313,26 @@
             mask-composite: exclude;
             pointer-events: none;
         }
+        
+        /* Updated glow effects for each difficulty */
+        .diff-easy { 
+            border-top-color: var(--cyan); 
+            box-shadow: 0 -10px 20px rgba(6, 182, 212, 0.05); 
+        }
         .diff-easy::before { background: linear-gradient(135deg, var(--cyan), transparent 60%); }
+        
+        .diff-medium { 
+            border-top-color: var(--gold); 
+            box-shadow: 0 -10px 20px rgba(212, 175, 55, 0.05); 
+        }
         .diff-medium::before { background: linear-gradient(135deg, var(--gold), transparent 60%); }
+        
+        .diff-hard { 
+            border-top-color: var(--pink); 
+            box-shadow: 0 -10px 20px rgba(239, 68, 68, 0.05); 
+        }
         .diff-hard::before { background: linear-gradient(135deg, var(--pink), transparent 60%); }
+        
         .diff-stars { font-size: 1.5rem; margin-bottom: 8px; }
         .diff-card h3 {
             font-family: 'Playfair Display', serif;
@@ -385,6 +352,59 @@
             color: var(--text-secondary);
             font-size: 0.95rem;
             line-height: 1.6;
+        }
+        .diff-card .matchup-example {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+        .matchup-example .actor-thumb {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.15);
+        }
+        .matchup-example .actor-thumb-name {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        .matchup-example .matchup-arrow {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        /* ── Screenshot Showcase ── */
+        .showcase {
+            position: relative;
+            z-index: 1;
+            padding: 80px 0;
+            overflow: hidden;
+        }
+        .showcase-scroll {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 0 24px;
+        }
+        .showcase-item {
+            flex: 0 0 auto;
+            width: 220px;
+            border-radius: 28px;
+            box-shadow: 0 0 0 6px #1A1A2E, 0 12px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .showcase-item:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 0 0 6px #1A1A2E, 0 20px 50px rgba(6, 182, 212, 0.2);
         }
 
         /* ── Daily Challenge Banner ── */
@@ -481,12 +501,23 @@
         }
 
         /* ── Responsive ── */
-        @media (max-width: 768px) {
-            .matchup-card {
-                gap: 20px;
-                padding: 24px 28px;
+        @media (max-width: 850px) {
+            .hero-inner {
+                flex-direction: column;
+                text-align: center;
             }
-            .actor-photo { width: 64px; height: 64px; font-size: 1.5rem; }
+            .hero-content {
+                text-align: center;
+                margin: 0 auto;
+            }
+            .hero p {
+                margin: 0 auto 32px;
+            }
+            .cta-group {
+                justify-content: center;
+            }
+        }
+        @media (max-width: 768px) {
             .steps, .difficulties {
                 grid-template-columns: 1fr;
                 max-width: 400px;
@@ -494,6 +525,19 @@
             }
             .cta-group { flex-direction: column; align-items: center; }
             .cta-primary, .cta-secondary { width: 100%; max-width: 300px; justify-content: center; }
+            .showcase-scroll {
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+                padding: 0 24px 16px;
+            }
+            .showcase-item {
+                width: 180px;
+                scroll-snap-align: center;
+            }
+            .matchup-example { flex-wrap: wrap; gap: 6px; }
         }
     </style>
 </head>
@@ -504,7 +548,6 @@
     <div class="orb orb-cyan"></div>
 </div>
 
-<!-- Nav -->
 <nav>
     <div class="container">
         <div class="logo">Six Degrees</div>
@@ -514,42 +557,28 @@
     </div>
 </nav>
 
-<!-- Hero -->
 <section class="hero">
-    <div class="hero-content">
-        <h1>Connect the Stars</h1>
-        <div class="tagline">The daily movie trivia challenge</div>
-        <p>Link two actors through their movies in 6 moves or less. Three difficulty levels. A new puzzle every day at midnight.</p>
+    <div class="container hero-inner">
+        <div class="hero-content">
+            <h1>Connect the Stars</h1>
+            <div class="tagline">The daily movie trivia challenge</div>
+            <p>Link two actors through their movies in 6 moves or less. Three difficulty levels. A new puzzle every day at midnight.</p>
 
-        <div class="matchup-card">
-            <div class="actor">
-                <div class="actor-label label-start">Start</div>
-                <div class="actor-photo">🎬</div>
-                <div class="actor-name">Actor A</div>
-            </div>
-            <div class="vs">
-                <div class="vs-text">VS</div>
-                <div class="vs-icon">✦</div>
-            </div>
-            <div class="actor">
-                <div class="actor-label label-end">End</div>
-                <div class="actor-photo gold">🎬</div>
-                <div class="actor-name">Actor B</div>
+            <div class="cta-group" id="download">
+                <a href="#" class="cta-primary">
+                    <span>📱</span> Download for iOS
+                </a>
+                <a href="#how" class="cta-secondary">
+                    See How It Works ↓
+                </a>
             </div>
         </div>
-
-        <div class="cta-group" id="download">
-            <a href="#" class="cta-primary">
-                <span></span> Download for iOS
-            </a>
-            <a href="#how" class="cta-secondary">
-                See How It Works ↓
-            </a>
+        <div class="hero-visual">
+            <img src="screenshot-build-chain.jpeg" alt="Six Degrees Gameplay" class="iphone-mockup" loading="lazy" width="320" height="693">
         </div>
     </div>
 </section>
 
-<!-- How It Works -->
 <section class="section" id="how">
     <div class="container">
         <h2 class="section-title">How It Works</h2>
@@ -567,14 +596,25 @@
             </div>
             <div class="step">
                 <div class="step-icon">🏆</div>
-                <h3>Beat the Limit</h3>
-                <p>Complete the chain in 6 moves or less. Fewer moves = bigger bragging rights. Track your streaks and stats.</p>
+                <h3>Earn Your Rank</h3>
+                <p>Complete the chain in 6 moves or less. Can you connect them in 1 move to achieve the <strong>"Impossible"</strong> rank and earn the Walk of Fame trophy?</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Difficulty -->
+<section class="showcase">
+    <div class="container">
+        <h2 class="section-title">See It in Action</h2>
+        <p class="section-subtitle">Choose your difficulty, build the chain, earn your rank</p>
+    </div>
+    <div class="showcase-scroll">
+        <img src="choose-your-difficulty.jpeg" alt="Choose your difficulty" class="showcase-item" loading="lazy" width="220" height="476">
+        <img src="showing-the-chain.jpeg" alt="Building the chain" class="showcase-item" loading="lazy" width="220" height="476">
+        <img src="legendary.jpeg" alt="Legendary rank result" class="showcase-item" loading="lazy" width="220" height="476">
+    </div>
+</section>
+
 <section class="section">
     <div class="container">
         <h2 class="section-title">Three Ways to Play</h2>
@@ -585,24 +625,44 @@
                 <h3>Easy</h3>
                 <div class="diff-sub">Household names</div>
                 <p>Blockbuster stars everyone knows. A great warm-up or a chill daily puzzle.</p>
+                <div class="matchup-example">
+                    <img src="https://image.tmdb.org/t/p/w185/8RZLOyYGsoRe9p44q3xin9QkMHv.jpg" alt="Keanu Reeves" class="actor-thumb" loading="lazy">
+                    <span class="actor-thumb-name">Keanu Reeves</span>
+                    <span class="matchup-arrow">→</span>
+                    <span class="actor-thumb-name">Morgan Freeman</span>
+                    <img src="https://image.tmdb.org/t/p/w185/jPsLqiYGSofU4s6BjrxnefMfabb.jpg" alt="Morgan Freeman" class="actor-thumb" loading="lazy">
+                </div>
             </div>
             <div class="diff-card diff-medium">
                 <div class="diff-stars">⭐⭐</div>
                 <h3>Medium</h3>
                 <div class="diff-sub">Know your films</div>
                 <p>Familiar faces with deeper filmographies. You'll need to think a step or two ahead.</p>
+                <div class="matchup-example">
+                    <img src="https://image.tmdb.org/t/p/w185/e8CUyxQSE99y5IOfzSLtHC0B0Ch.jpg" alt="Elle Fanning" class="actor-thumb" loading="lazy">
+                    <span class="actor-thumb-name">Elle Fanning</span>
+                    <span class="matchup-arrow">→</span>
+                    <span class="actor-thumb-name">Mia Goth</span>
+                    <img src="https://image.tmdb.org/t/p/w185/371WiQYe2mGlsZj5f7AZHSGgnFV.jpg" alt="Mia Goth" class="actor-thumb" loading="lazy">
+                </div>
             </div>
             <div class="diff-card diff-hard">
                 <div class="diff-stars">⭐⭐⭐</div>
                 <h3>Hard</h3>
                 <div class="diff-sub">True cinephile</div>
                 <p>Obscure connections and unexpected pairings. For those who live and breathe cinema.</p>
+                <div class="matchup-example">
+                    <img src="https://image.tmdb.org/t/p/w185/uynym1kWiWfH4J5amF1J1hQhD8Z.jpg" alt="Alan Calton" class="actor-thumb" loading="lazy">
+                    <span class="actor-thumb-name">Alan Calton</span>
+                    <span class="matchup-arrow">→</span>
+                    <span class="actor-thumb-name">Lucy Liu</span>
+                    <img src="https://image.tmdb.org/t/p/w185/9nbtjqsx3De7hO2XDtrBQ7M9VCH.jpg" alt="Lucy Liu" class="actor-thumb" loading="lazy">
+                </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Daily Challenge Banner -->
 <section class="daily-banner">
     <div class="daily-pill">
         <span class="dot"></span>
@@ -611,20 +671,18 @@
     <p>New puzzles drop every day at midnight ET</p>
 </section>
 
-<!-- Final CTA -->
 <section class="section" style="padding-bottom: 60px;">
     <div class="container" style="text-align: center;">
         <h2 class="section-title">Ready to Play?</h2>
         <p class="section-subtitle">Free. No ads. Just movies, actors, and your brain.</p>
-        <div class="cta-group">
+        <div class="cta-group" style="justify-content: center;">
             <a href="#" class="cta-primary">
-                <span></span> Download for iOS
+                <span>📱</span> Download for iOS
             </a>
         </div>
     </div>
 </section>
 
-<!-- Footer -->
 <footer>
     <div class="container">
         <div class="footer-logo">Six Degrees</div>
