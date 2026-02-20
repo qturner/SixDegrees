@@ -1,7 +1,7 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries } from "../../shared/schema.js";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships } from "../../shared/schema.js";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db.js";
-import { eq, and, gt, desc, sql, count } from "drizzle-orm";
+import { eq, and, or, gt, desc, asc, ne, sql, count } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export interface IStorage {
@@ -100,6 +100,20 @@ export interface IStorage {
   addMovieToList(data: InsertMovieListEntry): Promise<MovieListEntry>;
   removeMovieFromList(listId: string, tmdbMovieId: number): Promise<void>;
   getMovieListWithEntries(id: string): Promise<(MovieList & { entries: MovieListEntry[] }) | undefined>;
+
+  // Friend methods
+  createFriendship(requesterId: string, addresseeId: string): Promise<Friendship>;
+  getFriendshipBetween(userId1: string, userId2: string): Promise<Friendship | undefined>;
+  getFriendshipById(id: string): Promise<Friendship | undefined>;
+  updateFriendshipStatus(id: string, status: string): Promise<Friendship>;
+  deleteFriendship(id: string): Promise<void>;
+  getPendingRequestsForUser(userId: string): Promise<any[]>;
+  getSentRequestsForUser(userId: string): Promise<any[]>;
+  getAcceptedFriends(userId: string): Promise<any[]>;
+  searchUsersByUsername(query: string, currentUserId: string): Promise<any[]>;
+  getFriendsWithTodayStatus(userId: string, date: string): Promise<any[]>;
+  getFriendsLeaderboard(userId: string, sortBy: string): Promise<any[]>;
+  getUserByUsernameCaseInsensitive(username: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -878,6 +892,384 @@ export class DatabaseStorage implements IStorage {
 
       const entries = await this.getMovieListEntries(id);
       return { ...list, entries };
+    });
+  }
+
+  // Friend methods
+  async createFriendship(requesterId: string, addresseeId: string): Promise<Friendship> {
+    return await withRetry(async () => {
+      // Check if friendship already exists between the two users (in either direction)
+      const existing = await db.select().from(friendships)
+        .where(or(
+          and(eq(friendships.requesterId, requesterId), eq(friendships.addresseeId, addresseeId)),
+          and(eq(friendships.requesterId, addresseeId), eq(friendships.addresseeId, requesterId))
+        ));
+
+      if (existing.length > 0) {
+        const friendship = existing[0];
+        // If the reverse request is pending (addressee sent to requester), auto-accept
+        if (friendship.status === "pending" && friendship.requesterId === addresseeId && friendship.addresseeId === requesterId) {
+          const [updated] = await db.update(friendships)
+            .set({ status: "accepted", updatedAt: new Date() })
+            .where(eq(friendships.id, friendship.id))
+            .returning();
+          return updated;
+        }
+        if (friendship.status === "accepted") {
+          throw new Error("Already friends");
+        }
+        // Pending request in same direction already exists
+        throw new Error("Friend request already sent");
+      }
+
+      try {
+        const [friendship] = await db.insert(friendships).values({
+          requesterId,
+          addresseeId,
+        }).returning();
+        return friendship;
+      } catch (error: any) {
+        if (error?.code === "23505") {
+          const [existingFriendship] = await db.select().from(friendships)
+            .where(or(
+              and(eq(friendships.requesterId, requesterId), eq(friendships.addresseeId, addresseeId)),
+              and(eq(friendships.requesterId, addresseeId), eq(friendships.addresseeId, requesterId))
+            ));
+
+          if (existingFriendship) {
+            if (existingFriendship.status === "accepted") {
+              throw new Error("Already friends");
+            }
+
+            if (existingFriendship.requesterId === addresseeId && existingFriendship.addresseeId === requesterId) {
+              const [updated] = await db.update(friendships)
+                .set({ status: "accepted", updatedAt: new Date() })
+                .where(eq(friendships.id, existingFriendship.id))
+                .returning();
+              return updated;
+            }
+
+            throw new Error("Friend request already sent");
+          }
+        }
+
+        throw error;
+      }
+    });
+  }
+
+  async getFriendshipBetween(userId1: string, userId2: string): Promise<Friendship | undefined> {
+    return await withRetry(async () => {
+      const [friendship] = await db.select().from(friendships)
+        .where(or(
+          and(eq(friendships.requesterId, userId1), eq(friendships.addresseeId, userId2)),
+          and(eq(friendships.requesterId, userId2), eq(friendships.addresseeId, userId1))
+        ));
+      return friendship || undefined;
+    });
+  }
+
+  async getFriendshipById(id: string): Promise<Friendship | undefined> {
+    return await withRetry(async () => {
+      const [friendship] = await db.select().from(friendships).where(eq(friendships.id, id));
+      return friendship || undefined;
+    });
+  }
+
+  async updateFriendshipStatus(id: string, status: string): Promise<Friendship> {
+    return await withRetry(async () => {
+      const [friendship] = await db.update(friendships)
+        .set({ status, updatedAt: new Date() })
+        .where(eq(friendships.id, id))
+        .returning();
+      return friendship;
+    });
+  }
+
+  async deleteFriendship(id: string): Promise<void> {
+    await withRetry(async () => {
+      await db.delete(friendships).where(eq(friendships.id, id));
+    });
+  }
+
+  async getPendingRequestsForUser(userId: string): Promise<any[]> {
+    return await withRetry(async () => {
+      const rows = await db
+        .select({
+          id: friendships.id,
+          requesterId: users.id,
+          requesterUsername: users.username,
+          requesterPicture: users.picture,
+          createdAt: friendships.createdAt,
+        })
+        .from(friendships)
+        .innerJoin(users, eq(friendships.requesterId, users.id))
+        .where(and(
+          eq(friendships.addresseeId, userId),
+          eq(friendships.status, "pending")
+        ))
+        .orderBy(desc(friendships.createdAt));
+
+      return rows.map((row: any) => ({
+        id: row.id,
+        requester: {
+          id: row.requesterId,
+          username: row.requesterUsername,
+          picture: row.requesterPicture,
+        },
+        createdAt: row.createdAt,
+      }));
+    });
+  }
+
+  async getSentRequestsForUser(userId: string): Promise<any[]> {
+    return await withRetry(async () => {
+      const rows = await db
+        .select({
+          id: friendships.id,
+          addresseeId: users.id,
+          addresseeUsername: users.username,
+          addresseePicture: users.picture,
+          createdAt: friendships.createdAt,
+        })
+        .from(friendships)
+        .innerJoin(users, eq(friendships.addresseeId, users.id))
+        .where(and(
+          eq(friendships.requesterId, userId),
+          eq(friendships.status, "pending")
+        ))
+        .orderBy(desc(friendships.createdAt));
+
+      return rows.map((row: any) => ({
+        id: row.id,
+        addressee: {
+          id: row.addresseeId,
+          username: row.addresseeUsername,
+          picture: row.addresseePicture,
+        },
+        createdAt: row.createdAt,
+      }));
+    });
+  }
+
+  async getAcceptedFriends(userId: string): Promise<any[]> {
+    return await withRetry(async () => {
+      // Friends where the user is the requester
+      const asRequester = await db
+        .select({
+          friendshipId: friendships.id,
+          friendId: users.id,
+          friendUsername: users.username,
+          friendPicture: users.picture,
+        })
+        .from(friendships)
+        .innerJoin(users, eq(friendships.addresseeId, users.id))
+        .where(and(
+          eq(friendships.requesterId, userId),
+          eq(friendships.status, "accepted")
+        ));
+
+      // Friends where the user is the addressee
+      const asAddressee = await db
+        .select({
+          friendshipId: friendships.id,
+          friendId: users.id,
+          friendUsername: users.username,
+          friendPicture: users.picture,
+        })
+        .from(friendships)
+        .innerJoin(users, eq(friendships.requesterId, users.id))
+        .where(and(
+          eq(friendships.addresseeId, userId),
+          eq(friendships.status, "accepted")
+        ));
+
+      const all = [...asRequester, ...asAddressee];
+      return all.map(row => ({
+        id: row.friendId,
+        friendshipId: row.friendshipId,
+        username: row.friendUsername,
+        picture: row.friendPicture,
+      }));
+    });
+  }
+
+  async searchUsersByUsername(query: string, currentUserId: string): Promise<any[]> {
+    return await withRetry(async () => {
+      const matchedUsers = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          picture: users.picture,
+        })
+        .from(users)
+        .where(and(
+          sql`LOWER(${users.username}) LIKE LOWER(${query + '%'})`,
+          ne(users.id, currentUserId)
+        ))
+        .limit(20);
+
+      // For each result, check friendship status
+      const results = [];
+      for (const user of matchedUsers) {
+        const friendship = await this.getFriendshipBetween(currentUserId, user.id);
+        let friendshipStatus: string | null = null;
+        if (friendship) {
+          if (friendship.status === "accepted") {
+            friendshipStatus = "accepted";
+          } else if (friendship.requesterId === currentUserId) {
+            friendshipStatus = "pending_sent";
+          } else {
+            friendshipStatus = "pending_received";
+          }
+        }
+        results.push({
+          id: user.id,
+          username: user.username,
+          picture: user.picture,
+          friendshipStatus,
+          friendshipId: friendship?.id ?? null,
+        });
+      }
+      return results;
+    });
+  }
+
+  async getFriendsWithTodayStatus(userId: string, date: string): Promise<any[]> {
+    return await withRetry(async () => {
+      const friends = await this.getAcceptedFriends(userId);
+
+      // Get today's challenges for the given date
+      const todayChallenges = await db.select().from(dailyChallenges)
+        .where(eq(dailyChallenges.date, date));
+
+      const results = [];
+      for (const friend of friends) {
+        // Get friend's stats
+        const [stats] = await db.select().from(userStats)
+          .where(eq(userStats.userId, friend.id));
+
+        // Get friend's completions for today's challenges (include all difficulties)
+        const difficultyOrder: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
+        const sortedChallenges = [...todayChallenges].sort(
+          (a, b) => (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99)
+        );
+        const todayCompletions = [];
+        for (const challenge of sortedChallenges) {
+          const [completion] = await db.select().from(userChallengeCompletions)
+            .where(and(
+              eq(userChallengeCompletions.userId, friend.id),
+              eq(userChallengeCompletions.challengeId, challenge.id)
+            ));
+          todayCompletions.push({
+            difficulty: challenge.difficulty,
+            completed: !!completion,
+            moves: completion?.moves ?? null,
+          });
+        }
+
+        results.push({
+          id: friend.id,
+          friendshipId: friend.friendshipId,
+          username: friend.username,
+          picture: friend.picture,
+          currentStreak: stats?.currentStreak ?? 0,
+          totalCompletions: stats?.totalCompletions ?? 0,
+          todayCompletions,
+        });
+      }
+
+      return results;
+    });
+  }
+
+  async getFriendsLeaderboard(userId: string, sortBy: string): Promise<any[]> {
+    return await withRetry(async () => {
+      const friends = await this.getAcceptedFriends(userId);
+
+      // Include current user in leaderboard
+      const currentUser = await this.getUserById(userId);
+      const allParticipants = [
+        ...friends.map(f => ({ id: f.id, username: f.username, picture: f.picture, isCurrentUser: false })),
+        ...(currentUser ? [{ id: currentUser.id, username: currentUser.username, picture: currentUser.picture, isCurrentUser: true }] : []),
+      ];
+
+      const leaderboard = [];
+      for (const participant of allParticipants) {
+        const [stats] = await db.select().from(userStats)
+          .where(eq(userStats.userId, participant.id));
+
+        // Calculate avg moves from last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const recentCompletions = await db.select().from(userChallengeCompletions)
+          .where(and(
+            eq(userChallengeCompletions.userId, participant.id),
+            gt(userChallengeCompletions.completedAt, sevenDaysAgo)
+          ));
+        let avgMoves7Day: number | null = null;
+        if (recentCompletions.length > 0) {
+          const totalMoves = recentCompletions.reduce((sum: number, c: any) => sum + c.moves, 0);
+          avgMoves7Day = Math.round((totalMoves / recentCompletions.length) * 10) / 10;
+        }
+
+        // Calculate trophy totals
+        const trophyBreakdown: Record<string, number> = {
+          "1": stats?.completionsAt1Move ?? 0,
+          "2": stats?.completionsAt2Moves ?? 0,
+          "3": stats?.completionsAt3Moves ?? 0,
+          "4": stats?.completionsAt4Moves ?? 0,
+          "5": stats?.completionsAt5Moves ?? 0,
+          "6": stats?.completionsAt6Moves ?? 0,
+        };
+        const totalTrophies = Object.values(trophyBreakdown).reduce((sum, v) => sum + v, 0);
+
+        let sortValue = 0;
+        if (sortBy === "streak") {
+          sortValue = stats?.currentStreak ?? 0;
+        } else if (sortBy === "efficiency") {
+          sortValue = avgMoves7Day ?? 999;
+        } else if (sortBy === "trophies") {
+          // Weighted score: lower moves = more points
+          sortValue = trophyBreakdown["1"] * 6 + trophyBreakdown["2"] * 5
+            + trophyBreakdown["3"] * 4 + trophyBreakdown["4"] * 3
+            + trophyBreakdown["5"] * 2 + trophyBreakdown["6"] * 1;
+        }
+
+        leaderboard.push({
+          id: participant.id,
+          username: participant.username,
+          picture: participant.picture,
+          isCurrentUser: participant.isCurrentUser,
+          currentStreak: stats?.currentStreak ?? 0,
+          maxStreak: stats?.maxStreak ?? 0,
+          avgMoves7Day,
+          totalTrophies,
+          trophyBreakdown,
+          sortValue,
+        });
+      }
+
+      // Sort: for efficiency, lower is better; for streak and trophies, higher is better
+      if (sortBy === "efficiency") {
+        leaderboard.sort((a, b) => a.sortValue - b.sortValue);
+      } else {
+        leaderboard.sort((a, b) => b.sortValue - a.sortValue);
+      }
+
+      // Add rank
+      return leaderboard.map((entry, index) => ({
+        ...entry,
+        rank: index + 1,
+      }));
+    });
+  }
+
+  async getUserByUsernameCaseInsensitive(username: string): Promise<User | undefined> {
+    return await withRetry(async () => {
+      const [user] = await db.select().from(users)
+        .where(sql`LOWER(${users.username}) = LOWER(${username})`);
+      return user || undefined;
     });
   }
 }
