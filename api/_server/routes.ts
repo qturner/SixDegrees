@@ -489,6 +489,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", message: "pong", timestamp: new Date().toISOString() });
   });
 
+  // Temporary diagnostic endpoint — tests each generation step
+  app.get("/api/debug/generation", async (_req, res) => {
+    const steps: { step: string; result?: any; error?: string; ms: number }[] = [];
+    const t = () => Date.now();
+
+    // Step 1: DB read
+    let start = t();
+    try {
+      const today = getESTDateString();
+      const existing = await storage.getDailyChallenges(today);
+      steps.push({ step: "db_read", result: { date: today, count: existing.length, difficulties: existing.map(c => c.difficulty) }, ms: t() - start });
+    } catch (e: any) {
+      steps.push({ step: "db_read", error: e.message, ms: t() - start });
+    }
+
+    // Step 2: Quality actor pool
+    start = t();
+    try {
+      const pool = await tmdbService.getQualityActorPool();
+      steps.push({ step: "quality_pool", result: { size: pool.length, sample: pool.slice(0, 3).map(a => a.name) }, ms: t() - start });
+    } catch (e: any) {
+      steps.push({ step: "quality_pool", error: e.message, ms: t() - start });
+    }
+
+    // Step 3: generateAllDailyChallenges
+    start = t();
+    try {
+      const pairsMap = await gameLogicService.generateAllDailyChallenges([]);
+      const pairs: Record<string, string> = {};
+      for (const [diff, pair] of pairsMap) {
+        pairs[diff] = `${pair.actor1.name} <-> ${pair.actor2.name}`;
+      }
+      steps.push({ step: "generate_all", result: { filled: pairsMap.size, pairs }, ms: t() - start });
+    } catch (e: any) {
+      steps.push({ step: "generate_all", error: e.message, ms: t() - start });
+    }
+
+    res.json({ steps, totalMs: steps.reduce((sum, s) => sum + s.ms, 0) });
+  });
+
   // Get today's daily challenges (plural)
   app.get("/api/daily-challenges", async (req, res) => {
     try {
