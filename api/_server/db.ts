@@ -52,7 +52,7 @@ export const getDb = () => {
   if (!internalDb) {
     console.log('Initializing Drizzle via Neon HTTP...');
     const sql = neon(process.env.DATABASE_URL!);
-    internalDb = drizzle(sql, { schema });
+    internalDb = drizzle({ client: sql, schema });
   }
   return internalDb;
 };
