@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Six Degrees — Connect the Stars</title>
+    <meta name="description" content="Link two actors through their movies in 6 moves or less. A new challenge every day at midnight.">
+    <meta property="og:title" content="Six Degrees — Connect the Stars">
+    <meta property="og:description" content="Link two actors through their movies in 6 moves or less. A new challenge every day at midnight.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://sixdegrees.app">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0A0E14;
+            --bg-alt: #101620;
+            --card: #1A1A2E;
+            --surface: #252540;
+            --gold: #D4AF37;
+            --gold-light: #F0D060;
+            --cyan: #06B6D4;
+            --cyan-glow: #22D3EE;
+            --pink: #EF4444;
+            --text: #FFFFFF;
+            --text-secondary: rgba(255,255,255,0.6);
+            --text-muted: #6B7280;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ── Utility ── */
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .serif {
+            font-family: 'Playfair Display', Georgia, serif;
+        }
+
+        /* ── Animated background particles ── */
+        .bg-glow {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .bg-glow .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            animation: float 20s ease-in-out infinite;
+        }
+        .bg-glow .orb-gold {
+            width: 500px; height: 500px;
+            background: var(--gold);
+            top: -10%; left: -10%;
+        }
+        .bg-glow .orb-cyan {
+            width: 400px; height: 400px;
+            background: var(--cyan);
+            bottom: 10%; right: -5%;
+            animation-delay: -10s;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -20px) scale(1.05); }
+            66% { transform: translate(-20px, 15px) scale(0.95); }
+        }
+
+        /* ── Nav ── */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            padding: 16px 0;
+            background: rgba(10, 14, 20, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        nav .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        nav .cta-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #0A0E14;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        nav .cta-nav:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        /* ── Hero ── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+        }
+        .hero-content { max-width: 720px; }
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero .tagline {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.1rem, 3vw, 1.5rem);
+            color: var(--cyan-glow);
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+        .hero p {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin: 0 auto 40px;
+            line-height: 1.7;
+        }
+
+        /* ── Matchup Card (Hero Visual) ── */
+        .matchup-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 32px;
+            background: var(--card);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 20px;
+            padding: 32px 48px;
+            margin-bottom: 48px;
+            box-shadow: 0 0 40px rgba(6, 182, 212, 0.08), inset 0 1px 0 rgba(255,255,255,0.05);
+            position: relative;
+        }
+        .matchup-card::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 20px;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--cyan), transparent 50%, var(--gold));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .actor {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .actor-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2px solid var(--cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        .actor-photo.gold { border-color: var(--gold); }
+        .actor-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .actor-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .label-start { color: var(--cyan-glow); }
+        .label-end { color: var(--gold); }
+        .vs {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .vs-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            color: var(--pink);
+            font-weight: 700;
+        }
+        .vs-icon {
+            color: var(--cyan);
+            font-size: 1.2rem;
+        }
+
+        /* ── CTA Buttons ── */
+        .cta-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+        }
+        .cta-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #0A0E14;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border-radius: 14px;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.4);
+        }
+        .cta-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: transparent;
+            color: var(--cyan-glow);
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-radius: 14px;
+            border: 1px solid rgba(6, 182, 212, 0.4);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .cta-secondary:hover {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: var(--cyan-glow);
+        }
+
+        /* ── How It Works ── */
+        .section {
+            position: relative;
+            z-index: 1;
+            padding: 100px 0;
+        }
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 2.8rem);
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 60px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .step {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 32px 24px;
+            text-align: center;
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .step:hover {
+            transform: translateY(-4px);
+            border-color: rgba(212, 175, 55, 0.4);
+        }
+        .step-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+        .step h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+        .step p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ── Difficulty Section ── */
+        .difficulties {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .diff-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 32px 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .diff-card::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 16px;
+            padding: 1px;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        .diff-easy::before { background: linear-gradient(135deg, var(--cyan), transparent 60%); }
+        .diff-medium::before { background: linear-gradient(135deg, var(--gold), transparent 60%); }
+        .diff-hard::before { background: linear-gradient(135deg, var(--pink), transparent 60%); }
+        .diff-stars { font-size: 1.5rem; margin-bottom: 8px; }
+        .diff-card h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .diff-easy h3 { color: var(--cyan-glow); }
+        .diff-medium h3 { color: var(--gold); }
+        .diff-hard h3 { color: var(--pink); }
+        .diff-card .diff-sub {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+        .diff-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ── Daily Challenge Banner ── */
+        .daily-banner {
+            text-align: center;
+            padding: 60px 24px;
+            position: relative;
+            z-index: 1;
+        }
+        .daily-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: var(--card);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 100px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--cyan-glow);
+            animation: pulse-border 3s ease-in-out infinite;
+        }
+        .daily-pill .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--cyan-glow);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(6, 182, 212, 0.3); box-shadow: 0 0 0 rgba(6, 182, 212, 0); }
+            50% { border-color: rgba(6, 182, 212, 0.6); box-shadow: 0 0 20px rgba(6, 182, 212, 0.1); }
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .daily-banner p {
+            color: var(--text-muted);
+            margin-top: 16px;
+            font-size: 0.95rem;
+        }
+
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid rgba(212, 175, 55, 0.1);
+            padding: 48px 0 32px;
+        }
+        footer .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+        .footer-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .tmdb-attribution {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .tmdb-attribution img {
+            height: 40px;
+            opacity: 0.7;
+        }
+        .tmdb-attribution p {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-align: center;
+            max-width: 480px;
+            line-height: 1.5;
+        }
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--text); }
+        .footer-copy {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .matchup-card {
+                gap: 20px;
+                padding: 24px 28px;
+            }
+            .actor-photo { width: 64px; height: 64px; font-size: 1.5rem; }
+            .steps, .difficulties {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+            .cta-group { flex-direction: column; align-items: center; }
+            .cta-primary, .cta-secondary { width: 100%; max-width: 300px; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-glow">
+    <div class="orb orb-gold"></div>
+    <div class="orb orb-cyan"></div>
+</div>
+
+<!-- Nav -->
+<nav>
+    <div class="container">
+        <div class="logo">Six Degrees</div>
+        <a href="#download" class="cta-nav">
+            <span>📲</span> Download Free
+        </a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Connect the Stars</h1>
+        <div class="tagline">The daily movie trivia challenge</div>
+        <p>Link two actors through their movies in 6 moves or less. Three difficulty levels. A new puzzle every day at midnight.</p>
+
+        <div class="matchup-card">
+            <div class="actor">
+                <div class="actor-label label-start">Start</div>
+                <div class="actor-photo">🎬</div>
+                <div class="actor-name">Actor A</div>
+            </div>
+            <div class="vs">
+                <div class="vs-text">VS</div>
+                <div class="vs-icon">✦</div>
+            </div>
+            <div class="actor">
+                <div class="actor-label label-end">End</div>
+                <div class="actor-photo gold">🎬</div>
+                <div class="actor-name">Actor B</div>
+            </div>
+        </div>
+
+        <div class="cta-group" id="download">
+            <a href="#" class="cta-primary">
+                <span></span> Download for iOS
+            </a>
+            <a href="#how" class="cta-secondary">
+                See How It Works ↓
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="section" id="how">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">Build a chain of movies and actors to connect two stars</p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-icon">🎯</div>
+                <h3>Get Your Matchup</h3>
+                <p>Every day at midnight, a new pair of actors drops. Pick your difficulty — Easy, Medium, or Hard.</p>
+            </div>
+            <div class="step">
+                <div class="step-icon">🔗</div>
+                <h3>Build the Chain</h3>
+                <p>Connect the dots. Pick a movie the first actor was in, then find a co-star, then another movie — keep going.</p>
+            </div>
+            <div class="step">
+                <div class="step-icon">🏆</div>
+                <h3>Beat the Limit</h3>
+                <p>Complete the chain in 6 moves or less. Fewer moves = bigger bragging rights. Track your streaks and stats.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Difficulty -->
+<section class="section">
+    <div class="container">
+        <h2 class="section-title">Three Ways to Play</h2>
+        <p class="section-subtitle">Something for everyone — from casual fans to true cinephiles</p>
+        <div class="difficulties">
+            <div class="diff-card diff-easy">
+                <div class="diff-stars">⭐</div>
+                <h3>Easy</h3>
+                <div class="diff-sub">Household names</div>
+                <p>Blockbuster stars everyone knows. A great warm-up or a chill daily puzzle.</p>
+            </div>
+            <div class="diff-card diff-medium">
+                <div class="diff-stars">⭐⭐</div>
+                <h3>Medium</h3>
+                <div class="diff-sub">Know your films</div>
+                <p>Familiar faces with deeper filmographies. You'll need to think a step or two ahead.</p>
+            </div>
+            <div class="diff-card diff-hard">
+                <div class="diff-stars">⭐⭐⭐</div>
+                <h3>Hard</h3>
+                <div class="diff-sub">True cinephile</div>
+                <p>Obscure connections and unexpected pairings. For those who live and breathe cinema.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Daily Challenge Banner -->
+<section class="daily-banner">
+    <div class="daily-pill">
+        <span class="dot"></span>
+        Today's challenge is live
+    </div>
+    <p>New puzzles drop every day at midnight ET</p>
+</section>
+
+<!-- Final CTA -->
+<section class="section" style="padding-bottom: 60px;">
+    <div class="container" style="text-align: center;">
+        <h2 class="section-title">Ready to Play?</h2>
+        <p class="section-subtitle">Free. No ads. Just movies, actors, and your brain.</p>
+        <div class="cta-group">
+            <a href="#" class="cta-primary">
+                <span></span> Download for iOS
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="footer-logo">Six Degrees</div>
+        <div class="tmdb-attribution">
+            <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.svg" alt="The Movie Database (TMDB)">
+            <p>This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.</p>
+        </div>
+        <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+        </div>
+        <div class="footer-copy">© 2026 Six Degrees. All rights reserved.</div>
+    </div>
+</footer>
+
+</body>
+</html>
