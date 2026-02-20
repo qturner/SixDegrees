@@ -772,14 +772,15 @@ class TMDbService {
   }
 
   /**
-   * Get a quality actor pool: pages 1-10 of TMDB popular, cap at 60 before deep filtering.
+   * Get a quality actor pool: pages 1-5 of TMDB popular, cap at 50 before deep filtering.
+   * Sized to complete within Vercel hobby 60s limit (5 page fetches + ~100 filter calls + BFS).
    * No popularity threshold — difficulty is determined by BFS distance, not TMDB score.
    */
   async getQualityActorPool(): Promise<Actor[]> {
     try {
       const pages: TMDbResponse<TMDbActor>[] = [];
 
-      for (let pageNum = 1; pageNum <= 10; pageNum++) {
+      for (let pageNum = 1; pageNum <= 5; pageNum++) {
         try {
           const page = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: pageNum.toString() });
           pages.push(page);
@@ -791,10 +792,11 @@ class TMDbService {
 
       const allResults = pages.flatMap(page => page.results);
 
-      // Filter to actors only, cap at 60 before expensive genre filtering
+      // Filter to actors only, cap at 50 before expensive genre filtering
+      // (each actor costs ~2 TMDB calls to filter, so 50 × 2 = ~100 calls, ~10s)
       const actors = allResults
         .filter(person => person.known_for_department === "Acting")
-        .slice(0, 60)
+        .slice(0, 50)
         .map(person => ({
           id: person.id,
           name: person.name,
@@ -803,7 +805,7 @@ class TMDbService {
         }));
 
       const filteredActors = await this.filterActorsByGenre(actors);
-      console.log(`Quality actor pool: ${allResults.length} raw -> ${actors.length} capped -> ${filteredActors.length} after filtering`);
+      console.log(`Quality actor pool: ${allResults.length} raw -> ${actors.length} capped (max 50) -> ${filteredActors.length} after filtering`);
       return filteredActors;
     } catch (error) {
       console.error("Error getting quality actor pool:", error);
