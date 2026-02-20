@@ -15,9 +15,6 @@ if (!isProd) {
   neonConfig.webSocketConstructor = ws;
 }
 
-neonConfig.fetchConnectionCache = true;
-neonConfig.useSecureWebSocket = !isProd;
-
 if (!process.env.DATABASE_URL) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
@@ -40,7 +37,7 @@ export const getPool = () => {
       application_name: 'movie-connection-game-pool',
     });
 
-    internalPool.on('error', (err) => {
+    internalPool.on('error', (err: Error) => {
       console.error('Database pool error:', err);
     });
 
@@ -83,7 +80,7 @@ export async function withRetry<T>(operation: () => Promise<T>, maxRetries: numb
   let lastError: any;
   const isProd = process.env.NODE_ENV === 'production';
   // Reduce retries in production to avoid lambda timeouts
-  const actualMaxRetries = isProd ? 1 : maxRetries;
+  const actualMaxRetries = isProd ? 2 : maxRetries;
 
   for (let attempt = 1; attempt <= actualMaxRetries; attempt++) {
     try {

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
 import { tmdbService } from "./services/tmdb.js";
-import { gameLogicService } from "./services/gameLogic.js";
+import { gameLogicService, type DifficultyLevel } from "./services/gameLogic.js";
 import { withRetry } from "./db.js";
 import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema } from "../../shared/schema.js";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth.js";
@@ -361,13 +361,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Generating challenges for ${date}, excluding ${excludeActorIds.length} actors`);
 
+      const pairsMap = await gameLogicService.generateAllDailyChallenges(excludeActorIds);
       const generatedChallenges = [];
 
       for (const difficulty of difficultyOrder) {
-        const newChallenge = await createChallengeForDifficulty(date, difficulty, excludeActorIds);
-        if (newChallenge) {
-          generatedChallenges.push(newChallenge);
+        const pair = pairsMap.get(difficulty as DifficultyLevel);
+        if (!pair) {
+          console.error(`Failed to generate ${difficulty} challenge for ${date}`);
+          continue;
         }
+
+        const newChallenge = await storage.createDailyChallenge({
+          date,
+          status: "active",
+          difficulty,
+          startActorId: pair.actor1.id,
+          startActorName: pair.actor1.name,
+          startActorProfilePath: sanitizeImagePath(pair.actor1.profile_path),
+          endActorId: pair.actor2.id,
+          endActorName: pair.actor2.name,
+          endActorProfilePath: sanitizeImagePath(pair.actor2.profile_path),
+          hintsUsed: 0,
+        });
+
+        console.log(`Created ${difficulty} challenge: ${pair.actor1.name} -> ${pair.actor2.name}`);
+        generatedChallenges.push(newChallenge);
       }
       return sortChallengesByDifficulty(generatedChallenges);
     } catch (error) {
@@ -376,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
-  // Ensure each date has easy/medium/hard. Backfills only missing difficulties.
+  // Ensure each date has easy/medium/hard. Backfills missing difficulties using unified generation.
   const ensureDailyChallenges = async (date: string) => {
     try {
       let challenges = await storage.getDailyChallenges(date);
@@ -400,15 +418,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `Backfilling ${missingDifficulties.join(", ")} challenge(s) for ${date}; existing=${challenges.length}`,
       );
 
+      // Use unified generation for consistent behavior
+      const pairsMap = await gameLogicService.generateAllDailyChallenges(excludeActorIds);
+
       for (const difficulty of missingDifficulties) {
+        const pair = pairsMap.get(difficulty as DifficultyLevel);
+        if (!pair) {
+          console.error(`Failed to generate ${difficulty} pair for backfill on ${date}`);
+          continue;
+        }
+
         try {
-          await createChallengeForDifficulty(date, difficulty, excludeActorIds);
+          await storage.createDailyChallenge({
+            date,
+            status: "active",
+            difficulty,
+            startActorId: pair.actor1.id,
+            startActorName: pair.actor1.name,
+            startActorProfilePath: sanitizeImagePath(pair.actor1.profile_path),
+            endActorId: pair.actor2.id,
+            endActorName: pair.actor2.name,
+            endActorProfilePath: sanitizeImagePath(pair.actor2.profile_path),
+            hintsUsed: 0,
+          });
+          console.log(`Backfilled ${difficulty} challenge: ${pair.actor1.name} -> ${pair.actor2.name}`);
         } catch (error) {
           if (isDateDifficultyUniqueViolation(error)) {
             console.log(`Skipping ${difficulty} backfill for ${date}: already created by another request`);
             continue;
           }
-
           throw error;
         }
       }
@@ -459,6 +497,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = getESTDateString();
       const challenges = await ensureDailyChallenges(today);
 
+      if (challenges.length === 0) {
+        return res.status(503).json({ message: "Challenges unavailable, try again later" });
+      }
+
       res.json(challenges);
     } catch (error) {
       console.error("Error getting daily challenges:", error);
@@ -473,8 +515,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const today = getESTDateString();
       const challenges = await ensureDailyChallenges(today);
-      const challenge = challenges.find(c => c.difficulty === 'medium') || challenges[0];
 
+      if (challenges.length === 0) {
+        return res.status(503).json({ message: "Challenges unavailable, try again later" });
+      }
+
+      const challenge = challenges.find(c => c.difficulty === 'medium') || challenges[0];
       res.json(challenge);
     } catch (error) {
       console.error("Get daily challenge error:", error);
