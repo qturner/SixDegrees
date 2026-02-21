@@ -54,6 +54,16 @@ export interface IStorage {
 
   // User Challenge Completion methods
   createUserChallengeCompletion(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion>;
+  createUserChallengeCompletionIfNotExists(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion | null>;
+  recordCompletionWithStats(
+    completion: InsertUserChallengeCompletion,
+    context: {
+      difficulty: string;
+      trophyTier: string;
+      today: string;
+      yesterday: string;
+    },
+  ): Promise<UserChallengeCompletion | null>;
   getUserChallengeCompletion(userId: string, challengeId: string): Promise<UserChallengeCompletion | undefined>;
   getUserCompletions(userId: string): Promise<UserChallengeCompletion[]>;
   getUserMoveDistribution(userId: string): Promise<{ moves: number; count: number }[]>;
@@ -683,6 +693,115 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async createUserChallengeCompletionIfNotExists(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion | null> {
+    return await withRetry(async () => {
+      const rows = await db.insert(userChallengeCompletions)
+        .values(completion)
+        .onConflictDoNothing({ target: [userChallengeCompletions.userId, userChallengeCompletions.challengeId] })
+        .returning();
+      return rows.length > 0 ? rows[0] : null;
+    });
+  }
+
+  async recordCompletionWithStats(
+    completion: InsertUserChallengeCompletion,
+    context: {
+      difficulty: string;
+      trophyTier: string;
+      today: string;
+      yesterday: string;
+    },
+  ): Promise<UserChallengeCompletion | null> {
+    return await withRetry(async () => {
+      return await db.transaction(async (tx: any) => {
+        // 1. Insert completion — ON CONFLICT DO NOTHING for idempotency
+        const rows = await tx.insert(userChallengeCompletions)
+          .values(completion)
+          .onConflictDoNothing({ target: [userChallengeCompletions.userId, userChallengeCompletions.challengeId] })
+          .returning();
+
+        if (rows.length === 0) {
+          // Already existed — transaction still commits cleanly, no stats change
+          return null;
+        }
+
+        // 2. Lock the user row so stats updates for the same user serialize.
+        await tx.execute(sql`
+          SELECT ${users.id}
+          FROM ${users}
+          WHERE ${users.id} = ${completion.userId}
+          FOR UPDATE
+        `);
+
+        // 3. Ensure stats row exists
+        let [existingStats] = await tx.select().from(userStats)
+          .where(eq(userStats.userId, completion.userId))
+          .limit(1);
+        if (!existingStats) {
+          const [createdStats] = await tx.insert(userStats)
+            .values({ userId: completion.userId })
+            .returning();
+          existingStats = createdStats;
+        }
+
+        const move1Delta = completion.moves === 1 ? 1 : 0;
+        const move2Delta = completion.moves === 2 ? 1 : 0;
+        const move3Delta = completion.moves === 3 ? 1 : 0;
+        const move4Delta = completion.moves === 4 ? 1 : 0;
+        const move5Delta = completion.moves === 5 ? 1 : 0;
+        const move6Delta = completion.moves === 6 ? 1 : 0;
+
+        const easyDelta = context.difficulty === "easy" ? 1 : 0;
+        const mediumDelta = context.difficulty === "medium" ? 1 : 0;
+        const hardDelta = context.difficulty === "hard" ? 1 : 0;
+
+        const walkOfFameDelta = context.trophyTier === "walkOfFame" ? 1 : 0;
+        const oscarDelta = context.trophyTier === "oscar" ? 1 : 0;
+        const goldenGlobeDelta = context.trophyTier === "goldenGlobe" ? 1 : 0;
+        const emmyDelta = context.trophyTier === "emmy" ? 1 : 0;
+        const sagDelta = context.trophyTier === "sag" ? 1 : 0;
+        const popcornDelta = context.trophyTier === "popcorn" ? 1 : 0;
+
+        const streakExpr = sql<number>`
+          CASE
+            WHEN ${userStats.lastPlayedDate} = ${context.today} THEN COALESCE(${userStats.currentStreak}, 0)
+            WHEN ${userStats.lastPlayedDate} = ${context.yesterday} THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            ELSE 1
+          END
+        `;
+
+        // 4. Update stats atomically within the same transaction using DB-side increments.
+        await tx.update(userStats)
+          .set({
+            totalCompletions: sql`COALESCE(${userStats.totalCompletions}, 0) + 1`,
+            totalMoves: sql`COALESCE(${userStats.totalMoves}, 0) + ${completion.moves}`,
+            currentStreak: streakExpr,
+            maxStreak: sql`GREATEST(COALESCE(${userStats.maxStreak}, 0), ${streakExpr})`,
+            lastPlayedDate: context.today,
+            completionsAt1Move: sql`COALESCE(${userStats.completionsAt1Move}, 0) + ${move1Delta}`,
+            completionsAt2Moves: sql`COALESCE(${userStats.completionsAt2Moves}, 0) + ${move2Delta}`,
+            completionsAt3Moves: sql`COALESCE(${userStats.completionsAt3Moves}, 0) + ${move3Delta}`,
+            completionsAt4Moves: sql`COALESCE(${userStats.completionsAt4Moves}, 0) + ${move4Delta}`,
+            completionsAt5Moves: sql`COALESCE(${userStats.completionsAt5Moves}, 0) + ${move5Delta}`,
+            completionsAt6Moves: sql`COALESCE(${userStats.completionsAt6Moves}, 0) + ${move6Delta}`,
+            easyCompletions: sql`COALESCE(${userStats.easyCompletions}, 0) + ${easyDelta}`,
+            mediumCompletions: sql`COALESCE(${userStats.mediumCompletions}, 0) + ${mediumDelta}`,
+            hardCompletions: sql`COALESCE(${userStats.hardCompletions}, 0) + ${hardDelta}`,
+            trophyWalkOfFame: sql`COALESCE(${userStats.trophyWalkOfFame}, 0) + ${walkOfFameDelta}`,
+            trophyOscar: sql`COALESCE(${userStats.trophyOscar}, 0) + ${oscarDelta}`,
+            trophyGoldenGlobe: sql`COALESCE(${userStats.trophyGoldenGlobe}, 0) + ${goldenGlobeDelta}`,
+            trophyEmmy: sql`COALESCE(${userStats.trophyEmmy}, 0) + ${emmyDelta}`,
+            trophySag: sql`COALESCE(${userStats.trophySag}, 0) + ${sagDelta}`,
+            trophyPopcorn: sql`COALESCE(${userStats.trophyPopcorn}, 0) + ${popcornDelta}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(userStats.id, existingStats.id));
+
+        return rows[0];
+      });
+    });
+  }
+
   async getUserChallengeCompletion(userId: string, challengeId: string): Promise<UserChallengeCompletion | undefined> {
     return await withRetry(async () => {
       const [completion] = await db.select().from(userChallengeCompletions)
@@ -785,6 +904,12 @@ export class DatabaseStorage implements IStorage {
           completionsAt4Moves: (primaryStats.completionsAt4Moves ?? 0) + (dupStats.completionsAt4Moves ?? 0),
           completionsAt5Moves: (primaryStats.completionsAt5Moves ?? 0) + (dupStats.completionsAt5Moves ?? 0),
           completionsAt6Moves: (primaryStats.completionsAt6Moves ?? 0) + (dupStats.completionsAt6Moves ?? 0),
+          trophyWalkOfFame: (primaryStats.trophyWalkOfFame ?? 0) + (dupStats.trophyWalkOfFame ?? 0),
+          trophyOscar: (primaryStats.trophyOscar ?? 0) + (dupStats.trophyOscar ?? 0),
+          trophyGoldenGlobe: (primaryStats.trophyGoldenGlobe ?? 0) + (dupStats.trophyGoldenGlobe ?? 0),
+          trophyEmmy: (primaryStats.trophyEmmy ?? 0) + (dupStats.trophyEmmy ?? 0),
+          trophySag: (primaryStats.trophySag ?? 0) + (dupStats.trophySag ?? 0),
+          trophyPopcorn: (primaryStats.trophyPopcorn ?? 0) + (dupStats.trophyPopcorn ?? 0),
           updatedAt: new Date(),
         }).where(eq(userStats.userId, primaryUserId));
       } else if (!primaryStats && dupStats) {
@@ -1213,14 +1338,14 @@ export class DatabaseStorage implements IStorage {
           avgMoves7Day = Math.round((totalMoves / recentCompletions.length) * 10) / 10;
         }
 
-        // Calculate trophy totals
+        // Calculate trophy totals using par-based trophy columns
         const trophyBreakdown: Record<string, number> = {
-          "1": stats?.completionsAt1Move ?? 0,
-          "2": stats?.completionsAt2Moves ?? 0,
-          "3": stats?.completionsAt3Moves ?? 0,
-          "4": stats?.completionsAt4Moves ?? 0,
-          "5": stats?.completionsAt5Moves ?? 0,
-          "6": stats?.completionsAt6Moves ?? 0,
+          walkOfFame: stats?.trophyWalkOfFame ?? 0,
+          oscar: stats?.trophyOscar ?? 0,
+          goldenGlobe: stats?.trophyGoldenGlobe ?? 0,
+          emmy: stats?.trophyEmmy ?? 0,
+          sag: stats?.trophySag ?? 0,
+          popcorn: stats?.trophyPopcorn ?? 0,
         };
         const totalTrophies = Object.values(trophyBreakdown).reduce((sum, v) => sum + v, 0);
 
@@ -1230,10 +1355,12 @@ export class DatabaseStorage implements IStorage {
         } else if (sortBy === "efficiency") {
           sortValue = avgMoves7Day ?? 999;
         } else if (sortBy === "trophies") {
-          // Weighted score: lower moves = more points
-          sortValue = trophyBreakdown["1"] * 6 + trophyBreakdown["2"] * 5
-            + trophyBreakdown["3"] * 4 + trophyBreakdown["4"] * 3
-            + trophyBreakdown["5"] * 2 + trophyBreakdown["6"] * 1;
+          // Weighted score: higher tier = more points
+          const weightedScore = trophyBreakdown.walkOfFame * 6 + trophyBreakdown.oscar * 5
+            + trophyBreakdown.goldenGlobe * 4 + trophyBreakdown.emmy * 3
+            + trophyBreakdown.sag * 2 + trophyBreakdown.popcorn * 1;
+          // Transition fallback: use totalCompletions when all trophy counts are 0
+          sortValue = weightedScore > 0 ? weightedScore : (stats?.totalCompletions ?? 0);
         }
 
         leaderboard.push({

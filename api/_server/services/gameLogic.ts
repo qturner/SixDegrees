@@ -31,7 +31,7 @@ class GameLogicService {
   private readonly maxActorsPerExpansion = 3;
   private readonly maxMoviesPerActor = 6;
   private readonly maxCastPerMovie = 8;
-  private readonly maxFrontierSize = 32;
+  private readonly maxFrontierSize = 64;
 
   private readonly distanceBuckets: DistanceBucket[] = [
     { difficulty: "easy", minDistance: 1, maxDistance: 2 },
@@ -224,8 +224,8 @@ class GameLogicService {
    */
   async generateAllDailyChallenges(
     excludeActorIds: number[] = [],
-  ): Promise<Map<DifficultyLevel, { actor1: Actor; actor2: Actor }>> {
-    const results = new Map<DifficultyLevel, { actor1: Actor; actor2: Actor }>();
+  ): Promise<Map<DifficultyLevel, { actor1: Actor; actor2: Actor; distance: number }>> {
+    const results = new Map<DifficultyLevel, { actor1: Actor; actor2: Actor; distance: number }>();
     // Store multiple fallbacks per bucket, sorted by score at selection time
     const fallbacks = new Map<DifficultyLevel, CandidateScore[]>();
 
@@ -258,7 +258,7 @@ class GameLogicService {
 
           if (distance >= bucket.minDistance && distance <= bucket.maxDistance) {
             console.log(`Selected ${bucket.difficulty} pair (${distance} hops): ${actor1.name} <-> ${actor2.name} [attempt ${attempt + 1}]`);
-            results.set(bucket.difficulty, { actor1, actor2 });
+            results.set(bucket.difficulty, { actor1, actor2, distance });
             usedActorIds.add(actor1.id);
             usedActorIds.add(actor2.id);
             slotted = true;
@@ -303,7 +303,7 @@ class GameLogicService {
             continue;
           }
           console.warn(`Using fallback ${bucket.difficulty} pair (${candidate.distance} hops): ${candidate.actor1.name} <-> ${candidate.actor2.name}`);
-          results.set(bucket.difficulty, { actor1: candidate.actor1, actor2: candidate.actor2 });
+          results.set(bucket.difficulty, { actor1: candidate.actor1, actor2: candidate.actor2, distance: candidate.distance });
           usedActorIds.add(candidate.actor1.id);
           usedActorIds.add(candidate.actor2.id);
           picked = true;
@@ -329,7 +329,7 @@ class GameLogicService {
   async generateDailyActors(
     difficulty: DifficultyLevel = "medium",
     excludeActorIds: number[] = [],
-  ): Promise<{ actor1: Actor; actor2: Actor } | null> {
+  ): Promise<{ actor1: Actor; actor2: Actor; distance: number } | null> {
     try {
       const pool = await tmdbService.getQualityActorPool();
       if (pool.length < 2) {
@@ -356,7 +356,7 @@ class GameLogicService {
 
         if (distance >= bucket.minDistance && distance <= bucket.maxDistance) {
           console.log(`Selected ${difficulty} pair (${distance} hops): ${actor1.name} <-> ${actor2.name}`);
-          return { actor1, actor2 };
+          return { actor1, actor2, distance };
         }
 
         // Track fallback
@@ -373,7 +373,7 @@ class GameLogicService {
 
       if (bestFallback) {
         console.warn(`Using fallback ${difficulty} pair (${bestFallback.distance} hops): ${bestFallback.actor1.name} <-> ${bestFallback.actor2.name}`);
-        return { actor1: bestFallback.actor1, actor2: bestFallback.actor2 };
+        return { actor1: bestFallback.actor1, actor2: bestFallback.actor2, distance: bestFallback.distance };
       }
 
       console.warn(`Could not generate ${difficulty} pair after ${this.maxUnifiedPairAttempts} attempts`);
@@ -396,7 +396,7 @@ class GameLogicService {
     return true;
   }
 
-  private async findPathDistance(
+  async findPathDistance(
     startId: number,
     endId: number,
     maxDepth: number,
@@ -411,7 +411,7 @@ class GameLogicService {
     const budget = this.createSearchBudget(maxDepth);
 
     let expansionCount = 0;
-    const maxExpansions = Math.max(1, maxDepth * 3);
+    const maxExpansions = Math.max(1, maxDepth * 5);
 
     while (
       startFrontier.length > 0 &&
@@ -463,12 +463,12 @@ class GameLogicService {
 
   private createSearchBudget(maxDepth: number): SearchBudget {
     if (maxDepth <= 3) {
-      return { remainingActorExpansions: 16 };
+      return { remainingActorExpansions: 24 };
     }
     if (maxDepth <= 4) {
-      return { remainingActorExpansions: 22 };
+      return { remainingActorExpansions: 32 };
     }
-    return { remainingActorExpansions: 30 };
+    return { remainingActorExpansions: 45 };
   }
 
   private frontierCanExpand(

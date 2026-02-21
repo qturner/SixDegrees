@@ -344,10 +344,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       endActorId: actors.actor2.id,
       endActorName: actors.actor2.name,
       endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
+      estimatedMoves: actors.distance,
       hintsUsed: 0,
     });
 
-    console.log(`Created ${difficulty} challenge: ${actors.actor1.name} -> ${actors.actor2.name}`);
+    console.log(`Created ${difficulty} challenge: ${actors.actor1.name} -> ${actors.actor2.name} (par: ${actors.distance})`);
     return newChallenge;
   };
 
@@ -381,10 +382,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           endActorId: pair.actor2.id,
           endActorName: pair.actor2.name,
           endActorProfilePath: sanitizeImagePath(pair.actor2.profile_path),
+          estimatedMoves: pair.distance,
           hintsUsed: 0,
         });
 
-        console.log(`Created ${difficulty} challenge: ${pair.actor1.name} -> ${pair.actor2.name}`);
+        console.log(`Created ${difficulty} challenge: ${pair.actor1.name} -> ${pair.actor2.name} (par: ${pair.distance})`);
         generatedChallenges.push(newChallenge);
       }
       return sortChallengesByDifficulty(generatedChallenges);
@@ -439,9 +441,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             endActorId: pair.actor2.id,
             endActorName: pair.actor2.name,
             endActorProfilePath: sanitizeImagePath(pair.actor2.profile_path),
+            estimatedMoves: pair.distance,
             hintsUsed: 0,
           });
-          console.log(`Backfilled ${difficulty} challenge: ${pair.actor1.name} -> ${pair.actor2.name}`);
+          console.log(`Backfilled ${difficulty} challenge: ${pair.actor1.name} -> ${pair.actor2.name} (par: ${pair.distance})`);
         } catch (error) {
           if (isDateDifficultyUniqueViolation(error)) {
             console.log(`Skipping ${difficulty} backfill for ${date}: already created by another request`);
@@ -1067,6 +1070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endActorId: actors.actor2.id,
         endActorName: actors.actor2.name,
         endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
+        estimatedMoves: actors.distance,
       });
 
       res.json(challenge);
@@ -1204,6 +1208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             endActorId: actors.actor2.id,
             endActorName: actors.actor2.name,
             endActorProfilePath: actors.actor2.profile_path,
+            estimatedMoves: actors.distance,
             hintsUsed: 0,
           });
           console.log(`Backfilled new Next challenge: ${newNextChallenge.startActorName} -> ${newNextChallenge.endActorName}`);
@@ -1224,6 +1229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             endActorId: activeActors.actor2.id,
             endActorName: activeActors.actor2.name,
             endActorProfilePath: activeActors.actor2.profile_path,
+            estimatedMoves: activeActors.distance,
             hintsUsed: 0,
           });
         }
@@ -1241,6 +1247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             endActorId: nextActors.actor2.id,
             endActorName: nextActors.actor2.name,
             endActorProfilePath: nextActors.actor2.profile_path,
+            estimatedMoves: nextActors.distance,
             hintsUsed: 0,
           });
         }
@@ -1271,6 +1278,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.deleteDailyChallenge(existingNext.date);
       }
 
+      // Compute BFS distance for manually selected actors (best-effort)
+      let estimatedMoves: number | null = null;
+      try {
+        const distance = await gameLogicService.findPathDistance(startActorId, endActorId, 6);
+        if (distance !== null) {
+          estimatedMoves = distance;
+          console.log(`Computed BFS distance for admin challenge: ${distance}`);
+        }
+      } catch (e) {
+        console.warn("Could not compute BFS distance for admin challenge:", e);
+      }
+
       // Create new NEXT challenge with selected actors (will become tomorrow's challenge)
       const challenge = await storage.createDailyChallenge({
         date: tomorrow,
@@ -1279,9 +1298,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startActorName,
         endActorId,
         endActorName,
+        estimatedMoves,
       });
 
-      console.log(`Admin set custom NEXT challenge for ${tomorrow}: ${startActorName} to ${endActorName}`);
+      console.log(`Admin set custom NEXT challenge for ${tomorrow}: ${startActorName} to ${endActorName} (par: ${estimatedMoves ?? 'unknown'})`);
       res.json({ message: "Custom next challenge set successfully - will become active tomorrow", challenge });
     } catch (error) {
       console.error("Admin set challenge error:", error);
@@ -1317,10 +1337,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             endActorId: actors.actor2.id,
             endActorName: actors.actor2.name,
             endActorProfilePath: actors.actor2.profile_path,
+            estimatedMoves: actors.distance,
             hintsUsed: 0,
           });
 
-          console.log(`Generated new next challenge: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
+          console.log(`Generated new next challenge: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName} (par: ${actors.distance})`);
           return res.json(newNextChallenge);
         } else {
           return res.status(500).json({ message: "Failed to generate next challenge" });
@@ -1362,10 +1383,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endActorId: actors.actor2.id,
         endActorName: actors.actor2.name,
         endActorProfilePath: sanitizeImagePath(actors.actor2.profile_path),
+        estimatedMoves: actors.distance,
         hintsUsed: 0,
       });
 
-      console.log(`Created new next challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName}`);
+      console.log(`Created new next challenge: ${newChallenge.startActorName} to ${newChallenge.endActorName} (par: ${actors.distance})`);
       res.json({ message: "Next challenge reset successfully", challenge: newChallenge });
     } catch (error) {
       console.error("Error resetting tomorrow's challenge:", error);
@@ -1627,6 +1649,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Compute trophy tier based on par (estimatedMoves)
+  function computeTrophyTier(moves: number, par: number): string {
+    if (moves === 1) return "walkOfFame"; // Hole in one, always
+    const relative = moves - par;
+    if (relative <= -2) return "oscar";       // Eagle
+    if (relative === -1) return "goldenGlobe"; // Birdie
+    if (relative === 0) return "emmy";         // Par
+    if (relative === 1) return "sag";          // Bogey
+    return "popcorn";                          // Double bogey+
+  }
+
+  // Fallback par when estimatedMoves is null (old challenges)
+  function getDefaultPar(difficulty: string): number {
+    if (difficulty === "easy") return 2;
+    if (difficulty === "hard") return 6;
+    return 4; // medium or unknown
+  }
+
   // User challenge completion routes
   app.post("/api/user-challenge-completion", isAuthenticated, async (req, res) => {
     try {
@@ -1640,77 +1680,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if user already completed this challenge
-      const existingCompletion = await storage.getUserChallengeCompletion(userId, parseResult.data.challengeId);
-      if (existingCompletion) {
-        return res.status(400).json({ message: "Challenge already completed" });
-      }
-
       const challenge = await storage.getDailyChallengeById(parseResult.data.challengeId);
       if (!challenge) {
         return res.status(404).json({ message: "Challenge not found" });
       }
 
-      // Record the completion
-      const completion = await storage.createUserChallengeCompletion({
-        ...parseResult.data,
-        userId
-      });
+      // Compute completion context once; stats math is done inside the transaction.
+      const moves = parseResult.data.moves;
+      const par = challenge.estimatedMoves ?? getDefaultPar(challenge.difficulty);
+      const trophy = computeTrophyTier(moves, par);
 
-      // Update user stats
-      const currentStats = await storage.getUserStats(userId);
-      if (currentStats) {
-        const moves = parseResult.data.moves;
-        const today = getESTDateString();
-        const yesterday = getYesterdayDateString();
+      const today = getESTDateString();
+      const yesterday = getYesterdayDateString();
 
-        // Calculate streak
-        let currentStreak = currentStats.currentStreak || 0;
-        let maxStreak = currentStats.maxStreak || 0;
-        const lastPlayed = currentStats.lastPlayedDate;
+      // Atomic: insert completion + upsert stats in one transaction.
+      // Returns null if completion already existed (idempotent duplicate).
+      const completion = await storage.recordCompletionWithStats(
+        { ...parseResult.data, userId },
+        {
+          difficulty: challenge.difficulty,
+          trophyTier: trophy,
+          today,
+          yesterday,
+        },
+      );
 
-        if (lastPlayed === today) {
-          // Already played today, streak remains same
-        } else if (lastPlayed === yesterday) {
-          // Played yesterday, increment streak
-          currentStreak += 1;
-        } else {
-          // Missed a day or first time, reset streak
-          currentStreak = 1;
+      if (!completion) {
+        // Already completed — return existing completion idempotently
+        const existing = await storage.getUserChallengeCompletion(userId, parseResult.data.challengeId);
+        if (!existing) {
+          return res.status(409).json({ message: "Challenge already completed but record not found" });
         }
-
-        if (currentStreak > maxStreak) {
-          maxStreak = currentStreak;
-        }
-
-        const statUpdates: Partial<typeof currentStats> = {
-          totalCompletions: (currentStats.totalCompletions || 0) + 1,
-          totalMoves: (currentStats.totalMoves || 0) + moves,
-          currentStreak,
-          maxStreak,
-          lastPlayedDate: today,
-        };
-
-        // Update move count stats
-        if (moves === 1) statUpdates.completionsAt1Move = (currentStats.completionsAt1Move || 0) + 1;
-        else if (moves === 2) statUpdates.completionsAt2Moves = (currentStats.completionsAt2Moves || 0) + 1;
-        else if (moves === 3) statUpdates.completionsAt3Moves = (currentStats.completionsAt3Moves || 0) + 1;
-        else if (moves === 4) statUpdates.completionsAt4Moves = (currentStats.completionsAt4Moves || 0) + 1;
-        else if (moves === 5) statUpdates.completionsAt5Moves = (currentStats.completionsAt5Moves || 0) + 1;
-        else if (moves === 6) statUpdates.completionsAt6Moves = (currentStats.completionsAt6Moves || 0) + 1;
-
-        if (challenge.difficulty === 'easy') {
-          statUpdates.easyCompletions = (currentStats.easyCompletions || 0) + 1;
-        } else if (challenge.difficulty === 'medium') {
-          statUpdates.mediumCompletions = (currentStats.mediumCompletions || 0) + 1;
-        } else if (challenge.difficulty === 'hard') {
-          statUpdates.hardCompletions = (currentStats.hardCompletions || 0) + 1;
-        }
-
-        await storage.updateUserStats(userId, statUpdates);
+        const existingTrophy = computeTrophyTier(existing.moves, par);
+        return res.status(200).json({ ...existing, trophyTier: existingTrophy });
       }
 
-      res.status(201).json(completion);
+      res.status(201).json({ ...completion, trophyTier: trophy });
     } catch (error) {
       console.error("Error creating user challenge completion:", error);
       res.status(500).json({ message: "Internal server error" });
