@@ -158,6 +158,7 @@ function setupDailyChallengeReset(port: number) {
               startActorName: nextChallenge.startActorName,
               endActorId: nextChallenge.endActorId,
               endActorName: nextChallenge.endActorName,
+              estimatedMoves: nextChallenge.estimatedMoves ?? null,
             });
 
             log(`Successfully promoted next challenge to current: ${newCurrentChallenge.startActorName} to ${newCurrentChallenge.endActorName}`);
@@ -223,9 +224,10 @@ function setupDailyChallengeReset(port: number) {
               startActorName: actors.actor1.name,
               endActorId: actors.actor2.id,
               endActorName: actors.actor2.name,
+              estimatedMoves: actors.distance,
             });
 
-            log(`Generated new Next Daily Challenge for ${tomorrow}: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName}`);
+            log(`Generated new Next Daily Challenge for ${tomorrow}: ${newNextChallenge.startActorName} to ${newNextChallenge.endActorName} (par: ${actors.distance})`);
           } else {
             log(`Failed to generate actors for Next Daily Challenge`);
           }

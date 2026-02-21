@@ -15,6 +15,7 @@ export const dailyChallenges = pgTable("daily_challenges", {
   endActorId: integer("end_actor_id").notNull(),
   endActorName: text("end_actor_name").notNull(),
   endActorProfilePath: text("end_actor_profile_path"),
+  estimatedMoves: integer("estimated_moves"), // BFS distance (par) for trophy calculation
   hintsUsed: integer("hints_used").default(0),
   startActorHint: text("start_actor_hint"), // JSON string of hint movies
   endActorHint: text("end_actor_hint"),     // JSON string of hint movies
@@ -213,6 +214,7 @@ export const userChallengeCompletions = pgTable("user_challenge_completions", {
 }, (table) => [
   index("idx_user_completions").on(table.userId),
   index("idx_challenge_completions").on(table.challengeId),
+  unique("user_challenge_completions_user_challenge_unique").on(table.userId, table.challengeId),
 ]);
 
 // User stats tracking table
@@ -233,6 +235,12 @@ export const userStats = pgTable("user_stats", {
   completionsAt4Moves: integer("completions_at_4_moves").default(0),
   completionsAt5Moves: integer("completions_at_5_moves").default(0),
   completionsAt6Moves: integer("completions_at_6_moves").default(0),
+  trophyWalkOfFame: integer("trophy_walk_of_fame").default(0),
+  trophyOscar: integer("trophy_oscar").default(0),
+  trophyGoldenGlobe: integer("trophy_golden_globe").default(0),
+  trophyEmmy: integer("trophy_emmy").default(0),
+  trophySag: integer("trophy_sag").default(0),
+  trophyPopcorn: integer("trophy_popcorn").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
