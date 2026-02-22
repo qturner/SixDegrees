@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 import { Pool, neonConfig, neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle as drizzleServerless } from 'drizzle-orm/neon-serverless';
 import * as schema from "../../shared/schema.js";
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -50,9 +50,8 @@ export const getPool = () => {
 
 export const getDb = () => {
   if (!internalDb) {
-    console.log('Initializing Drizzle via Neon HTTP...');
-    const sql = neon(process.env.DATABASE_URL!);
-    internalDb = drizzle({ client: sql, schema });
+    console.log('Initializing Drizzle via Neon Serverless (WebSocket, supports transactions)...');
+    internalDb = drizzleServerless({ client: getPool(), schema });
   }
   return internalDb;
 };

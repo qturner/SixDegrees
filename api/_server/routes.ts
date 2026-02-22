@@ -1716,9 +1716,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.status(201).json({ ...completion, trophyTier: trophy });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating user challenge completion:", error);
-      res.status(500).json({ message: "Internal server error", debug: error?.message });
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
