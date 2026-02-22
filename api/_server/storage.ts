@@ -695,10 +695,28 @@ export class DatabaseStorage implements IStorage {
 
   async createUserChallengeCompletionIfNotExists(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion | null> {
     return await withRetry(async () => {
-      const rows = await db.insert(userChallengeCompletions)
-        .values(completion)
-        .onConflictDoNothing({ target: [userChallengeCompletions.userId, userChallengeCompletions.challengeId] })
-        .returning();
+      let rows: UserChallengeCompletion[];
+      try {
+        rows = await db.insert(userChallengeCompletions)
+          .values(completion)
+          .onConflictDoNothing({ target: [userChallengeCompletions.userId, userChallengeCompletions.challengeId] })
+          .returning();
+      } catch (e: any) {
+        // Fallback if unique constraint doesn't exist yet in the database
+        if (e?.message?.includes('unique') || e?.message?.includes('ON CONFLICT')) {
+          const [existing] = await db.select().from(userChallengeCompletions)
+            .where(and(
+              eq(userChallengeCompletions.userId, completion.userId),
+              eq(userChallengeCompletions.challengeId, completion.challengeId)
+            ));
+          if (existing) return null;
+          rows = await db.insert(userChallengeCompletions)
+            .values(completion)
+            .returning();
+        } else {
+          throw e;
+        }
+      }
       return rows.length > 0 ? rows[0] : null;
     });
   }
@@ -715,10 +733,28 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       return await db.transaction(async (tx: any) => {
         // 1. Insert completion — ON CONFLICT DO NOTHING for idempotency
-        const rows = await tx.insert(userChallengeCompletions)
-          .values(completion)
-          .onConflictDoNothing({ target: [userChallengeCompletions.userId, userChallengeCompletions.challengeId] })
-          .returning();
+        let rows: any[];
+        try {
+          rows = await tx.insert(userChallengeCompletions)
+            .values(completion)
+            .onConflictDoNothing({ target: [userChallengeCompletions.userId, userChallengeCompletions.challengeId] })
+            .returning();
+        } catch (e: any) {
+          // Fallback if unique constraint doesn't exist yet in the database
+          if (e?.message?.includes('unique') || e?.message?.includes('ON CONFLICT')) {
+            const [existing] = await tx.select().from(userChallengeCompletions)
+              .where(and(
+                eq(userChallengeCompletions.userId, completion.userId),
+                eq(userChallengeCompletions.challengeId, completion.challengeId)
+              ));
+            if (existing) return null; // Already completed
+            rows = await tx.insert(userChallengeCompletions)
+              .values(completion)
+              .returning();
+          } else {
+            throw e;
+          }
+        }
 
         if (rows.length === 0) {
           // Already existed — transaction still commits cleanly, no stats change
