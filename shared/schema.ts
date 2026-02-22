@@ -241,8 +241,42 @@ export const userStats = pgTable("user_stats", {
   trophyEmmy: integer("trophy_emmy").default(0),
   trophySag: integer("trophy_sag").default(0),
   trophyPopcorn: integer("trophy_popcorn").default(0),
+  streakShieldsRemaining: integer("streak_shields_remaining").default(0),
+  streakShieldMonth: text("streak_shield_month"), // YYYY-MM format
+  lastShieldUsedDate: text("last_shield_used_date"), // YYYY-MM-DD format
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User subscriptions table (App Store IAP)
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull().unique(),
+  status: text("status").notNull().default("active"), // "active"|"expired"|"revoked"|"billing_retry"|"grace_period"
+  plan: text("plan").notNull(), // "monthly"|"annual"
+  productId: text("product_id").notNull(),
+  originalTransactionId: text("original_transaction_id").notNull().unique(),
+  latestTransactionId: text("latest_transaction_id"),
+  currentPeriodEndsAt: timestamp("current_period_ends_at"),
+  trialStartedAt: timestamp("trial_started_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  autoRenewEnabled: boolean("auto_renew_enabled").default(true),
+  appAccountToken: text("app_account_token"),
+  environment: text("environment").notNull().default("Production"), // "Production"|"Sandbox"
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Subscription event log for App Store Server Notifications V2
+export const subscriptionEvents = pgTable("subscription_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  notificationUUID: text("notification_uuid").unique(),
+  notificationType: text("notification_type").notNull(),
+  subtype: text("subtype"),
+  originalTransactionId: text("original_transaction_id").notNull(),
+  payload: text("payload").notNull(),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Relations
@@ -252,9 +286,20 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.id],
     references: [userStats.userId],
   }),
+  subscription: one(userSubscriptions, {
+    fields: [users.id],
+    references: [userSubscriptions.userId],
+  }),
   movieLists: many(movieLists),
   sentFriendRequests: many(friendships, { relationName: "sentRequests" }),
   receivedFriendRequests: many(friendships, { relationName: "receivedRequests" }),
+}));
+
+export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [userSubscriptions.userId],
+    references: [users.id],
+  }),
 }));
 
 export const userStatsRelations = relations(userStats, ({ one }) => ({
@@ -398,6 +443,25 @@ export const insertMovieListEntrySchema = createInsertSchema(movieListEntries).o
 
 export type InsertMovieListType = z.infer<typeof insertMovieListSchema>;
 export type InsertMovieListEntryType = z.infer<typeof insertMovieListEntrySchema>;
+
+// Subscription types
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
+export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
+export type InsertSubscriptionEvent = typeof subscriptionEvents.$inferInsert;
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertUserSubscriptionType = z.infer<typeof insertUserSubscriptionSchema>;
+
+export const insertSubscriptionEventSchema = createInsertSchema(subscriptionEvents).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertSubscriptionEventType = z.infer<typeof insertSubscriptionEventSchema>;
 
 // Friendship types
 export type Friendship = typeof friendships.$inferSelect;

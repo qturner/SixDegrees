@@ -1,7 +1,7 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships } from "../../shared/schema.js";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents } from "../../shared/schema.js";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db.js";
-import { eq, and, or, gt, desc, asc, ne, sql, count } from "drizzle-orm";
+import { eq, and, or, gt, desc, asc, ne, sql, count, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export interface IStorage {
@@ -62,6 +62,7 @@ export interface IStorage {
       trophyTier: string;
       today: string;
       yesterday: string;
+      dayBeforeYesterday: string;
     },
   ): Promise<UserChallengeCompletion | null>;
   getUserChallengeCompletion(userId: string, challengeId: string): Promise<UserChallengeCompletion | undefined>;
@@ -122,8 +123,15 @@ export interface IStorage {
   getAcceptedFriends(userId: string): Promise<any[]>;
   searchUsersByUsername(query: string, currentUserId: string): Promise<any[]>;
   getFriendsWithTodayStatus(userId: string, date: string): Promise<any[]>;
-  getFriendsLeaderboard(userId: string, sortBy: string): Promise<any[]>;
+  getFriendsLeaderboard(userId: string, sortBy: string, isEntitled?: boolean): Promise<any>;
   getUserByUsernameCaseInsensitive(username: string): Promise<User | undefined>;
+
+  // Subscription methods
+  getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
+  getSubscriptionByOriginalTransactionId(txnId: string): Promise<UserSubscription | undefined>;
+  upsertSubscription(data: Partial<InsertUserSubscription> & { originalTransactionId: string; userId: string; plan: string; productId: string; status: string; environment: string }): Promise<UserSubscription>;
+  createSubscriptionEvent(data: InsertSubscriptionEvent): Promise<SubscriptionEvent | null>;
+  isUserEntitled(userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -728,6 +736,7 @@ export class DatabaseStorage implements IStorage {
       trophyTier: string;
       today: string;
       yesterday: string;
+      dayBeforeYesterday: string;
     },
   ): Promise<UserChallengeCompletion | null> {
     return await withRetry(async () => {
@@ -798,11 +807,26 @@ export class DatabaseStorage implements IStorage {
         const sagDelta = context.trophyTier === "sag" ? 1 : 0;
         const popcornDelta = context.trophyTier === "popcorn" ? 1 : 0;
 
+        // Streak calculation now includes shield logic:
+        // If lastPlayedDate is dayBeforeYesterday and shields > 0, the shield saves the streak.
         const streakExpr = sql<number>`
           CASE
             WHEN ${userStats.lastPlayedDate} = ${context.today} THEN COALESCE(${userStats.currentStreak}, 0)
             WHEN ${userStats.lastPlayedDate} = ${context.yesterday} THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
+              AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
+              THEN COALESCE(${userStats.currentStreak}, 0) + 1
             ELSE 1
+          END
+        `;
+
+        // Determine if a shield is being used in this update
+        const shieldUsed = sql<number>`
+          CASE
+            WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
+              AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
+              THEN 1
+            ELSE 0
           END
         `;
 
@@ -829,6 +853,9 @@ export class DatabaseStorage implements IStorage {
             trophyEmmy: sql`COALESCE(${userStats.trophyEmmy}, 0) + ${emmyDelta}`,
             trophySag: sql`COALESCE(${userStats.trophySag}, 0) + ${sagDelta}`,
             trophyPopcorn: sql`COALESCE(${userStats.trophyPopcorn}, 0) + ${popcornDelta}`,
+            // Decrement shield if used
+            streakShieldsRemaining: sql`COALESCE(${userStats.streakShieldsRemaining}, 0) - ${shieldUsed}`,
+            lastShieldUsedDate: sql`CASE WHEN ${shieldUsed} = 1 THEN ${context.today} ELSE ${userStats.lastShieldUsedDate} END`,
             updatedAt: new Date(),
           })
           .where(eq(userStats.id, existingStats.id));
@@ -1344,7 +1371,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getFriendsLeaderboard(userId: string, sortBy: string): Promise<any[]> {
+  async getFriendsLeaderboard(userId: string, sortBy: string, isEntitled: boolean = true): Promise<any> {
     return await withRetry(async () => {
       const friends = await this.getAcceptedFriends(userId);
 
@@ -1421,10 +1448,36 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Add rank
-      return leaderboard.map((entry, index) => ({
+      const rankedLeaderboard = leaderboard.map((entry, index) => ({
         ...entry,
         rank: index + 1,
       }));
+
+      // If not entitled, truncate to top 3 + current user
+      if (!isEntitled && rankedLeaderboard.length > 3) {
+        const top3 = rankedLeaderboard.slice(0, 3);
+        const currentUserEntry = rankedLeaderboard.find(e => e.isCurrentUser);
+        const userRank = currentUserEntry?.rank ?? 0;
+
+        // Include current user if they're outside top 3
+        const entries = currentUserEntry && currentUserEntry.rank > 3
+          ? [...top3, currentUserEntry]
+          : top3;
+
+        return {
+          entries,
+          isTruncated: true,
+          lockedCount: rankedLeaderboard.length - entries.length,
+          userRank,
+        };
+      }
+
+      return {
+        entries: rankedLeaderboard,
+        isTruncated: false,
+        lockedCount: 0,
+        userRank: rankedLeaderboard.find(e => e.isCurrentUser)?.rank ?? 0,
+      };
     });
   }
 
@@ -1433,6 +1486,72 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db.select().from(users)
         .where(sql`LOWER(${users.username}) = LOWER(${username})`);
       return user || undefined;
+    });
+  }
+
+  // Subscription methods
+  async getUserSubscription(userId: string): Promise<UserSubscription | undefined> {
+    return await withRetry(async () => {
+      const [sub] = await db.select().from(userSubscriptions)
+        .where(eq(userSubscriptions.userId, userId));
+      return sub || undefined;
+    });
+  }
+
+  async getSubscriptionByOriginalTransactionId(txnId: string): Promise<UserSubscription | undefined> {
+    return await withRetry(async () => {
+      const [sub] = await db.select().from(userSubscriptions)
+        .where(eq(userSubscriptions.originalTransactionId, txnId));
+      return sub || undefined;
+    });
+  }
+
+  async upsertSubscription(
+    data: Partial<InsertUserSubscription> & { originalTransactionId: string; userId: string; plan: string; productId: string; status: string; environment: string },
+  ): Promise<UserSubscription> {
+    return await withRetry(async () => {
+      const [sub] = await db.insert(userSubscriptions)
+        .values(data as any)
+        .onConflictDoUpdate({
+          target: userSubscriptions.originalTransactionId,
+          set: {
+            userId: data.userId,
+            status: data.status,
+            plan: data.plan,
+            productId: data.productId,
+            latestTransactionId: data.latestTransactionId,
+            currentPeriodEndsAt: data.currentPeriodEndsAt,
+            autoRenewEnabled: data.autoRenewEnabled,
+            appAccountToken: data.appAccountToken,
+            environment: data.environment,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      return sub;
+    });
+  }
+
+  async createSubscriptionEvent(data: InsertSubscriptionEvent): Promise<SubscriptionEvent | null> {
+    return await withRetry(async () => {
+      const rows = await db.insert(subscriptionEvents)
+        .values(data)
+        .onConflictDoNothing({ target: subscriptionEvents.notificationUUID })
+        .returning();
+      return rows.length > 0 ? rows[0] : null;
+    });
+  }
+
+  async isUserEntitled(userId: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const [sub] = await db.select().from(userSubscriptions)
+        .where(
+          and(
+            eq(userSubscriptions.userId, userId),
+            inArray(userSubscriptions.status, ["active", "billing_retry", "grace_period"]),
+          ),
+        );
+      return !!sub;
     });
   }
 }

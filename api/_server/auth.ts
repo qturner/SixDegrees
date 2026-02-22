@@ -1,8 +1,9 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcryptjs";
-import { pool, getPool } from "./db.js";
+import { pool, getPool, db, withRetry } from "./db.js";
 import { storage } from "./storage.js";
-import { loginSchema, registerSchema } from "../../shared/schema.js";
+import { loginSchema, registerSchema, userChallengeCompletions, dailyChallenges } from "../../shared/schema.js";
+import { eq, and, gt, sql } from "drizzle-orm";
 import { ZodError } from "zod";
 
 import passport from "passport";
@@ -420,10 +421,87 @@ export async function setupAuth(app: Express) {
       if (!stats) {
         // Create initial stats if they don't exist
         const newStats = await storage.createUserStats({ userId });
-        return res.json(newStats);
+        return res.json({
+          ...newStats,
+          avgMoves7d: null,
+          avgMoves30d: null,
+          avgMovesAllTime: null,
+          completionRateEasy: null,
+          completionRateMedium: null,
+          completionRateHard: null,
+          streakShieldsRemaining: 0,
+        });
       }
 
-      res.json(stats);
+      // Compute average moves over time windows
+      const now = new Date();
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const allCompletions = await withRetry(async () => {
+        return await db.select({
+          moves: userChallengeCompletions.moves,
+          completedAt: userChallengeCompletions.completedAt,
+          challengeId: userChallengeCompletions.challengeId,
+        }).from(userChallengeCompletions)
+          .where(eq(userChallengeCompletions.userId, userId));
+      });
+
+      // Calculate averages
+      const avg = (arr: number[]) => arr.length > 0
+        ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10
+        : null;
+
+      const allMoves = allCompletions.map((c: any) => c.moves);
+      const recent7d = allCompletions
+        .filter((c: any) => c.completedAt && c.completedAt > sevenDaysAgo)
+        .map((c: any) => c.moves);
+      const recent30d = allCompletions
+        .filter((c: any) => c.completedAt && c.completedAt > thirtyDaysAgo)
+        .map((c: any) => c.moves);
+
+      // Compute per-difficulty completion rates
+      // Get all challenges for the completions
+      const challengeIds = [...new Set(allCompletions.map((c: any) => c.challengeId))];
+      let challengeDifficultyMap: Record<string, string> = {};
+      if (challengeIds.length > 0) {
+        const challenges = await withRetry(async () => {
+          return await db.select({
+            id: dailyChallenges.id,
+            difficulty: dailyChallenges.difficulty,
+          }).from(dailyChallenges)
+            .where(sql`${dailyChallenges.id} IN (${sql.join(challengeIds.map(id => sql`${id}`), sql`, `)})`);
+        });
+        for (const ch of challenges) {
+          challengeDifficultyMap[ch.id] = ch.difficulty;
+        }
+      }
+
+      const completionsByDifficulty = { easy: 0, medium: 0, hard: 0 };
+      for (const comp of allCompletions) {
+        const diff = challengeDifficultyMap[comp.challengeId];
+        if (diff && diff in completionsByDifficulty) {
+          completionsByDifficulty[diff as keyof typeof completionsByDifficulty]++;
+        }
+      }
+
+      // Total challenges by difficulty (approximate from stats columns)
+      const totalEasy = stats.easyCompletions ?? 0;
+      const totalMedium = stats.mediumCompletions ?? 0;
+      const totalHard = stats.hardCompletions ?? 0;
+
+      res.json({
+        ...stats,
+        avgMoves7d: avg(recent7d),
+        avgMoves30d: avg(recent30d),
+        avgMovesAllTime: avg(allMoves),
+        completionRateEasy: totalEasy,
+        completionRateMedium: totalMedium,
+        completionRateHard: totalHard,
+        streakShieldsRemaining: stats.streakShieldsRemaining ?? 0,
+      });
     } catch (error) {
       console.error("Get user stats error:", error);
       res.status(500).json({ message: "Internal server error" });

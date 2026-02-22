@@ -4,11 +4,14 @@ import { storage } from "./storage.js";
 import { tmdbService } from "./services/tmdb.js";
 import { gameLogicService, type DifficultyLevel } from "./services/gameLogic.js";
 import { withRetry } from "./db.js";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema } from "../../shared/schema.js";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema, userSubscriptions, userStats } from "../../shared/schema.js";
+import { eq, and, ne, sql, inArray } from "drizzle-orm";
+import { db } from "./db.js";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth.js";
 import { setupAuth, isAuthenticated } from "./auth.js";
 import { emailService } from "./services/email.js";
 import { registerTestEmailRoutes } from "./internal_routes/testEmail.js";
+import * as appStoreSubscriptions from "./services/appStoreSubscriptions.js";
 import cron from "node-cron";
 
 function getESTDateString(date: Date = new Date()): string {
@@ -37,6 +40,13 @@ function getTomorrowDateString(): string {
   // Get tomorrow's date in EST/EDT timezone
   const date = new Date();
   date.setDate(date.getDate() + 1);
+  return getESTDateString(date);
+}
+
+function getDayBeforeYesterdayDateString(): string {
+  // Get the day before yesterday in EST/EDT timezone
+  const date = new Date();
+  date.setDate(date.getDate() - 2);
   return getESTDateString(date);
 }
 
@@ -1685,6 +1695,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Challenge not found" });
       }
 
+      // Gate non-easy difficulties behind Pro subscription
+      if (challenge.difficulty !== "easy") {
+        const entitled = await storage.isUserEntitled(userId);
+        if (!entitled) {
+          return res.status(403).json({ message: "Pro subscription required for this difficulty" });
+        }
+      }
+
       // Compute completion context once; stats math is done inside the transaction.
       const moves = parseResult.data.moves;
       const par = challenge.estimatedMoves ?? getDefaultPar(challenge.difficulty);
@@ -1692,6 +1710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const today = getESTDateString();
       const yesterday = getYesterdayDateString();
+      const dayBeforeYesterday = getDayBeforeYesterdayDateString();
 
       // Atomic: insert completion + upsert stats in one transaction.
       // Returns null if completion already existed (idempotent duplicate).
@@ -1702,6 +1721,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           trophyTier: trophy,
           today,
           yesterday,
+          dayBeforeYesterday,
         },
       );
 
@@ -2198,7 +2218,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid sort parameter. Use streak, efficiency, or trophies." });
       }
 
-      const leaderboard = await storage.getFriendsLeaderboard(userId, sort);
+      const isEntitled = await storage.isUserEntitled(userId);
+      const leaderboard = await storage.getFriendsLeaderboard(userId, sort, isEntitled);
       res.json(leaderboard);
     } catch (error) {
       console.error("Error getting friends leaderboard:", error);
@@ -2243,6 +2264,236 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─── Subscription Routes ───
+
+  // GET /api/user/subscription-status - Get current user's subscription status
+  app.get("/api/user/subscription-status", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const subscription = await storage.getUserSubscription(userId);
+      const stats = await storage.getUserStats(userId);
+      const isEntitled = subscription
+        ? ["active", "billing_retry", "grace_period"].includes(subscription.status)
+        : false;
+
+      res.json({
+        tier: isEntitled ? "pro" : "free",
+        status: subscription?.status ?? null,
+        plan: subscription?.plan ?? null,
+        isEntitled,
+        currentPeriodEndsAt: subscription?.currentPeriodEndsAt ?? null,
+        streakShieldsRemaining: stats?.streakShieldsRemaining ?? 0,
+      });
+    } catch (error) {
+      console.error("Error getting subscription status:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/user/subscription/sync - Sync subscription from client-side StoreKit transaction
+  app.post("/api/user/subscription/sync", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const { signedTransactionInfo } = req.body;
+
+      if (!signedTransactionInfo) {
+        return res.status(400).json({ message: "Missing signedTransactionInfo" });
+      }
+
+      // Verify the JWS transaction
+      let transactionInfo;
+      try {
+        transactionInfo = await appStoreSubscriptions.verifyTransaction(signedTransactionInfo);
+      } catch (err: any) {
+        console.error("Transaction verification failed:", err);
+        return res.status(400).json({ message: "Invalid transaction" });
+      }
+
+      const originalTransactionId = transactionInfo.originalTransactionId!;
+      const transactionId = transactionInfo.transactionId!;
+      const productId = transactionInfo.productId!;
+      const expiresDate = transactionInfo.expiresDate
+        ? new Date(transactionInfo.expiresDate)
+        : null;
+      const appAccountToken = transactionInfo.appAccountToken ?? null;
+
+      // appAccountToken validation
+      if (appAccountToken) {
+        // If present, verify it matches the session user UUID
+        if (appAccountToken !== userId) {
+          return res.status(403).json({ message: "Transaction belongs to a different user" });
+        }
+      } else {
+        // If absent, check if the originalTransactionId is already linked to a different user
+        const existing = await storage.getSubscriptionByOriginalTransactionId(originalTransactionId);
+        if (existing && existing.userId !== userId) {
+          return res.status(409).json({ message: "Subscription already linked to another account" });
+        }
+      }
+
+      const plan = appStoreSubscriptions.derivePlanFromProductId(productId);
+
+      // Check if this is a first activation (no existing subscription for this user)
+      const existingSub = await storage.getUserSubscription(userId);
+      const isFirstActivation = !existingSub;
+
+      const subscription = await storage.upsertSubscription({
+        userId,
+        status: "active",
+        plan,
+        productId,
+        originalTransactionId,
+        latestTransactionId: transactionId,
+        currentPeriodEndsAt: expiresDate,
+        appAccountToken,
+        autoRenewEnabled: true,
+        environment: transactionInfo.environment === "Sandbox" ? "Sandbox" : "Production",
+      });
+
+      // On first activation, grant streak shield
+      if (isFirstActivation) {
+        const currentMonth = getESTDateString().slice(0, 7); // YYYY-MM
+        await storage.updateUserStats(userId, {
+          streakShieldsRemaining: 1,
+          streakShieldMonth: currentMonth,
+        });
+      }
+
+      // Return subscription-status payload
+      const stats = await storage.getUserStats(userId);
+      const isEntitled = ["active", "billing_retry", "grace_period"].includes(subscription.status);
+
+      res.json({
+        tier: isEntitled ? "pro" : "free",
+        status: subscription.status,
+        plan: subscription.plan,
+        isEntitled,
+        currentPeriodEndsAt: subscription.currentPeriodEndsAt,
+        streakShieldsRemaining: stats?.streakShieldsRemaining ?? 0,
+      });
+    } catch (error) {
+      console.error("Error syncing subscription:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/subscriptions/app-store-notifications - App Store Server Notifications V2 webhook
+  app.post("/api/subscriptions/app-store-notifications", async (req, res) => {
+    try {
+      const { signedPayload } = req.body;
+
+      if (!signedPayload) {
+        return res.status(400).json({ message: "Missing signedPayload" });
+      }
+
+      // Verify and decode the notification
+      let notification;
+      try {
+        notification = await appStoreSubscriptions.verifyAndDecodeNotification(signedPayload);
+      } catch (err: any) {
+        console.error("Notification verification failed:", err);
+        return res.status(400).json({ message: "Invalid notification" });
+      }
+
+      const notificationType = notification.notificationType!;
+      const subtype = notification.subtype ?? null;
+      const notificationUUID = notification.notificationUUID!;
+
+      // Decode transaction info from the notification data
+      const signedTransactionInfo = notification.data?.signedTransactionInfo;
+      const signedRenewalInfo = notification.data?.signedRenewalInfo;
+
+      if (!signedTransactionInfo) {
+        // Some notification types may not have transaction info
+        console.log(`Notification ${notificationType} has no transaction info, acknowledging`);
+        return res.sendStatus(200);
+      }
+
+      let transactionInfo;
+      try {
+        transactionInfo = await appStoreSubscriptions.verifyTransaction(signedTransactionInfo);
+      } catch (err: any) {
+        console.error("Transaction verification in notification failed:", err);
+        return res.status(400).json({ message: "Invalid transaction in notification" });
+      }
+
+      const originalTransactionId = transactionInfo.originalTransactionId!;
+
+      // Record event idempotently (on notificationUUID)
+      await storage.createSubscriptionEvent({
+        notificationUUID,
+        notificationType,
+        subtype,
+        originalTransactionId,
+        payload: JSON.stringify(notification),
+        processedAt: new Date(),
+      });
+
+      // Decode renewal info if present
+      let renewalInfo = null;
+      if (signedRenewalInfo) {
+        try {
+          renewalInfo = await appStoreSubscriptions.verifyRenewalInfo(signedRenewalInfo);
+        } catch (err: any) {
+          console.error("Renewal info verification failed:", err);
+        }
+      }
+
+      // Look up existing subscription
+      const existingSub = await storage.getSubscriptionByOriginalTransactionId(originalTransactionId);
+
+      // "Newer wins" logic: derive status and determine if we should update
+      const derived = appStoreSubscriptions.deriveEntitlementStatus(
+        transactionInfo,
+        renewalInfo,
+        existingSub?.currentPeriodEndsAt,
+      );
+
+      if (derived.shouldUpdate && existingSub) {
+        const plan = appStoreSubscriptions.derivePlanFromProductId(transactionInfo.productId!);
+        await storage.upsertSubscription({
+          userId: existingSub.userId,
+          status: derived.status,
+          plan,
+          productId: transactionInfo.productId!,
+          originalTransactionId,
+          latestTransactionId: transactionInfo.transactionId!,
+          currentPeriodEndsAt: derived.currentPeriodEndsAt,
+          autoRenewEnabled: derived.autoRenewEnabled,
+          appAccountToken: transactionInfo.appAccountToken ?? existingSub.appAccountToken,
+          environment: transactionInfo.environment === "Sandbox" ? "Sandbox" : "Production",
+        });
+      } else if (derived.shouldUpdate && !existingSub) {
+        // New subscription from notification — try linking via appAccountToken
+        const appAccountToken = transactionInfo.appAccountToken;
+        if (appAccountToken) {
+          const plan = appStoreSubscriptions.derivePlanFromProductId(transactionInfo.productId!);
+          await storage.upsertSubscription({
+            userId: appAccountToken, // appAccountToken is set to userId
+            status: derived.status,
+            plan,
+            productId: transactionInfo.productId!,
+            originalTransactionId,
+            latestTransactionId: transactionInfo.transactionId!,
+            currentPeriodEndsAt: derived.currentPeriodEndsAt,
+            autoRenewEnabled: derived.autoRenewEnabled,
+            appAccountToken,
+            environment: transactionInfo.environment === "Sandbox" ? "Sandbox" : "Production",
+          });
+        } else {
+          console.log(`No existing subscription and no appAccountToken for txn ${originalTransactionId}, skipping`);
+        }
+      }
+
+      // Always return 200 to acknowledge the notification
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Error processing App Store notification:", error);
+      // Still return 200 to prevent Apple retries on server errors
+      res.sendStatus(200);
+    }
+  });
+
   // Secure Cron Reset endpoint for Vercel
   app.get("/api/cron/reset", async (req, res) => {
     // Basic security check using Vercel's CRON_SECRET or a custom one
@@ -2269,6 +2520,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ensure today has a full Easy/Medium/Hard set (backfills partial sets too).
       const ensuredChallenges = await ensureDailyChallenges(today);
       console.log(`Daily challenges for ${today}: ${ensuredChallenges.map((challenge) => challenge.difficulty).join(", ")}`);
+
+      // Monthly shield refill: for all entitled users where streakShieldMonth != currentMonth,
+      // reset streakShieldsRemaining = 1 and streakShieldMonth = currentMonth.
+      const currentMonth = today.slice(0, 7); // YYYY-MM
+      try {
+        const entitledStatuses = ["active", "billing_retry", "grace_period"];
+        await db.update(userStats)
+          .set({
+            streakShieldsRemaining: 1,
+            streakShieldMonth: currentMonth,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              sql`${userStats.userId} IN (
+                SELECT ${userSubscriptions.userId} FROM ${userSubscriptions}
+                WHERE ${userSubscriptions.status} IN (${sql.join(entitledStatuses.map(s => sql`${s}`), sql`, `)})
+              )`,
+              sql`(${userStats.streakShieldMonth} IS NULL OR ${userStats.streakShieldMonth} != ${currentMonth})`,
+            ),
+          );
+        console.log(`Shield refill check complete for month ${currentMonth}`);
+      } catch (shieldErr) {
+        console.error("Shield refill error (non-fatal):", shieldErr);
+      }
 
       res.json({ message: "Daily challenge reset completed successfully", date: today });
     } catch (error) {
