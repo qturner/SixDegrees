@@ -1521,12 +1521,13 @@ export class DatabaseStorage implements IStorage {
       const [sub] = await db.insert(userSubscriptions)
         .values(data as any)
         .onConflictDoUpdate({
-          target: userSubscriptions.originalTransactionId,
+          target: userSubscriptions.userId,
           set: {
             userId: data.userId,
             status: data.status,
             plan: data.plan,
             productId: data.productId,
+            originalTransactionId: data.originalTransactionId,
             latestTransactionId: data.latestTransactionId,
             currentPeriodEndsAt: data.currentPeriodEndsAt,
             autoRenewEnabled: data.autoRenewEnabled,
