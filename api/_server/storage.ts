@@ -4,6 +4,14 @@ import { db, withRetry } from "./db.js";
 import { eq, and, or, gt, desc, asc, ne, sql, count, inArray } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
+function isSubscriptionEntitledNow(subscription: Pick<UserSubscription, "status" | "currentPeriodEndsAt"> | undefined): boolean {
+  if (!subscription) return false;
+  if (subscription.status === "billing_retry" || subscription.status === "grace_period") return true;
+  if (subscription.status !== "active") return false;
+  if (!subscription.currentPeriodEndsAt) return true;
+  return new Date(subscription.currentPeriodEndsAt) > new Date();
+}
+
 export interface IStorage {
   // Daily Challenge methods
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
@@ -1545,13 +1553,8 @@ export class DatabaseStorage implements IStorage {
   async isUserEntitled(userId: string): Promise<boolean> {
     return await withRetry(async () => {
       const [sub] = await db.select().from(userSubscriptions)
-        .where(
-          and(
-            eq(userSubscriptions.userId, userId),
-            inArray(userSubscriptions.status, ["active", "billing_retry", "grace_period"]),
-          ),
-        );
-      return !!sub;
+        .where(eq(userSubscriptions.userId, userId));
+      return isSubscriptionEntitledNow(sub);
     });
   }
 }

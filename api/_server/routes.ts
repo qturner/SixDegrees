@@ -50,6 +50,14 @@ function getDayBeforeYesterdayDateString(): string {
   return getESTDateString(date);
 }
 
+function isSubscriptionEntitled(subscription: { status: string; currentPeriodEndsAt?: Date | null } | undefined): boolean {
+  if (!subscription) return false;
+  if (subscription.status === "billing_retry" || subscription.status === "grace_period") return true;
+  if (subscription.status !== "active") return false;
+  if (!subscription.currentPeriodEndsAt) return true;
+  return new Date(subscription.currentPeriodEndsAt) > new Date();
+}
+
 // Helper to ensure image paths are relative and clean
 function sanitizeImagePath(path: string | null | undefined): string | null {
   if (!path) return null;
@@ -2272,9 +2280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.session as any).userId;
       const subscription = await storage.getUserSubscription(userId);
       const stats = await storage.getUserStats(userId);
-      const isEntitled = subscription
-        ? ["active", "billing_retry", "grace_period"].includes(subscription.status)
-        : false;
+      const isEntitled = isSubscriptionEntitled(subscription);
 
       res.json({
         tier: isEntitled ? "pro" : "free",
@@ -2332,6 +2338,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const plan = appStoreSubscriptions.derivePlanFromProductId(productId);
+      const now = new Date();
+      const revocationDate = transactionInfo.revocationDate
+        ? new Date(transactionInfo.revocationDate)
+        : null;
+      const derivedStatus = revocationDate
+        ? "revoked"
+        : (expiresDate && expiresDate <= now ? "expired" : "active");
 
       // Check if this is a first activation (no existing subscription for this user)
       const existingSub = await storage.getUserSubscription(userId);
@@ -2339,7 +2352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const subscription = await storage.upsertSubscription({
         userId,
-        status: "active",
+        status: derivedStatus,
         plan,
         productId,
         originalTransactionId,
@@ -2351,7 +2364,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // On first activation, grant streak shield
-      if (isFirstActivation) {
+      const isEntitled = isSubscriptionEntitled(subscription);
+      if (isFirstActivation && isEntitled) {
         const currentMonth = getESTDateString().slice(0, 7); // YYYY-MM
         await storage.updateUserStats(userId, {
           streakShieldsRemaining: 1,
@@ -2361,7 +2375,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return subscription-status payload
       const stats = await storage.getUserStats(userId);
-      const isEntitled = ["active", "billing_retry", "grace_period"].includes(subscription.status);
 
       res.json({
         tier: isEntitled ? "pro" : "free",
@@ -2525,7 +2538,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // reset streakShieldsRemaining = 1 and streakShieldMonth = currentMonth.
       const currentMonth = today.slice(0, 7); // YYYY-MM
       try {
-        const entitledStatuses = ["active", "billing_retry", "grace_period"];
         await db.update(userStats)
           .set({
             streakShieldsRemaining: 1,
@@ -2536,7 +2548,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             and(
               sql`${userStats.userId} IN (
                 SELECT ${userSubscriptions.userId} FROM ${userSubscriptions}
-                WHERE ${userSubscriptions.status} IN (${sql.join(entitledStatuses.map(s => sql`${s}`), sql`, `)})
+                WHERE (
+                  ${userSubscriptions.status} IN ('billing_retry', 'grace_period')
+                  OR (
+                    ${userSubscriptions.status} = 'active'
+                    AND (
+                      ${userSubscriptions.currentPeriodEndsAt} IS NULL
+                      OR ${userSubscriptions.currentPeriodEndsAt} > NOW()
+                    )
+                  )
+                )
               )`,
               sql`(${userStats.streakShieldMonth} IS NULL OR ${userStats.streakShieldMonth} != ${currentMonth})`,
             ),

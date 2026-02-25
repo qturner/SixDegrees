@@ -139,7 +139,7 @@ export function deriveEntitlementStatus(
   if (
     storedCurrentPeriodEndsAt &&
     expiresDate &&
-    expiresDate <= storedCurrentPeriodEndsAt
+    expiresDate < storedCurrentPeriodEndsAt
   ) {
     return {
       status: "active", // don't change
