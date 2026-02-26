@@ -13,42 +13,7 @@ import { emailService } from "./services/email.js";
 import { registerTestEmailRoutes } from "./internal_routes/testEmail.js";
 import * as appStoreSubscriptions from "./services/appStoreSubscriptions.js";
 import cron from "node-cron";
-
-function getESTDateString(date: Date = new Date()): string {
-  // Use Intl.DateTimeFormat to ensure consistent YYYY-MM-DD format regardless of environment locale
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-
-  // en-CA format is YYYY-MM-DD, but we'll normalize it to be 100% sure
-  const formatted = formatter.format(date);
-  return formatted.replace(/\//g, '-');
-}
-
-function getYesterdayDateString(): string {
-  // Get yesterday's date in EST/EDT timezone
-  const date = new Date();
-  date.setHours(date.getHours() - 12); // Move back half a day to ensure we drop into yesterday EST if we are early morning UTC
-  date.setDate(date.getDate() - 1);
-  return getESTDateString(date);
-}
-
-function getTomorrowDateString(): string {
-  // Get tomorrow's date in EST/EDT timezone
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  return getESTDateString(date);
-}
-
-function getDayBeforeYesterdayDateString(): string {
-  // Get the day before yesterday in EST/EDT timezone
-  const date = new Date();
-  date.setDate(date.getDate() - 2);
-  return getESTDateString(date);
-}
+import { getDayBeforeYesterdayDateString, getESTDateString, getTomorrowDateString, getYesterdayDateString } from "./dateHelpers.js";
 
 function isSubscriptionEntitled(subscription: { status: string; currentPeriodEndsAt?: Date | null } | undefined): boolean {
   if (!subscription) return false;
