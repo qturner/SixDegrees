@@ -30,6 +30,7 @@ interface TMDbMovie {
   vote_average: number;
   vote_count: number;
   popularity?: number;
+  genre_ids?: number[];
 }
 
 interface TMDbCredit {
@@ -76,6 +77,12 @@ class TMDbService {
     TV_MOVIE: 10770, // TV Movies often include stand-up specials and single-person shows
     MUSIC: 10402, // Music documentaries and concert films
   };
+
+  private static readonly EXCLUDED_TITLE_PATTERNS = [
+    /\bmaking(?:\s+|-)of\b/i,
+    /\bbehind\s+the\s+scenes\b/i,
+    /\ba\s+look\s+behind\b/i,
+  ];
 
   // Actors to exclude (primarily voice actors, stand-up comedians, or those not suitable for the game)
   private readonly EXCLUDED_ACTORS = new Set([
@@ -138,6 +145,20 @@ class TMDbService {
   private CACHE_TTL = 3600000; // 1 hour
   private movieCreditsCache = new Map<number, { data: Actor[], timestamp: number }>();
   private actorMoviesCache = new Map<number, { data: Movie[], timestamp: number }>();
+
+  private isExcludedTitle(title?: string): boolean {
+    if (!title) return false;
+    return TMDbService.EXCLUDED_TITLE_PATTERNS.some(pattern => pattern.test(title));
+  }
+
+  private isDocumentaryOrTVMovie(genreIds?: number[]): boolean {
+    if (!genreIds || genreIds.length === 0) return false;
+    return genreIds.includes(this.EXCLUDED_GENRES.DOCUMENTARY) || genreIds.includes(this.EXCLUDED_GENRES.TV_MOVIE);
+  }
+
+  private isExcludedMakingOfMovie(movie: { title?: string; genre_ids?: number[] }): boolean {
+    return this.isExcludedTitle(movie.title) && this.isDocumentaryOrTVMovie(movie.genre_ids);
+  }
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
     const url = new URL(`${this.config.baseUrl}${endpoint}`);
@@ -237,7 +258,9 @@ class TMDbService {
           // Additional filter to ensure movies are from 1970+
           if (!movie.release_date) return false;
           const releaseYear = new Date(movie.release_date).getFullYear();
-          return releaseYear >= 1970;
+          if (releaseYear < 1970) return false;
+
+          return !this.isExcludedMakingOfMovie(movie);
         })
         // Sort primarily by vote count (popularity) to ensure well-known films appear first
         // Movies with 1000+ votes are likely mainstream releases users are looking for
@@ -298,7 +321,9 @@ class TMDbService {
           // Only include movies from 1970 onwards
           if (!movie.release_date) return false;
           const releaseYear = new Date(movie.release_date).getFullYear();
-          return releaseYear >= 1970;
+          if (releaseYear < 1970) return false;
+
+          return !this.isExcludedMakingOfMovie(movie);
         })
         .map(movie => ({
           id: movie.id,
@@ -669,8 +694,13 @@ class TMDbService {
       // ensuring we don't falsely reject valid credits due to business logic filters (like release date)
       const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
 
-      // Check if the movie ID exists in the cast list
-      return response.cast.some(movie => movie.id === movieId);
+      const matchedMovie = response.cast.find(movie => movie.id === movieId);
+      if (!matchedMovie) return false;
+
+      // Enforce making-of documentary exclusions during validation to prevent crafted payload bypasses.
+      if (this.isExcludedMakingOfMovie(matchedMovie)) return false;
+
+      return true;
     } catch (error) {
       console.error(`Error validating actor ${actorId} in movie ${movieId}:`, error);
       return false;
