@@ -488,10 +488,36 @@ export const reactions = pgTable("reactions", {
   check("reactions_emoji_check", sql`${table.emoji} IN ('🔥', '👏', '💀', '😂', '🤯', '👀')`),
 ]);
 
+// Reaction inbox events (append-only)
+export const reactionEvents = pgTable("reaction_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  targetUserId: varchar("target_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  reactorUserId: varchar("reactor_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  challengeDate: text("challenge_date").notNull(),
+  difficulty: text("difficulty").notNull(),
+  emoji: text("emoji").notNull(),
+  reactionId: varchar("reaction_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  readAt: timestamp("read_at"),
+}, (table) => [
+  index("idx_reaction_events_target_created").on(table.targetUserId, table.createdAt, table.id),
+  index("idx_reaction_events_target_unread").on(table.targetUserId, table.readAt),
+  check("reaction_events_difficulty_check", sql`${table.difficulty} IN ('easy', 'medium', 'hard')`),
+  check("reaction_events_emoji_check", sql`${table.emoji} IN ('🔥', '👏', '💀', '😂', '🤯', '👀')`),
+]);
+
 // Reaction types
 export type Reaction = typeof reactions.$inferSelect;
 export type InsertReaction = typeof reactions.$inferInsert;
 export const insertReactionSchema = createInsertSchema(reactions).omit({
   id: true,
   createdAt: true,
+});
+
+export type ReactionEvent = typeof reactionEvents.$inferSelect;
+export type InsertReactionEvent = typeof reactionEvents.$inferInsert;
+export const insertReactionEventSchema = createInsertSchema(reactionEvents).omit({
+  id: true,
+  createdAt: true,
+  readAt: true,
 });

@@ -2263,12 +2263,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (emoji === '') {
         await storage.removeReaction(reactorUserId, targetUserId, today, difficulty);
       } else {
-        await storage.upsertReaction(reactorUserId, targetUserId, today, difficulty, emoji);
+        const reaction = await storage.upsertReaction(reactorUserId, targetUserId, today, difficulty, emoji);
+        await storage.createReactionEvent(
+          targetUserId,
+          reactorUserId,
+          today,
+          difficulty,
+          emoji,
+          reaction.id,
+        );
       }
 
       res.json({ success: true });
     } catch (error) {
       console.error("Error handling reaction:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // GET /api/reactions/inbox - Get incoming reaction events (newest first)
+  app.get("/api/reactions/inbox", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+      const requestedLimit = Number(req.query.limit);
+      const limit = Number.isFinite(requestedLimit)
+        ? Math.max(1, Math.min(100, requestedLimit))
+        : 25;
+
+      const page = await storage.getReactionInbox(userId, cursor, limit);
+      res.json(page);
+    } catch (error) {
+      console.error("Error loading reaction inbox:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/reactions/inbox/read - Mark reaction inbox entries as read
+  app.post("/api/reactions/inbox/read", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const upToEventId = typeof req.body?.upToEventId === "string" ? req.body.upToEventId : undefined;
+
+      const unreadCount = await storage.markReactionInboxRead(userId, upToEventId);
+      res.json({ unreadCount });
+    } catch (error) {
+      console.error("Error marking reaction inbox read:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // GET /api/reactions/inbox/unread-count - Lightweight unread badge endpoint
+  app.get("/api/reactions/inbox/unread-count", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const count = await storage.getReactionInboxUnreadCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error loading reaction unread count:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

@@ -1,7 +1,7 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, type Reaction, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents, reactions } from "../../shared/schema.js";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, type Reaction, type ReactionEvent, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents, reactions, reactionEvents } from "../../shared/schema.js";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db.js";
-import { eq, and, or, gt, desc, asc, ne, sql, count, inArray } from "drizzle-orm";
+import { eq, and, or, gt, lt, lte, desc, asc, ne, sql, count, inArray, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 function isSubscriptionEntitledNow(subscription: Pick<UserSubscription, "status" | "currentPeriodEndsAt"> | undefined): boolean {
@@ -11,6 +11,26 @@ function isSubscriptionEntitledNow(subscription: Pick<UserSubscription, "status"
   if (!subscription.currentPeriodEndsAt) return true;
   return new Date(subscription.currentPeriodEndsAt) > new Date();
 }
+
+type ReactionInboxItem = {
+  id: string;
+  reactorUserId: string;
+  reactorUsername: string;
+  reactorPicture: string | null;
+  targetUserId: string;
+  challengeDate: string;
+  difficulty: string;
+  emoji: string;
+  moves: number | null;
+  createdAt: Date | null;
+  readAt: Date | null;
+};
+
+type ReactionInboxPage = {
+  items: ReactionInboxItem[];
+  nextCursor: string | null;
+  unreadCount: number;
+};
 
 export interface IStorage {
   // Daily Challenge methods
@@ -137,6 +157,10 @@ export interface IStorage {
   // Reaction methods
   upsertReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string, emoji: string): Promise<Reaction>;
   removeReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string): Promise<void>;
+  createReactionEvent(targetUserId: string, reactorUserId: string, challengeDate: string, difficulty: string, emoji: string, reactionId?: string | null): Promise<ReactionEvent>;
+  getReactionInbox(userId: string, cursor: string | undefined, limit: number): Promise<ReactionInboxPage>;
+  markReactionInboxRead(userId: string, upToEventId?: string): Promise<number>;
+  getReactionInboxUnreadCount(userId: string): Promise<number>;
   areFriends(userId1: string, userId2: string): Promise<boolean>;
   hasCompletionForDifficulty(userId: string, date: string, difficulty: string): Promise<boolean>;
   getReactionsForUsersOnDate(targetUserIds: string[], date: string): Promise<Reaction[]>;
@@ -1435,6 +1459,161 @@ export class DatabaseStorage implements IStorage {
         eq(reactions.challengeDate, challengeDate),
         eq(reactions.difficulty, difficulty),
       ));
+    });
+  }
+
+  async createReactionEvent(
+    targetUserId: string,
+    reactorUserId: string,
+    challengeDate: string,
+    difficulty: string,
+    emoji: string,
+    reactionId?: string | null,
+  ): Promise<ReactionEvent> {
+    return await withRetry(async () => {
+      const [event] = await db.insert(reactionEvents)
+        .values({
+          targetUserId,
+          reactorUserId,
+          challengeDate,
+          difficulty,
+          emoji,
+          reactionId: reactionId ?? null,
+        })
+        .returning();
+      return event;
+    });
+  }
+
+  async getReactionInbox(userId: string, cursor: string | undefined, limit: number): Promise<ReactionInboxPage> {
+    return await withRetry(async () => {
+      let whereClause: any = eq(reactionEvents.targetUserId, userId);
+
+      if (cursor) {
+        const [cursorEvent] = await db
+          .select({
+            id: reactionEvents.id,
+            createdAt: reactionEvents.createdAt,
+          })
+          .from(reactionEvents)
+          .where(and(
+            eq(reactionEvents.id, cursor),
+            eq(reactionEvents.targetUserId, userId),
+          ));
+
+        if (cursorEvent?.createdAt) {
+          whereClause = and(
+            eq(reactionEvents.targetUserId, userId),
+            or(
+              lt(reactionEvents.createdAt, cursorEvent.createdAt),
+              and(
+                eq(reactionEvents.createdAt, cursorEvent.createdAt),
+                lt(reactionEvents.id, cursorEvent.id),
+              ),
+            ),
+          );
+        }
+      }
+
+      const rows = await db
+        .select({
+          id: reactionEvents.id,
+          reactorUserId: reactionEvents.reactorUserId,
+          reactorUsername: users.username,
+          reactorPicture: users.picture,
+          targetUserId: reactionEvents.targetUserId,
+          challengeDate: reactionEvents.challengeDate,
+          difficulty: reactionEvents.difficulty,
+          emoji: reactionEvents.emoji,
+          moves: userChallengeCompletions.moves,
+          createdAt: reactionEvents.createdAt,
+          readAt: reactionEvents.readAt,
+        })
+        .from(reactionEvents)
+        .innerJoin(users, eq(reactionEvents.reactorUserId, users.id))
+        .leftJoin(dailyChallenges, and(
+          eq(dailyChallenges.date, reactionEvents.challengeDate),
+          eq(dailyChallenges.difficulty, reactionEvents.difficulty),
+        ))
+        .leftJoin(userChallengeCompletions, and(
+          eq(userChallengeCompletions.userId, reactionEvents.targetUserId),
+          eq(userChallengeCompletions.challengeId, dailyChallenges.id),
+        ))
+        .where(whereClause)
+        .orderBy(desc(reactionEvents.createdAt), desc(reactionEvents.id))
+        .limit(limit + 1);
+
+      const [unreadRow] = await db
+        .select({ count: count() })
+        .from(reactionEvents)
+        .where(and(
+          eq(reactionEvents.targetUserId, userId),
+          isNull(reactionEvents.readAt),
+        ));
+
+      const hasMore = rows.length > limit;
+      const items = hasMore ? rows.slice(0, limit) : rows;
+
+      return {
+        items,
+        nextCursor: hasMore ? items[items.length - 1].id : null,
+        unreadCount: Number(unreadRow?.count ?? 0),
+      };
+    });
+  }
+
+  async markReactionInboxRead(userId: string, upToEventId?: string): Promise<number> {
+    await withRetry(async () => {
+      const readAt = new Date();
+
+      if (!upToEventId) {
+        await db
+          .update(reactionEvents)
+          .set({ readAt })
+          .where(and(
+            eq(reactionEvents.targetUserId, userId),
+            isNull(reactionEvents.readAt),
+          ));
+        return;
+      }
+
+      const [upToEvent] = await db
+        .select({
+          createdAt: reactionEvents.createdAt,
+        })
+        .from(reactionEvents)
+        .where(and(
+          eq(reactionEvents.id, upToEventId),
+          eq(reactionEvents.targetUserId, userId),
+        ));
+
+      if (!upToEvent?.createdAt) {
+        return;
+      }
+
+      await db
+        .update(reactionEvents)
+        .set({ readAt })
+        .where(and(
+          eq(reactionEvents.targetUserId, userId),
+          isNull(reactionEvents.readAt),
+          lte(reactionEvents.createdAt, upToEvent.createdAt),
+        ));
+    });
+
+    return this.getReactionInboxUnreadCount(userId);
+  }
+
+  async getReactionInboxUnreadCount(userId: string): Promise<number> {
+    return await withRetry(async () => {
+      const [row] = await db
+        .select({ count: count() })
+        .from(reactionEvents)
+        .where(and(
+          eq(reactionEvents.targetUserId, userId),
+          isNull(reactionEvents.readAt),
+        ));
+      return Number(row?.count ?? 0);
     });
   }
 
