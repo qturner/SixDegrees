@@ -1,4 +1,4 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents } from "../../shared/schema.js";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, type Reaction, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents, reactions } from "../../shared/schema.js";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db.js";
 import { eq, and, or, gt, desc, asc, ne, sql, count, inArray } from "drizzle-orm";
@@ -133,6 +133,13 @@ export interface IStorage {
   getFriendsWithTodayStatus(userId: string, date: string): Promise<any[]>;
   getFriendsLeaderboard(userId: string, sortBy: string, isEntitled?: boolean): Promise<any>;
   getUserByUsernameCaseInsensitive(username: string): Promise<User | undefined>;
+
+  // Reaction methods
+  upsertReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string, emoji: string): Promise<Reaction>;
+  removeReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string): Promise<void>;
+  areFriends(userId1: string, userId2: string): Promise<boolean>;
+  hasCompletionForDifficulty(userId: string, date: string, difficulty: string): Promise<boolean>;
+  getReactionsForUsersOnDate(targetUserIds: string[], date: string): Promise<Reaction[]>;
 
   // Subscription methods
   getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
@@ -1339,6 +1346,12 @@ export class DatabaseStorage implements IStorage {
       const todayChallenges = await db.select().from(dailyChallenges)
         .where(eq(dailyChallenges.date, date));
 
+      // Batch-fetch reactions for all friends on this date
+      const friendIds = friends.map(f => f.id);
+      const allReactions = friendIds.length > 0
+        ? await this.getReactionsForUsersOnDate(friendIds, date)
+        : [];
+
       const results = [];
       for (const friend of friends) {
         // Get friend's stats
@@ -1357,10 +1370,14 @@ export class DatabaseStorage implements IStorage {
               eq(userChallengeCompletions.userId, friend.id),
               eq(userChallengeCompletions.challengeId, challenge.id)
             ));
+          const pillReactions = allReactions
+            .filter(r => r.targetUserId === friend.id && r.difficulty === challenge.difficulty)
+            .map(r => ({ reactorUserId: r.reactorUserId, emoji: r.emoji }));
           todayCompletions.push({
             difficulty: challenge.difficulty,
             completed: !!completion,
             moves: completion?.moves ?? null,
+            reactions: pillReactions,
           });
         }
 
@@ -1376,6 +1393,70 @@ export class DatabaseStorage implements IStorage {
       }
 
       return results;
+    });
+  }
+
+  // Reaction methods
+
+  async upsertReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string, emoji: string): Promise<Reaction> {
+    return await withRetry(async () => {
+      const [reaction] = await db.insert(reactions)
+        .values({ reactorUserId, targetUserId, challengeDate, difficulty, emoji })
+        .onConflictDoUpdate({
+          target: [reactions.reactorUserId, reactions.targetUserId, reactions.challengeDate, reactions.difficulty],
+          set: { emoji },
+        })
+        .returning();
+      return reaction;
+    });
+  }
+
+  async removeReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string): Promise<void> {
+    await withRetry(async () => {
+      await db.delete(reactions).where(and(
+        eq(reactions.reactorUserId, reactorUserId),
+        eq(reactions.targetUserId, targetUserId),
+        eq(reactions.challengeDate, challengeDate),
+        eq(reactions.difficulty, difficulty),
+      ));
+    });
+  }
+
+  async areFriends(userId1: string, userId2: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const [friendship] = await db.select().from(friendships)
+        .where(and(
+          or(
+            and(eq(friendships.requesterId, userId1), eq(friendships.addresseeId, userId2)),
+            and(eq(friendships.requesterId, userId2), eq(friendships.addresseeId, userId1))
+          ),
+          eq(friendships.status, "accepted")
+        ));
+      return !!friendship;
+    });
+  }
+
+  async hasCompletionForDifficulty(userId: string, date: string, difficulty: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const [result] = await db.select({ id: userChallengeCompletions.id })
+        .from(userChallengeCompletions)
+        .innerJoin(dailyChallenges, eq(userChallengeCompletions.challengeId, dailyChallenges.id))
+        .where(and(
+          eq(userChallengeCompletions.userId, userId),
+          eq(dailyChallenges.date, date),
+          eq(dailyChallenges.difficulty, difficulty),
+        ));
+      return !!result;
+    });
+  }
+
+  async getReactionsForUsersOnDate(targetUserIds: string[], date: string): Promise<Reaction[]> {
+    if (targetUserIds.length === 0) return [];
+    return await withRetry(async () => {
+      return await db.select().from(reactions).where(and(
+        inArray(reactions.targetUserId, targetUserIds),
+        eq(reactions.challengeDate, date),
+      ));
     });
   }
 

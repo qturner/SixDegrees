@@ -2223,6 +2223,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/reactions - Add or remove a reaction on a friend's completion
+  const ALLOWED_EMOJIS = ['🔥', '👏', '💀', '😂', '🤯', '👀'];
+  const ALLOWED_DIFFICULTIES = ['easy', 'medium', 'hard'];
+
+  app.post("/api/reactions", isAuthenticated, async (req, res) => {
+    try {
+      const reactorUserId = (req.session as any).userId;
+      const { targetUserId, difficulty, emoji } = req.body;
+
+      if (!targetUserId || !difficulty) {
+        return res.status(400).json({ message: "targetUserId and difficulty are required" });
+      }
+
+      if (!ALLOWED_DIFFICULTIES.includes(difficulty)) {
+        return res.status(400).json({ message: "Invalid difficulty" });
+      }
+
+      if (emoji !== '' && !ALLOWED_EMOJIS.includes(emoji)) {
+        return res.status(400).json({ message: "Invalid emoji" });
+      }
+
+      if (targetUserId === reactorUserId) {
+        return res.status(400).json({ message: "Cannot react to your own completions" });
+      }
+
+      const friends = await storage.areFriends(reactorUserId, targetUserId);
+      if (!friends) {
+        return res.status(403).json({ message: "You can only react to friends' completions" });
+      }
+
+      const today = getESTDateString();
+
+      const hasCompletion = await storage.hasCompletionForDifficulty(targetUserId, today, difficulty);
+      if (!hasCompletion) {
+        return res.status(400).json({ message: "This friend has not completed this difficulty today" });
+      }
+
+      if (emoji === '') {
+        await storage.removeReaction(reactorUserId, targetUserId, today, difficulty);
+      } else {
+        await storage.upsertReaction(reactorUserId, targetUserId, today, difficulty, emoji);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error handling reaction:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // GET /api/movie/:id/watch-providers - Get streaming providers for a movie
   app.get("/api/movie/:id/watch-providers", async (req, res) => {
     try {

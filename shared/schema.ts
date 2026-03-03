@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, index, json, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, index, json, unique, check } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -470,4 +470,28 @@ export const insertFriendshipSchema = createInsertSchema(friendships).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+// Reactions table
+export const reactions = pgTable("reactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reactorUserId: varchar("reactor_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  targetUserId: varchar("target_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  challengeDate: text("challenge_date").notNull(),
+  difficulty: text("difficulty").notNull(),
+  emoji: text("emoji").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  unique("reactions_unique_per_user").on(table.reactorUserId, table.targetUserId, table.challengeDate, table.difficulty),
+  index("idx_reactions_target_date").on(table.targetUserId, table.challengeDate),
+  check("reactions_difficulty_check", sql`${table.difficulty} IN ('easy', 'medium', 'hard')`),
+  check("reactions_emoji_check", sql`${table.emoji} IN ('🔥', '👏', '💀', '😂', '🤯', '👀')`),
+]);
+
+// Reaction types
+export type Reaction = typeof reactions.$inferSelect;
+export type InsertReaction = typeof reactions.$inferInsert;
+export const insertReactionSchema = createInsertSchema(reactions).omit({
+  id: true,
+  createdAt: true,
 });
