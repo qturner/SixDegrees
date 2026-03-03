@@ -1341,24 +1341,42 @@ export class DatabaseStorage implements IStorage {
   async getFriendsWithTodayStatus(userId: string, date: string): Promise<any[]> {
     return await withRetry(async () => {
       const friends = await this.getAcceptedFriends(userId);
+      const currentUser = await this.getUserById(userId);
+
+      const participants = [
+        ...(currentUser ? [{
+          id: currentUser.id,
+          friendshipId: null as string | null,
+          username: currentUser.username,
+          picture: currentUser.picture,
+        }] : []),
+        ...friends,
+      ];
 
       // Get today's challenges for the given date
       const todayChallenges = await db.select().from(dailyChallenges)
         .where(eq(dailyChallenges.date, date));
 
-      // Batch-fetch reactions for all friends on this date
-      const friendIds = friends.map(f => f.id);
-      const allReactions = friendIds.length > 0
-        ? await this.getReactionsForUsersOnDate(friendIds, date)
+      // Batch-fetch reactions for all visible participants on this date.
+      const participantIds = participants.map(p => p.id);
+      const allReactions = participantIds.length > 0
+        ? await this.getReactionsForUsersOnDate(participantIds, date)
         : [];
+      const reactionsByTargetDifficulty = new Map<string, { reactorUserId: string; emoji: string }[]>();
+      for (const reaction of allReactions) {
+        const key = `${reaction.targetUserId}:${reaction.difficulty}`;
+        const existing = reactionsByTargetDifficulty.get(key) ?? [];
+        existing.push({ reactorUserId: reaction.reactorUserId, emoji: reaction.emoji });
+        reactionsByTargetDifficulty.set(key, existing);
+      }
 
       const results = [];
-      for (const friend of friends) {
-        // Get friend's stats
+      for (const participant of participants) {
+        // Get user stats
         const [stats] = await db.select().from(userStats)
-          .where(eq(userStats.userId, friend.id));
+          .where(eq(userStats.userId, participant.id));
 
-        // Get friend's completions for today's challenges (include all difficulties)
+        // Get user completions for today's challenges (include all difficulties)
         const difficultyOrder: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
         const sortedChallenges = [...todayChallenges].sort(
           (a, b) => (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99)
@@ -1367,12 +1385,10 @@ export class DatabaseStorage implements IStorage {
         for (const challenge of sortedChallenges) {
           const [completion] = await db.select().from(userChallengeCompletions)
             .where(and(
-              eq(userChallengeCompletions.userId, friend.id),
+              eq(userChallengeCompletions.userId, participant.id),
               eq(userChallengeCompletions.challengeId, challenge.id)
             ));
-          const pillReactions = allReactions
-            .filter(r => r.targetUserId === friend.id && r.difficulty === challenge.difficulty)
-            .map(r => ({ reactorUserId: r.reactorUserId, emoji: r.emoji }));
+          const pillReactions = reactionsByTargetDifficulty.get(`${participant.id}:${challenge.difficulty}`) ?? [];
           todayCompletions.push({
             difficulty: challenge.difficulty,
             completed: !!completion,
@@ -1382,10 +1398,10 @@ export class DatabaseStorage implements IStorage {
         }
 
         results.push({
-          id: friend.id,
-          friendshipId: friend.friendshipId,
-          username: friend.username,
-          picture: friend.picture,
+          id: participant.id,
+          friendshipId: participant.friendshipId ?? null,
+          username: participant.username,
+          picture: participant.picture,
           currentStreak: stats?.currentStreak ?? 0,
           totalCompletions: stats?.totalCompletions ?? 0,
           todayCompletions,
