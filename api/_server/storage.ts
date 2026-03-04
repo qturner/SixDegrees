@@ -1,4 +1,4 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, type Reaction, type ReactionEvent, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents, reactions, reactionEvents } from "../../shared/schema.js";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, type Reaction, type ReactionEvent, type CastCallChallenge, type InsertCastCallChallenge, type CastCallCompletion, type InsertCastCallCompletion, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents, reactions, reactionEvents, castCallChallenges, castCallCompletions } from "../../shared/schema.js";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db.js";
 import { eq, and, or, gt, lt, lte, desc, asc, ne, sql, count, inArray, isNull } from "drizzle-orm";
@@ -164,6 +164,20 @@ export interface IStorage {
   areFriends(userId1: string, userId2: string): Promise<boolean>;
   hasCompletionForDifficulty(userId: string, date: string, difficulty: string): Promise<boolean>;
   getReactionsForUsersOnDate(targetUserIds: string[], date: string): Promise<Reaction[]>;
+
+  // Cast Call methods
+  getCastCallChallenges(date: string): Promise<CastCallChallenge[]>;
+  createCastCallChallenge(data: InsertCastCallChallenge): Promise<CastCallChallenge>;
+  getCastCallChallengeById(id: string): Promise<CastCallChallenge | undefined>;
+  getCastCallCompletion(userId: string, challengeId: string): Promise<CastCallCompletion | undefined>;
+  recordCastCallCompletionWithStats(
+    completion: InsertCastCallCompletion,
+    context: {
+      today: string;
+      yesterday: string;
+      dayBeforeYesterday: string;
+    },
+  ): Promise<CastCallCompletion | null>;
 
   // Subscription methods
   getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
@@ -1770,6 +1784,133 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db.select().from(users)
         .where(sql`LOWER(${users.username}) = LOWER(${username})`);
       return user || undefined;
+    });
+  }
+
+  // Cast Call methods
+  async getCastCallChallenges(date: string): Promise<CastCallChallenge[]> {
+    return await withRetry(async () => {
+      return await db.select().from(castCallChallenges).where(eq(castCallChallenges.challengeDate, date));
+    });
+  }
+
+  async createCastCallChallenge(data: InsertCastCallChallenge): Promise<CastCallChallenge> {
+    return await withRetry(async () => {
+      const [challenge] = await db.insert(castCallChallenges).values(data).returning();
+      return challenge;
+    });
+  }
+
+  async getCastCallChallengeById(id: string): Promise<CastCallChallenge | undefined> {
+    return await withRetry(async () => {
+      const [challenge] = await db.select().from(castCallChallenges).where(eq(castCallChallenges.id, id));
+      return challenge || undefined;
+    });
+  }
+
+  async getCastCallCompletion(userId: string, challengeId: string): Promise<CastCallCompletion | undefined> {
+    return await withRetry(async () => {
+      const [completion] = await db.select().from(castCallCompletions)
+        .where(and(
+          eq(castCallCompletions.userId, userId),
+          eq(castCallCompletions.challengeId, challengeId)
+        ));
+      return completion || undefined;
+    });
+  }
+
+  async recordCastCallCompletionWithStats(
+    completion: InsertCastCallCompletion,
+    context: {
+      today: string;
+      yesterday: string;
+      dayBeforeYesterday: string;
+    },
+  ): Promise<CastCallCompletion | null> {
+    return await withRetry(async () => {
+      return await db.transaction(async (tx: any) => {
+        // 1. Insert completion — ON CONFLICT DO NOTHING for idempotency
+        let rows: any[];
+        try {
+          rows = await tx.insert(castCallCompletions)
+            .values(completion)
+            .onConflictDoNothing({ target: [castCallCompletions.userId, castCallCompletions.challengeId] })
+            .returning();
+        } catch (e: any) {
+          if (e?.message?.includes('unique') || e?.message?.includes('ON CONFLICT')) {
+            const [existing] = await tx.select().from(castCallCompletions)
+              .where(and(
+                eq(castCallCompletions.userId, completion.userId),
+                eq(castCallCompletions.challengeId, completion.challengeId)
+              ));
+            if (existing) return null;
+            rows = await tx.insert(castCallCompletions)
+              .values(completion)
+              .returning();
+          } else {
+            throw e;
+          }
+        }
+
+        if (rows.length === 0) {
+          return null;
+        }
+
+        // 2. Lock the user row so stats updates serialize
+        await tx.execute(sql`
+          SELECT ${users.id}
+          FROM ${users}
+          WHERE ${users.id} = ${completion.userId}
+          FOR UPDATE
+        `);
+
+        // 3. Ensure stats row exists
+        let [existingStats] = await tx.select().from(userStats)
+          .where(eq(userStats.userId, completion.userId))
+          .limit(1);
+        if (!existingStats) {
+          const [createdStats] = await tx.insert(userStats)
+            .values({ userId: completion.userId })
+            .returning();
+          existingStats = createdStats;
+        }
+
+        // Streak calculation with shield logic (same as Six Degrees)
+        const streakExpr = sql<number>`
+          CASE
+            WHEN ${userStats.lastPlayedDate} = ${context.today} THEN COALESCE(${userStats.currentStreak}, 0)
+            WHEN ${userStats.lastPlayedDate} = ${context.yesterday} THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
+              AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
+              THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            ELSE 1
+          END
+        `;
+
+        const shieldUsed = sql<number>`
+          CASE
+            WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
+              AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
+              THEN 1
+            ELSE 0
+          END
+        `;
+
+        // 4. Update stats atomically — only cast call counter + streak
+        await tx.update(userStats)
+          .set({
+            castCallCompletions: sql`COALESCE(${userStats.castCallCompletions}, 0) + 1`,
+            currentStreak: streakExpr,
+            maxStreak: sql`GREATEST(COALESCE(${userStats.maxStreak}, 0), ${streakExpr})`,
+            lastPlayedDate: context.today,
+            streakShieldsRemaining: sql`COALESCE(${userStats.streakShieldsRemaining}, 0) - ${shieldUsed}`,
+            lastShieldUsedDate: sql`CASE WHEN ${shieldUsed} = 1 THEN ${context.today} ELSE ${userStats.lastShieldUsedDate} END`,
+            updatedAt: new Date(),
+          })
+          .where(eq(userStats.id, existingStats.id));
+
+        return rows[0];
+      });
     });
   }
 

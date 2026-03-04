@@ -41,6 +41,7 @@ interface TMDbCredit {
     character: string;
     profile_path: string | null;
     known_for_department: string;
+    order: number;
   }>;
   crew: Array<{
     id: number;
@@ -682,6 +683,46 @@ class TMDbService {
       console.error(`Error getting watch providers for movie ${movieId}:`, error);
       return null;
     }
+  }
+
+  async getMovieCastWithOrder(movieId: number): Promise<Array<{id: number; name: string; profilePath: string | null; order: number}>> {
+    try {
+      const response = await this.makeRequest<TMDbCredit>(`/movie/${movieId}/credits`);
+      return response.cast
+        .filter(a => a.known_for_department === "Acting")
+        .map(a => ({ id: a.id, name: a.name, profilePath: a.profile_path, order: a.order }));
+    } catch (error) {
+      console.error(`Error getting movie cast with order for ${movieId}:`, error);
+      return [];
+    }
+  }
+
+  async getMovieDetails(movieId: number): Promise<{id: number; title: string; genres: {id: number; name: string}[]; releaseDate: string; posterPath: string | null; popularity: number} | null> {
+    try {
+      const response = await this.makeRequest<{
+        id: number;
+        title: string;
+        genres: {id: number; name: string}[];
+        release_date: string;
+        poster_path: string | null;
+        popularity: number;
+      }>(`/movie/${movieId}`);
+      return {
+        id: response.id,
+        title: response.title,
+        genres: response.genres,
+        releaseDate: response.release_date,
+        posterPath: response.poster_path,
+        popularity: response.popularity,
+      };
+    } catch (error) {
+      console.error(`Error getting movie details for ${movieId}:`, error);
+      return null;
+    }
+  }
+
+  async discoverMovies(params: Record<string, string>): Promise<TMDbResponse<TMDbMovie>> {
+    return this.makeRequest<TMDbResponse<TMDbMovie>>("/discover/movie", params);
   }
 
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {

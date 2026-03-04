@@ -244,6 +244,7 @@ export const userStats = pgTable("user_stats", {
   streakShieldsRemaining: integer("streak_shields_remaining").default(0),
   streakShieldMonth: text("streak_shield_month"), // YYYY-MM format
   lastShieldUsedDate: text("last_shield_used_date"), // YYYY-MM-DD format
+  castCallCompletions: integer("cast_call_completions").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -520,4 +521,68 @@ export const insertReactionEventSchema = createInsertSchema(reactionEvents).omit
   id: true,
   createdAt: true,
   readAt: true,
+});
+
+// Cast Call tables
+export const castCallChallenges = pgTable("cast_call_challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  challengeDate: text("challenge_date").notNull(),
+  difficulty: text("difficulty").notNull(),
+  movieId: integer("movie_id").notNull(),
+  movieTitle: text("movie_title").notNull(),
+  movieYear: integer("movie_year").notNull(),
+  moviePosterPath: text("movie_poster_path"),
+  genre: text("genre").notNull(),
+  actors: text("actors").notNull(), // JSON array of {id, name, profilePath, revealOrder}
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  unique("cast_call_challenges_date_difficulty_key").on(table.challengeDate, table.difficulty),
+  index("idx_cast_call_challenges_date").on(table.challengeDate),
+]);
+
+export const castCallCompletions = pgTable("cast_call_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  challengeId: varchar("challenge_id").references(() => castCallChallenges.id).notNull(),
+  actorsRevealed: integer("actors_revealed").notNull(),
+  totalGuesses: integer("total_guesses").notNull(),
+  stars: integer("stars").notNull(),
+  correct: boolean("correct").notNull(),
+  completedAt: timestamp("completed_at").defaultNow(),
+}, (table) => [
+  unique("cast_call_completions_user_challenge_unique").on(table.userId, table.challengeId),
+  index("idx_cast_call_completions_user").on(table.userId),
+  index("idx_cast_call_completions_challenge").on(table.challengeId),
+]);
+
+// Cast Call relations
+export const castCallChallengesRelations = relations(castCallChallenges, ({ many }) => ({
+  completions: many(castCallCompletions),
+}));
+
+export const castCallCompletionsRelations = relations(castCallCompletions, ({ one }) => ({
+  user: one(users, {
+    fields: [castCallCompletions.userId],
+    references: [users.id],
+  }),
+  challenge: one(castCallChallenges, {
+    fields: [castCallCompletions.challengeId],
+    references: [castCallChallenges.id],
+  }),
+}));
+
+// Cast Call types
+export type CastCallChallenge = typeof castCallChallenges.$inferSelect;
+export type InsertCastCallChallenge = typeof castCallChallenges.$inferInsert;
+export type CastCallCompletion = typeof castCallCompletions.$inferSelect;
+export type InsertCastCallCompletion = typeof castCallCompletions.$inferInsert;
+
+export const insertCastCallChallengeSchema = createInsertSchema(castCallChallenges).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCastCallCompletionSchema = createInsertSchema(castCallCompletions).omit({
+  id: true,
+  completedAt: true,
 });

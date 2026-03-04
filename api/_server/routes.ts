@@ -3,8 +3,9 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
 import { tmdbService } from "./services/tmdb.js";
 import { gameLogicService, type DifficultyLevel } from "./services/gameLogic.js";
+import { castCallService, CastCallService } from "./services/castCallLogic.js";
 import { withRetry } from "./db.js";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema, userSubscriptions, userStats } from "../../shared/schema.js";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema, userSubscriptions, userStats, castCallChallenges } from "../../shared/schema.js";
 import { eq, and, ne, sql, inArray } from "drizzle-orm";
 import { db } from "./db.js";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth.js";
@@ -2638,6 +2639,280 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Cron reset error:", error);
       res.status(500).json({ message: "Failed to reset daily challenge", error: String(error) });
+    }
+  });
+
+  // ========== Cast Call Routes ==========
+
+  // Prevent race conditions in cast call challenge creation
+  let castCallCreationPromise: Promise<any> | null = null;
+  let lastCastCallDate: string | null = null;
+
+  const isCastCallDateDifficultyUniqueViolation = (error: unknown): boolean => {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return errorMessage.includes("cast_call_challenges_date_difficulty_key");
+  };
+
+  const ensureCastCallChallenges = async (date: string) => {
+    try {
+      let challenges = await storage.getCastCallChallenges(date);
+      const existingDifficulties = new Set(challenges.map(c => c.difficulty));
+      const missingDifficulties = (["easy", "medium", "hard"] as const).filter(
+        d => !existingDifficulties.has(d),
+      );
+
+      if (missingDifficulties.length === 0) {
+        return challenges;
+      }
+
+      // Exclude yesterday's movie IDs to avoid repeats
+      const yesterday = getYesterdayDateString();
+      const previousChallenges = await storage.getCastCallChallenges(yesterday);
+      const excludeMovieIds = [
+        ...previousChallenges.map(c => c.movieId),
+        ...challenges.map(c => c.movieId),
+      ];
+
+      console.log(`Backfilling Cast Call ${missingDifficulties.join(", ")} challenge(s) for ${date}`);
+
+      for (const difficulty of missingDifficulties) {
+        const challengeData = await castCallService.generateCastCallChallenge(difficulty, excludeMovieIds);
+        if (!challengeData) {
+          console.error(`Failed to generate Cast Call ${difficulty} for ${date}`);
+          continue;
+        }
+
+        try {
+          const created = await storage.createCastCallChallenge({
+            challengeDate: date,
+            difficulty,
+            movieId: challengeData.movieId,
+            movieTitle: challengeData.movieTitle,
+            movieYear: challengeData.movieYear,
+            moviePosterPath: challengeData.moviePosterPath,
+            genre: challengeData.genre,
+            actors: JSON.stringify(challengeData.actors),
+          });
+          excludeMovieIds.push(created.movieId);
+          console.log(`Created Cast Call ${difficulty}: ${challengeData.movieTitle} (${challengeData.movieYear})`);
+        } catch (error) {
+          if (isCastCallDateDifficultyUniqueViolation(error)) {
+            console.log(`Skipping Cast Call ${difficulty} for ${date}: already created`);
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      challenges = await storage.getCastCallChallenges(date);
+      return challenges;
+    } catch (error) {
+      console.error(`Error ensuring Cast Call challenges for ${date}:`, error);
+      return [];
+    }
+  };
+
+  // GET /api/cast-call/today — returns today's challenges with only first 2 actors, no movie info
+  app.get("/api/cast-call/today", async (_req, res) => {
+    try {
+      const today = getESTDateString();
+
+      // Singleton pattern to prevent concurrent generation
+      if (castCallCreationPromise && lastCastCallDate === today) {
+        await castCallCreationPromise;
+      } else {
+        lastCastCallDate = today;
+        castCallCreationPromise = ensureCastCallChallenges(today);
+        await castCallCreationPromise;
+        castCallCreationPromise = null;
+      }
+
+      const challenges = await storage.getCastCallChallenges(today);
+      const response = challenges.map(c => {
+        const actors = JSON.parse(c.actors);
+        return {
+          id: c.id,
+          challengeDate: c.challengeDate,
+          difficulty: c.difficulty,
+          actors: actors.slice(0, 2),
+        };
+      });
+
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.json(response);
+    } catch (error) {
+      console.error("Error getting Cast Call challenges:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/cast-call/reveal — reveal next 2 actors + progressive hints
+  app.post("/api/cast-call/reveal", async (req, res) => {
+    try {
+      const { challengeId, currentRevealCount } = req.body;
+
+      if (!challengeId || currentRevealCount == null) {
+        return res.status(400).json({ message: "challengeId and currentRevealCount are required" });
+      }
+
+      const validCounts = [2, 4, 6, 8];
+      if (!validCounts.includes(currentRevealCount)) {
+        return res.status(400).json({ message: "currentRevealCount must be 2, 4, 6, or 8" });
+      }
+
+      const challenge = await storage.getCastCallChallengeById(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      const actors = JSON.parse(challenge.actors);
+      const nextActors = actors.slice(currentRevealCount, currentRevealCount + 2);
+
+      // Progressive hints
+      const hint: Record<string, string | number> = {};
+      const nextRevealCount = currentRevealCount + 2;
+      if (nextRevealCount >= 4) {
+        hint.genre = challenge.genre;
+      }
+      if (nextRevealCount >= 6) {
+        hint.decade = `${Math.floor(challenge.movieYear / 10) * 10}s`;
+      }
+      if (nextRevealCount >= 8) {
+        hint.year = challenge.movieYear;
+      }
+
+      res.json({
+        actors: nextActors,
+        hint: Object.keys(hint).length > 0 ? hint : undefined,
+      });
+    } catch (error) {
+      console.error("Error revealing Cast Call actors:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/cast-call/guess — check if movie guess is correct
+  app.post("/api/cast-call/guess", async (req, res) => {
+    try {
+      const { challengeId, movieId, actorsRevealed } = req.body;
+
+      if (!challengeId || !movieId) {
+        return res.status(400).json({ message: "challengeId and movieId are required" });
+      }
+
+      const challenge = await storage.getCastCallChallengeById(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      if (challenge.movieId !== movieId) {
+        return res.json({ correct: false });
+      }
+
+      const stars = CastCallService.calculateStars(actorsRevealed || 2, true);
+      const allActors = JSON.parse(challenge.actors);
+
+      res.json({
+        correct: true,
+        movie: {
+          title: challenge.movieTitle,
+          posterPath: challenge.moviePosterPath,
+          year: challenge.movieYear,
+        },
+        stars,
+        allActors,
+      });
+    } catch (error) {
+      console.error("Error processing Cast Call guess:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/cast-call/complete — record completion (auth required)
+  app.post("/api/cast-call/complete", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const { challengeId, actorsRevealed, totalGuesses } = req.body;
+
+      if (!challengeId || actorsRevealed == null || totalGuesses == null) {
+        return res.status(400).json({ message: "challengeId, actorsRevealed, and totalGuesses are required" });
+      }
+
+      const challenge = await storage.getCastCallChallengeById(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      // Validate challenge is for today
+      const today = getESTDateString();
+      if (challenge.challengeDate !== today) {
+        return res.status(400).json({ message: "Challenge is not for today" });
+      }
+
+      // Gate non-easy difficulties behind Pro subscription
+      if (challenge.difficulty !== "easy") {
+        const entitled = await storage.isUserEntitled(userId);
+        if (!entitled) {
+          return res.status(403).json({ message: "Pro subscription required for this difficulty" });
+        }
+      }
+
+      const stars = CastCallService.calculateStars(actorsRevealed, true);
+
+      const yesterday = getYesterdayDateString();
+      const dayBeforeYesterday = getDayBeforeYesterdayDateString();
+
+      const completion = await storage.recordCastCallCompletionWithStats(
+        {
+          userId,
+          challengeId,
+          actorsRevealed,
+          totalGuesses,
+          stars,
+          correct: true,
+        },
+        { today, yesterday, dayBeforeYesterday },
+      );
+
+      if (!completion) {
+        const existing = await storage.getCastCallCompletion(userId, challengeId);
+        if (!existing) {
+          return res.status(409).json({ message: "Challenge already completed but record not found" });
+        }
+        return res.status(200).json(existing);
+      }
+
+      res.status(201).json({ ...completion, stars });
+    } catch (error) {
+      console.error("Error completing Cast Call:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // GET /api/cast-call/completions — get user's completions for a date (auth required)
+  app.get("/api/cast-call/completions", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const date = (req.query.date as string) || getESTDateString();
+
+      const challenges = await storage.getCastCallChallenges(date);
+      const completions = await Promise.all(
+        challenges.map(async (c) => {
+          const completion = await storage.getCastCallCompletion(userId, c.id);
+          return {
+            challengeId: c.id,
+            difficulty: c.difficulty,
+            completed: !!completion,
+            stars: completion?.stars ?? null,
+            actorsRevealed: completion?.actorsRevealed ?? null,
+          };
+        }),
+      );
+
+      res.json({ date, completions });
+    } catch (error) {
+      console.error("Error getting Cast Call completions:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 

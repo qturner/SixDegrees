@@ -1,0 +1,124 @@
+import { tmdbService } from "./tmdb.js";
+
+interface CastCallActor {
+  id: number;
+  name: string;
+  profilePath: string | null;
+  revealOrder: number;
+}
+
+export interface CastCallChallengeData {
+  movieId: number;
+  movieTitle: string;
+  movieYear: number;
+  moviePosterPath: string | null;
+  genre: string;
+  actors: CastCallActor[];
+}
+
+export class CastCallService {
+  async generateCastCallChallenge(difficulty: string, excludeMovieIds: number[]): Promise<CastCallChallengeData | null> {
+    const MAX_RETRIES = 10;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        // Pick a random page based on difficulty
+        const { page, minVotes } = this.getDifficultyParams(difficulty);
+
+        const response = await tmdbService.discoverMovies({
+          sort_by: "popularity.desc",
+          with_original_language: "en",
+          without_genres: "16,99",
+          page: page.toString(),
+          "vote_count.gte": minVotes.toString(),
+        });
+
+        if (!response.results || response.results.length === 0) {
+          continue;
+        }
+
+        // Filter out excluded movies and pick random
+        const candidates = response.results.filter(m => !excludeMovieIds.includes(m.id));
+        if (candidates.length === 0) continue;
+
+        const movie = candidates[Math.floor(Math.random() * candidates.length)];
+
+        // Get cast with billing order
+        const cast = await tmdbService.getMovieCastWithOrder(movie.id);
+
+        // Filter to actors with photos
+        const qualifiedActors = cast.filter(a => a.profilePath !== null);
+
+        if (qualifiedActors.length < 10) {
+          console.log(`Movie ${movie.title} only has ${qualifiedActors.length} actors with photos (need 10), retrying...`);
+          continue;
+        }
+
+        // Sort by order DESC (supporting cast first), take top 10
+        const sorted = [...qualifiedActors].sort((a, b) => b.order - a.order);
+        const selected = sorted.slice(0, 10);
+
+        // Assign revealOrder 1-N
+        const actors: CastCallActor[] = selected.map((a, i) => ({
+          id: a.id,
+          name: a.name,
+          profilePath: a.profilePath,
+          revealOrder: i + 1,
+        }));
+
+        // Get movie details for genre and year
+        const details = await tmdbService.getMovieDetails(movie.id);
+        if (!details) continue;
+
+        const genre = details.genres.length > 0 ? details.genres[0].name : "Unknown";
+        const year = details.releaseDate ? new Date(details.releaseDate).getFullYear() : 0;
+
+        return {
+          movieId: movie.id,
+          movieTitle: details.title,
+          movieYear: year,
+          moviePosterPath: details.posterPath,
+          genre,
+          actors,
+        };
+      } catch (error) {
+        console.error(`Cast Call generation attempt ${attempt + 1} failed:`, error);
+      }
+    }
+
+    console.error(`Failed to generate Cast Call challenge after ${MAX_RETRIES} retries`);
+    return null;
+  }
+
+  private getDifficultyParams(difficulty: string): { page: number; minVotes: number } {
+    switch (difficulty) {
+      case "easy": {
+        const page = Math.floor(Math.random() * 3) + 1; // pages 1-3
+        return { page, minVotes: 500 };
+      }
+      case "medium": {
+        const page = Math.floor(Math.random() * 8) + 3; // pages 3-10
+        return { page, minVotes: 200 };
+      }
+      case "hard": {
+        const page = Math.floor(Math.random() * 21) + 10; // pages 10-30
+        return { page, minVotes: 100 };
+      }
+      default: {
+        const page = Math.floor(Math.random() * 3) + 1;
+        return { page, minVotes: 500 };
+      }
+    }
+  }
+
+  static calculateStars(actorsRevealed: number, correct: boolean): number {
+    if (!correct) return 0;
+    if (actorsRevealed <= 2) return 5;
+    if (actorsRevealed <= 4) return 4;
+    if (actorsRevealed <= 6) return 3;
+    if (actorsRevealed <= 8) return 2;
+    return 1; // 10 actors revealed
+  }
+}
+
+export const castCallService = new CastCallService();
