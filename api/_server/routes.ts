@@ -15,7 +15,7 @@ import { emailService } from "./services/email.js";
 import { registerTestEmailRoutes } from "./internal_routes/testEmail.js";
 import * as appStoreSubscriptions from "./services/appStoreSubscriptions.js";
 import cron from "node-cron";
-import { getDayBeforeYesterdayDateString, getESTDateString, getTomorrowDateString, getYesterdayDateString } from "./dateHelpers.js";
+import { getDayBeforeYesterdayDateString, getESTDateString, getTomorrowDateString, getYesterdayDateString, shiftISODateString } from "./dateHelpers.js";
 
 function isSubscriptionEntitled(subscription: { status: string; currentPeriodEndsAt?: Date | null } | undefined): boolean {
   if (!subscription) return false;
@@ -39,6 +39,21 @@ function sanitizeImagePath(path: string | null | undefined): string | null {
     cleanPath = '/' + cleanPath;
   }
   return cleanPath;
+}
+
+/**
+ * Get excluded actor IDs from recent challenges.
+ * Uses a 7-day window. With 3 difficulties × 2 actors × 7 days = 42 max IDs
+ * (less after dedup). The expanded pool (75 pre-filter, ~30-50 post-filter)
+ * can handle this level of exclusion.
+ */
+export async function getExcludedActorIds(targetDate: string): Promise<number[]> {
+  const startDate = shiftISODateString(targetDate, -7);
+  const endDate = shiftISODateString(targetDate, -1);
+  const recentChallenges = await storage.getDailyChallengesInRange(startDate, endDate);
+  const ids = [...new Set(recentChallenges.flatMap(c => [c.startActorId, c.endActorId]))];
+  console.log(`7-day exclusion window (${startDate} to ${endDate}): ${ids.length} actor IDs excluded`);
+  return ids;
 }
 
 // Prevent race conditions in challenge creation
@@ -340,10 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Helper to generate a full challenge set for a specific date
   const generateChallengesForDate = async (date: string) => {
     try {
-      // Get yesterday's challenges to exclude actors
-      const yesterday = getYesterdayDateString();
-      const previousChallenges = await storage.getDailyChallenges(yesterday);
-      const excludeActorIds: number[] = previousChallenges.flatMap(c => [c.startActorId, c.endActorId]);
+      const excludeActorIds = await getExcludedActorIds(date);
 
       console.log(`Generating challenges for ${date}, excluding ${excludeActorIds.length} actors`);
 
@@ -394,10 +406,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sortChallengesByDifficulty(challenges);
       }
 
-      const yesterday = getYesterdayDateString();
-      const previousChallenges = await storage.getDailyChallenges(yesterday);
       const excludeActorIds: number[] = [
-        ...previousChallenges.flatMap((challenge) => [challenge.startActorId, challenge.endActorId]),
+        ...await getExcludedActorIds(date),
         ...challenges.flatMap((challenge) => [challenge.startActorId, challenge.endActorId]),
       ];
 
@@ -1027,18 +1037,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate new daily challenge (manual trigger)
   app.post("/api/generate-challenge", async (req, res) => {
     try {
-      // Get yesterday's challenge to exclude those actors from new generation
-      let excludeActorIds: number[] = [];
-      try {
-        const yesterday = getYesterdayDateString();
-        const previousChallenge = await storage.getDailyChallenge(yesterday);
-        if (previousChallenge) {
-          excludeActorIds.push(previousChallenge.startActorId, previousChallenge.endActorId);
-          console.log(`Excluding actors from yesterday's challenge: ${previousChallenge.startActorName} and ${previousChallenge.endActorName}`);
-        }
-      } catch (exclusionError) {
-        console.log("Could not check for actors to exclude, proceeding with normal generation");
-      }
+      const excludeActorIds = await getExcludedActorIds(getESTDateString());
 
       const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
       if (!actors) {
@@ -1180,7 +1179,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // NOW generate a NEW Next challenge for tomorrow
-        const excludeActorIds = [nextChallenge.startActorId, nextChallenge.endActorId];
+        const excludeActorIds = [
+          ...await getExcludedActorIds(tomorrow),
+          nextChallenge.startActorId, nextChallenge.endActorId,
+        ];
         const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
 
         if (actors) {
@@ -1203,7 +1205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("No next challenge found. Generating entirely fresh pipeline.");
 
         // 1. Generate Active
-        const activeActors = await gameLogicService.generateDailyActors('medium', []);
+        const baseExclusions = await getExcludedActorIds(today);
+        const activeActors = await gameLogicService.generateDailyActors('medium', baseExclusions);
         if (activeActors) {
           await storage.createDailyChallenge({
             date: today,
@@ -1220,8 +1223,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // 2. Generate Next
-        const exclude = activeActors ? [activeActors.actor1.id, activeActors.actor2.id] : [];
-        const nextActors = await gameLogicService.generateDailyActors('medium', exclude);
+        const nextExclude = activeActors
+          ? [...baseExclusions, activeActors.actor1.id, activeActors.actor2.id]
+          : baseExclusions;
+        const nextActors = await gameLogicService.generateDailyActors('medium', nextExclude);
         if (nextActors) {
           await storage.createDailyChallenge({
             date: tomorrow,
@@ -1308,7 +1313,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Auto-generate logic
         const currentActive = await storage.getChallengeByStatus('active');
-        const excludeIds = currentActive ? [currentActive.startActorId, currentActive.endActorId] : [];
+        const excludeIds = [
+          ...await getExcludedActorIds(tomorrow),
+          ...(currentActive ? [currentActive.startActorId, currentActive.endActorId] : []),
+        ];
 
         const actors = await gameLogicService.generateDailyActors('medium', excludeIds);
 
@@ -1354,7 +1362,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate new next challenge (24 hours in advance)
-      const actors = await gameLogicService.generateDailyActors('medium');
+      const excludeActorIds = await getExcludedActorIds(tomorrow);
+      const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
       if (!actors) {
         return res.status(500).json({ message: "Unable to generate next challenge" });
       }

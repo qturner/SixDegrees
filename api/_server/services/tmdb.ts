@@ -843,15 +843,29 @@ class TMDbService {
   }
 
   /**
-   * Get a quality actor pool: pages 1-5 of TMDB popular, cap at 50 before deep filtering.
-   * Sized to complete within Vercel hobby 60s limit (5 page fetches + ~100 filter calls + BFS).
+   * Pick random TMDB pages: always include page 1 (most recognizable), randomize the rest.
+   */
+  private pickRandomPages(count: number, maxPage: number): number[] {
+    const remaining = Array.from({ length: maxPage - 1 }, (_, i) => i + 2);
+    for (let i = remaining.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+    }
+    return [1, ...remaining.slice(0, count - 1)].sort((a, b) => a - b);
+  }
+
+  /**
+   * Get a quality actor pool: 5 randomized pages from TMDB popular (page 1 always included),
+   * cap at 75 before deep filtering.
    * No popularity threshold — difficulty is determined by BFS distance, not TMDB score.
    */
   async getQualityActorPool(): Promise<Actor[]> {
     try {
       const pages: TMDbResponse<TMDbActor>[] = [];
+      const pageNumbers = this.pickRandomPages(5, 15);
+      console.log(`Fetching actor pool from TMDB pages: ${pageNumbers.join(', ')}`);
 
-      for (let pageNum = 1; pageNum <= 5; pageNum++) {
+      for (const pageNum of pageNumbers) {
         try {
           const page = await this.makeRequest<TMDbResponse<TMDbActor>>("/person/popular", { page: pageNum.toString() });
           pages.push(page);
@@ -863,11 +877,11 @@ class TMDbService {
 
       const allResults = pages.flatMap(page => page.results);
 
-      // Filter to actors only, cap at 50 before expensive genre filtering
-      // (each actor costs ~2 TMDB calls to filter, so 50 × 2 = ~100 calls, ~10s)
+      // Filter to actors only, cap at 75 before expensive genre filtering
+      // (each actor costs ~2 TMDB calls to filter, so 75 × 2 = ~150 calls, ~15s)
       const actors = allResults
         .filter(person => person.known_for_department === "Acting")
-        .slice(0, 50)
+        .slice(0, 75)
         .map(person => ({
           id: person.id,
           name: person.name,
@@ -876,7 +890,7 @@ class TMDbService {
         }));
 
       const filteredActors = await this.filterActorsByGenre(actors);
-      console.log(`Quality actor pool: ${allResults.length} raw -> ${actors.length} capped (max 50) -> ${filteredActors.length} after filtering`);
+      console.log(`Quality actor pool: ${allResults.length} raw -> ${actors.length} capped (max 75) -> ${filteredActors.length} after filtering`);
       return filteredActors;
     } catch (error) {
       console.error("Error getting quality actor pool:", error);

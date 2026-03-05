@@ -36,6 +36,7 @@ export interface IStorage {
   // Daily Challenge methods
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
   getDailyChallenges(date: string): Promise<DailyChallenge[]>;
+  getDailyChallengesInRange(startDate: string, endDate: string): Promise<DailyChallenge[]>;
   getDailyChallengeById(id: string): Promise<DailyChallenge | undefined>;
   getChallengeByStatus(status: string): Promise<DailyChallenge | undefined>;
   getAllChallengesByStatus(status: string): Promise<DailyChallenge[]>;
@@ -217,6 +218,16 @@ export class DatabaseStorage implements IStorage {
   async getDailyChallenges(date: string): Promise<DailyChallenge[]> {
     return await withRetry(async () => {
       return await db.select().from(dailyChallenges).where(eq(dailyChallenges.date, date));
+    });
+  }
+
+  async getDailyChallengesInRange(startDate: string, endDate: string): Promise<DailyChallenge[]> {
+    return await withRetry(async () => {
+      return await db.select().from(dailyChallenges)
+        .where(and(
+          sql`${dailyChallenges.date} >= ${startDate}`,
+          sql`${dailyChallenges.date} <= ${endDate}`,
+        ));
     });
   }
 

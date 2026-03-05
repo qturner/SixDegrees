@@ -1,5 +1,8 @@
 import { gameLogicService, type DifficultyLevel } from "./api/_server/services/gameLogic.ts";
 import { tmdbService } from "./api/_server/services/tmdb.ts";
+import { storage } from "./api/_server/storage.ts";
+import { shiftISODateString, getESTDateString } from "./api/_server/dateHelpers.ts";
+import { getExcludedActorIds } from "./api/_server/routes.ts";
 
 let passed = 0;
 let failed = 0;
@@ -21,7 +24,7 @@ async function testQualityActorPool() {
   const pool = await tmdbService.getQualityActorPool();
 
   assert(pool.length >= 2, `Pool has at least 2 actors (got ${pool.length})`);
-  assert(pool.length <= 60, `Pool is capped at 60 before filtering (got ${pool.length})`);
+  assert(pool.length <= 80, `Pool is capped at 80 before filtering (got ${pool.length})`);
 
   // Every actor should have a profile_path (filterActorsByGenre requires it)
   const allHavePhotos = pool.every(a => a.profile_path);
@@ -170,6 +173,61 @@ async function testPopularActorsUsesQualityPool() {
   assert(allHavePhotos, "All actors from getPopularActors have profile_path");
 }
 
+// ─── Test 8: getDailyChallengesInRange returns valid data ─────────────────
+
+async function testGetDailyChallengesInRange() {
+  console.log("\n--- Test: getDailyChallengesInRange ---");
+
+  const today = getESTDateString();
+  const weekAgo = shiftISODateString(today, -7);
+  const results = await storage.getDailyChallengesInRange(weekAgo, today);
+
+  assert(Array.isArray(results), "Returns an array");
+  assert(results.length > 0, `Returns at least 1 challenge (got ${results.length}) — DB should have recent challenges`);
+
+  for (const c of results) {
+    assert(typeof c.startActorId === 'number', `Challenge ${c.id} has numeric startActorId`);
+    assert(typeof c.endActorId === 'number', `Challenge ${c.id} has numeric endActorId`);
+    assert(c.date >= weekAgo && c.date <= today, `Challenge ${c.id} date ${c.date} is within range`);
+  }
+
+  console.log(`  Found ${results.length} challenges in the last 7 days`);
+}
+
+// ─── Test 9: getExcludedActorIds uses 7-day window and deduplicates ─────────
+
+async function testGetExcludedActorIds() {
+  console.log("\n--- Test: getExcludedActorIds ---");
+
+  const today = getESTDateString();
+  const ids = await getExcludedActorIds(today);
+
+  assert(Array.isArray(ids), "Returns an array");
+
+  // All IDs should be numbers
+  const allNumbers = ids.every(id => typeof id === 'number');
+  assert(allNumbers, "All excluded IDs are numbers");
+
+  // Should be deduplicated — no repeated values
+  const uniqueIds = new Set(ids);
+  assert(ids.length === uniqueIds.size, `IDs are deduplicated (${ids.length} total, ${uniqueIds.size} unique)`);
+
+  // Cross-check: manually query 7-day window and verify same result
+  const startDate = shiftISODateString(today, -7);
+  const endDate = shiftISODateString(today, -1);
+  const recentChallenges = await storage.getDailyChallengesInRange(startDate, endDate);
+  const expectedIds = [...new Set(recentChallenges.flatMap(c => [c.startActorId, c.endActorId]))];
+
+  assert(ids.length === expectedIds.length, `Matches manual 7-day query: ${ids.length} vs ${expectedIds.length}`);
+
+  // Verify all expected IDs are present
+  const idSet = new Set(ids);
+  const allPresent = expectedIds.every(id => idSet.has(id));
+  assert(allPresent, "All expected actor IDs from 7-day window are present");
+
+  console.log(`  ${ids.length} excluded actor IDs from 7-day window`);
+}
+
 // ─── Runner ─────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -186,6 +244,8 @@ async function main() {
     await testCrossBucketUniqueness();
     await testUnifiedExclusions();
     await testPopularActorsUsesQualityPool();
+    await testGetDailyChallengesInRange();
+    await testGetExcludedActorIds();
   } catch (error) {
     console.error("\nUnexpected error:", error);
     failed++;
