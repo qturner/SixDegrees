@@ -1,5 +1,7 @@
 import { tmdbService } from "./tmdb.js";
 
+type CastCallDifficulty = "easy" | "medium" | "hard";
+
 interface CastCallActor {
   id: number;
   name: string;
@@ -17,7 +19,7 @@ export interface CastCallChallengeData {
 }
 
 export class CastCallService {
-  async generateCastCallChallenge(difficulty: string, excludeMovieIds: number[]): Promise<CastCallChallengeData | null> {
+  async generateCastCallChallenge(difficulty: CastCallDifficulty, excludeMovieIds: number[]): Promise<CastCallChallengeData | null> {
     const MAX_RETRIES = 10;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -61,6 +63,10 @@ export class CastCallService {
 
         // Select and order actors based on difficulty
         const actors = this.selectAndOrderActors(sorted, difficulty);
+        if (actors.length < 10) {
+          console.log(`Movie ${movie.title} only yielded ${actors.length} unique actors for ${difficulty}, retrying...`);
+          continue;
+        }
 
         // Get movie details for genre and year
         const details = await tmdbService.getMovieDetails(movie.id);
@@ -94,7 +100,7 @@ export class CastCallService {
    */
   private selectAndOrderActors(
     sortedByBilling: Array<{ id: number; name: string; profilePath: string | null; order: number }>,
-    difficulty: string
+    difficulty: CastCallDifficulty
   ): CastCallActor[] {
     const total = sortedByBilling.length;
 
@@ -147,7 +153,7 @@ export class CastCallService {
     }));
   }
 
-  private getDifficultyParams(difficulty: string): { page: number; minVotes: number } {
+  private getDifficultyParams(difficulty: CastCallDifficulty): { page: number; minVotes: number } {
     switch (difficulty) {
       case "easy": {
         const page = Math.floor(Math.random() * 3) + 1; // pages 1-3
