@@ -4,9 +4,10 @@ import { storage } from "./storage.js";
 import { tmdbService } from "./services/tmdb.js";
 import { gameLogicService, type DifficultyLevel } from "./services/gameLogic.js";
 import { castCallService, CastCallService } from "./services/castCallLogic.js";
+import { premierService, PremierService } from "./services/premierLogic.js";
 import { withRetry } from "./db.js";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema, userSubscriptions, userStats, castCallChallenges } from "../../shared/schema.js";
-import { eq, and, ne, sql, inArray } from "drizzle-orm";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema, userSubscriptions, userStats, castCallChallenges, premierChallenges } from "../../shared/schema.js";
+import { eq, and, ne, sql, inArray, gte } from "drizzle-orm";
 import { db } from "./db.js";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth.js";
 import { setupAuth, isAuthenticated } from "./auth.js";
@@ -2912,6 +2913,222 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ date, completions });
     } catch (error) {
       console.error("Error getting Cast Call completions:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // ========== Premier Routes ==========
+
+  // Prevent race conditions in premier challenge creation
+  let premierCreationPromise: Promise<any> | null = null;
+  let lastPremierDate: string | null = null;
+
+  const isPremierDateDifficultyUniqueViolation = (error: unknown): boolean => {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return errorMessage.includes("premier_challenges_date_difficulty_key");
+  };
+
+  const ensurePremierChallenges = async (date: string) => {
+    try {
+      let challenges = await storage.getPremierChallenges(date);
+      const existingDifficulties = new Set(challenges.map(c => c.difficulty));
+      const missingDifficulties = (["easy", "medium", "hard"] as const).filter(
+        d => !existingDifficulties.has(d),
+      );
+
+      if (missingDifficulties.length === 0) {
+        return challenges;
+      }
+
+      // Exclude movie IDs from last 14 days to avoid repeats
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 13);
+      const cutoffDateStr = cutoffDate.toISOString().split("T")[0];
+
+      const recentChallenges = await db.select()
+        .from(premierChallenges)
+        .where(gte(premierChallenges.challengeDate, cutoffDateStr));
+
+      const excludeMovieIds: number[] = [];
+      for (const c of recentChallenges) {
+        const movies = JSON.parse(c.movies);
+        for (const m of movies) {
+          excludeMovieIds.push(m.tmdbId);
+        }
+      }
+      // Also exclude today's already-created challenges
+      for (const c of challenges) {
+        const movies = JSON.parse(c.movies);
+        for (const m of movies) {
+          if (!excludeMovieIds.includes(m.tmdbId)) {
+            excludeMovieIds.push(m.tmdbId);
+          }
+        }
+      }
+
+      console.log(`Backfilling Premier ${missingDifficulties.join(", ")} challenge(s) for ${date}`);
+
+      for (const difficulty of missingDifficulties) {
+        const challengeData = await premierService.generateChallenge(difficulty, excludeMovieIds);
+        if (!challengeData) {
+          console.error(`Failed to generate Premier ${difficulty} for ${date}`);
+          continue;
+        }
+
+        try {
+          const created = await storage.createPremierChallenge({
+            challengeDate: date,
+            difficulty,
+            movies: JSON.stringify(challengeData.movies),
+          });
+          // Add newly created movie IDs to exclude list
+          for (const m of challengeData.movies) {
+            excludeMovieIds.push(m.tmdbId);
+          }
+          console.log(`Created Premier ${difficulty}: ${challengeData.movies.length} movies`);
+        } catch (error) {
+          if (isPremierDateDifficultyUniqueViolation(error)) {
+            console.log(`Skipping Premier ${difficulty} for ${date}: already created`);
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      challenges = await storage.getPremierChallenges(date);
+      return challenges;
+    } catch (error) {
+      console.error(`Error ensuring Premier challenges for ${date}:`, error);
+      return [];
+    }
+  };
+
+  // GET /api/premier/daily — returns today's challenges with all 9 movies per difficulty
+  app.get("/api/premier/daily", async (_req, res) => {
+    try {
+      const today = getESTDateString();
+
+      // Singleton pattern to prevent concurrent generation
+      if (premierCreationPromise && lastPremierDate === today) {
+        await premierCreationPromise;
+      } else {
+        lastPremierDate = today;
+        premierCreationPromise = ensurePremierChallenges(today);
+        await premierCreationPromise;
+        premierCreationPromise = null;
+      }
+
+      const challenges = await storage.getPremierChallenges(today);
+      const response = challenges.map(c => ({
+        id: c.id,
+        challengeDate: c.challengeDate,
+        difficulty: c.difficulty,
+        movies: JSON.parse(c.movies),
+      }));
+
+      res.setHeader('Cache-Control', 'no-store');
+      res.json(response);
+    } catch (error) {
+      console.error("Error getting Premier challenges:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // POST /api/premier/complete — record completion (auth required)
+  app.post("/api/premier/complete", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const { challengeId, moviesSorted, result } = req.body;
+
+      if (!challengeId || moviesSorted == null || !result) {
+        return res.status(400).json({ message: "challengeId, moviesSorted, and result are required" });
+      }
+
+      // Validate moviesSorted range
+      if (typeof moviesSorted !== "number" || moviesSorted < 0 || moviesSorted > 9) {
+        return res.status(400).json({ message: "moviesSorted must be between 0 and 9" });
+      }
+
+      // Validate result enum
+      if (result !== "won" && result !== "failed") {
+        return res.status(400).json({ message: "result must be 'won' or 'failed'" });
+      }
+
+      // Validate consistency: moviesSorted=9 iff result="won"
+      if ((moviesSorted === 9) !== (result === "won")) {
+        return res.status(400).json({ message: "moviesSorted must be 9 when result is 'won' and less than 9 when 'failed'" });
+      }
+
+      // Look up the challenge
+      const challenges = await storage.getPremierChallenges(getESTDateString());
+      const challenge = challenges.find(c => c.id === challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      // Validate challenge is for today
+      const today = getESTDateString();
+      if (challenge.challengeDate !== today) {
+        return res.status(400).json({ message: "Challenge is not for today" });
+      }
+
+      // Pro gate: non-easy difficulties require subscription
+      if (challenge.difficulty !== "easy") {
+        const entitled = await storage.isUserEntitled(userId);
+        if (!entitled) {
+          return res.status(403).json({ message: "Pro subscription required for this difficulty" });
+        }
+      }
+
+      // Server recomputes reels
+      const reels = PremierService.calculateReels(moviesSorted);
+
+      const yesterday = getYesterdayDateString();
+      const dayBeforeYesterday = getDayBeforeYesterdayDateString();
+
+      const { completion, isNew } = await storage.recordPremierCompletionWithStats(
+        {
+          userId,
+          challengeId,
+          moviesSorted,
+          reels,
+          result,
+        },
+        { today, yesterday, dayBeforeYesterday },
+      );
+
+      res.status(isNew ? 201 : 200).json({
+        alreadyRecorded: !isNew,
+        reels: completion.reels,
+        moviesSorted: completion.moviesSorted,
+        result: completion.result,
+      });
+    } catch (error) {
+      console.error("Error completing Premier:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // GET /api/premier/completions — get user's completions for a date (auth required)
+  app.get("/api/premier/completions", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.session as any).userId;
+      const date = (req.query.date as string) || getESTDateString();
+
+      const completions = await storage.getPremierCompletionsForDate(userId, date);
+
+      res.json({
+        date,
+        completions: completions.map(c => ({
+          challengeId: c.challengeId,
+          difficulty: c.difficulty,
+          reels: c.reels,
+          moviesSorted: c.moviesSorted,
+          result: c.result,
+        })),
+      });
+    } catch (error) {
+      console.error("Error getting Premier completions:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

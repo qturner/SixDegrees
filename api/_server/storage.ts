@@ -1,4 +1,4 @@
-import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, type Reaction, type ReactionEvent, type CastCallChallenge, type InsertCastCallChallenge, type CastCallCompletion, type InsertCastCallCompletion, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents, reactions, reactionEvents, castCallChallenges, castCallCompletions } from "../../shared/schema.js";
+import { type DailyChallenge, type InsertDailyChallenge, type GameAttempt, type InsertGameAttempt, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession, type ContactSubmission, type InsertContactSubmission, type VisitorAnalytics, type InsertVisitorAnalytics, type User, type InsertUser, type UserStats, type InsertUserStats, type UserChallengeCompletion, type InsertUserChallengeCompletion, type MovieList, type InsertMovieList, type MovieListEntry, type InsertMovieListEntry, type Friendship, type UserSubscription, type InsertUserSubscription, type SubscriptionEvent, type InsertSubscriptionEvent, type Reaction, type ReactionEvent, type CastCallChallenge, type InsertCastCallChallenge, type CastCallCompletion, type InsertCastCallCompletion, type PremierChallenge, type InsertPremierChallenge, type PremierCompletion, type InsertPremierCompletion, adminUsers, adminSessions, dailyChallenges, gameAttempts, contactSubmissions, visitorAnalytics, users, userStats, userChallengeCompletions, movieLists, movieListEntries, friendships, userSubscriptions, subscriptionEvents, reactions, reactionEvents, castCallChallenges, castCallCompletions, premierChallenges, premierCompletions } from "../../shared/schema.js";
 import { randomUUID } from "crypto";
 import { db, withRetry } from "./db.js";
 import { eq, and, or, gt, lt, lte, desc, asc, ne, sql, count, inArray, isNull } from "drizzle-orm";
@@ -178,6 +178,20 @@ export interface IStorage {
       dayBeforeYesterday: string;
     },
   ): Promise<CastCallCompletion | null>;
+
+  // Premier methods
+  getPremierChallenges(date: string): Promise<PremierChallenge[]>;
+  createPremierChallenge(data: InsertPremierChallenge): Promise<PremierChallenge>;
+  getPremierCompletion(userId: string, challengeId: string): Promise<PremierCompletion | undefined>;
+  getPremierCompletionsForDate(userId: string, date: string): Promise<(PremierCompletion & { difficulty: string })[]>;
+  recordPremierCompletionWithStats(
+    completion: InsertPremierCompletion,
+    context: {
+      today: string;
+      yesterday: string;
+      dayBeforeYesterday: string;
+    },
+  ): Promise<{ completion: PremierCompletion; isNew: boolean }>;
 
   // Subscription methods
   getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
@@ -1910,6 +1924,154 @@ export class DatabaseStorage implements IStorage {
           .where(eq(userStats.id, existingStats.id));
 
         return rows[0];
+      });
+    });
+  }
+
+  // Premier methods
+  async getPremierChallenges(date: string): Promise<PremierChallenge[]> {
+    return await withRetry(async () => {
+      return await db.select().from(premierChallenges).where(eq(premierChallenges.challengeDate, date));
+    });
+  }
+
+  async createPremierChallenge(data: InsertPremierChallenge): Promise<PremierChallenge> {
+    return await withRetry(async () => {
+      const [challenge] = await db.insert(premierChallenges).values(data).returning();
+      return challenge;
+    });
+  }
+
+  async getPremierCompletion(userId: string, challengeId: string): Promise<PremierCompletion | undefined> {
+    return await withRetry(async () => {
+      const [completion] = await db.select().from(premierCompletions)
+        .where(and(
+          eq(premierCompletions.userId, userId),
+          eq(premierCompletions.challengeId, challengeId)
+        ));
+      return completion || undefined;
+    });
+  }
+
+  async getPremierCompletionsForDate(userId: string, date: string): Promise<(PremierCompletion & { difficulty: string })[]> {
+    return await withRetry(async () => {
+      const rows = await db.select({
+        id: premierCompletions.id,
+        userId: premierCompletions.userId,
+        challengeId: premierCompletions.challengeId,
+        moviesSorted: premierCompletions.moviesSorted,
+        reels: premierCompletions.reels,
+        result: premierCompletions.result,
+        completedAt: premierCompletions.completedAt,
+        difficulty: premierChallenges.difficulty,
+      })
+        .from(premierCompletions)
+        .innerJoin(premierChallenges, eq(premierCompletions.challengeId, premierChallenges.id))
+        .where(and(
+          eq(premierCompletions.userId, userId),
+          eq(premierChallenges.challengeDate, date)
+        ));
+      return rows;
+    });
+  }
+
+  async recordPremierCompletionWithStats(
+    completion: InsertPremierCompletion,
+    context: {
+      today: string;
+      yesterday: string;
+      dayBeforeYesterday: string;
+    },
+  ): Promise<{ completion: PremierCompletion; isNew: boolean }> {
+    return await withRetry(async () => {
+      return await db.transaction(async (tx: any) => {
+        // 1. Insert completion — ON CONFLICT DO NOTHING (write-once)
+        let rows: any[];
+        try {
+          rows = await tx.insert(premierCompletions)
+            .values(completion)
+            .onConflictDoNothing({ target: [premierCompletions.userId, premierCompletions.challengeId] })
+            .returning();
+        } catch (e: any) {
+          if (e?.message?.includes('unique') || e?.message?.includes('ON CONFLICT')) {
+            const [existing] = await tx.select().from(premierCompletions)
+              .where(and(
+                eq(premierCompletions.userId, completion.userId),
+                eq(premierCompletions.challengeId, completion.challengeId)
+              ));
+            if (existing) return { completion: existing, isNew: false };
+            rows = await tx.insert(premierCompletions)
+              .values(completion)
+              .returning();
+          } else {
+            throw e;
+          }
+        }
+
+        if (rows.length === 0) {
+          // Conflict — return existing row
+          const [existing] = await tx.select().from(premierCompletions)
+            .where(and(
+              eq(premierCompletions.userId, completion.userId),
+              eq(premierCompletions.challengeId, completion.challengeId)
+            ));
+          return { completion: existing, isNew: false };
+        }
+
+        // 2. Lock the user row so stats updates serialize
+        await tx.execute(sql`
+          SELECT ${users.id}
+          FROM ${users}
+          WHERE ${users.id} = ${completion.userId}
+          FOR UPDATE
+        `);
+
+        // 3. Ensure stats row exists
+        let [existingStats] = await tx.select().from(userStats)
+          .where(eq(userStats.userId, completion.userId))
+          .limit(1);
+        if (!existingStats) {
+          const [createdStats] = await tx.insert(userStats)
+            .values({ userId: completion.userId })
+            .returning();
+          existingStats = createdStats;
+        }
+
+        // Streak calculation with shield logic (same as Cast Call / Six Degrees)
+        const streakExpr = sql<number>`
+          CASE
+            WHEN ${userStats.lastPlayedDate} = ${context.today} THEN COALESCE(${userStats.currentStreak}, 0)
+            WHEN ${userStats.lastPlayedDate} = ${context.yesterday} THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
+              AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
+              THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            ELSE 1
+          END
+        `;
+
+        const shieldUsed = sql<number>`
+          CASE
+            WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
+              AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
+              THEN 1
+            ELSE 0
+          END
+        `;
+
+        // 4. Update stats atomically — premier counter + streak
+        await tx.update(userStats)
+          .set({
+            premierAttempts: sql`COALESCE(${userStats.premierAttempts}, 0) + 1`,
+            currentStreak: streakExpr,
+            maxStreak: sql`GREATEST(COALESCE(${userStats.maxStreak}, 0), ${streakExpr})`,
+            lastPlayedDate: context.today,
+            streakShieldsRemaining: sql`COALESCE(${userStats.streakShieldsRemaining}, 0) - ${shieldUsed}`,
+            lastShieldUsedDate: sql`CASE WHEN ${shieldUsed} = 1 THEN ${context.today} ELSE ${userStats.lastShieldUsedDate} END`,
+            updatedAt: new Date(),
+          })
+          .where(eq(userStats.id, existingStats.id));
+
+        return { completion: rows[0], isNew: true };
       });
     });
   }

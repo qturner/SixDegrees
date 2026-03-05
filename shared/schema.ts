@@ -245,6 +245,7 @@ export const userStats = pgTable("user_stats", {
   streakShieldMonth: text("streak_shield_month"), // YYYY-MM format
   lastShieldUsedDate: text("last_shield_used_date"), // YYYY-MM-DD format
   castCallCompletions: integer("cast_call_completions").default(0),
+  premierAttempts: integer("premier_attempts").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -583,6 +584,63 @@ export const insertCastCallChallengeSchema = createInsertSchema(castCallChalleng
 });
 
 export const insertCastCallCompletionSchema = createInsertSchema(castCallCompletions).omit({
+  id: true,
+  completedAt: true,
+});
+
+// Premier tables
+export const premierChallenges = pgTable("premier_challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  challengeDate: text("challenge_date").notNull(),
+  difficulty: text("difficulty").notNull(),
+  movies: text("movies").notNull(), // JSON: [{tmdbId, title, posterPath, releaseYear, revealOrder}]
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  unique("premier_challenges_date_difficulty_key").on(table.challengeDate, table.difficulty),
+  index("idx_premier_challenges_date").on(table.challengeDate),
+]);
+
+export const premierCompletions = pgTable("premier_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  challengeId: varchar("challenge_id").references(() => premierChallenges.id).notNull(),
+  moviesSorted: integer("movies_sorted").notNull(),
+  reels: integer("reels").notNull(),
+  result: text("result").notNull(), // "won" | "failed"
+  completedAt: timestamp("completed_at").defaultNow(),
+}, (table) => [
+  unique("premier_completions_user_challenge_unique").on(table.userId, table.challengeId),
+  index("idx_premier_completions_user").on(table.userId),
+]);
+
+// Premier relations
+export const premierChallengesRelations = relations(premierChallenges, ({ many }) => ({
+  completions: many(premierCompletions),
+}));
+
+export const premierCompletionsRelations = relations(premierCompletions, ({ one }) => ({
+  user: one(users, {
+    fields: [premierCompletions.userId],
+    references: [users.id],
+  }),
+  challenge: one(premierChallenges, {
+    fields: [premierCompletions.challengeId],
+    references: [premierChallenges.id],
+  }),
+}));
+
+// Premier types
+export type PremierChallenge = typeof premierChallenges.$inferSelect;
+export type InsertPremierChallenge = typeof premierChallenges.$inferInsert;
+export type PremierCompletion = typeof premierCompletions.$inferSelect;
+export type InsertPremierCompletion = typeof premierCompletions.$inferInsert;
+
+export const insertPremierChallengeSchema = createInsertSchema(premierChallenges).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPremierCompletionSchema = createInsertSchema(premierCompletions).omit({
   id: true,
   completedAt: true,
 });
