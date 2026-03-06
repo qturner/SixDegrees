@@ -170,6 +170,7 @@ export interface IStorage {
   getCastCallChallenges(date: string): Promise<CastCallChallenge[]>;
   createCastCallChallenge(data: InsertCastCallChallenge): Promise<CastCallChallenge>;
   getCastCallChallengeById(id: string): Promise<CastCallChallenge | undefined>;
+  updateCastCallChallengeFinalGuessOptions(id: string, options: string): Promise<boolean>;
   getCastCallCompletion(userId: string, challengeId: string): Promise<CastCallCompletion | undefined>;
   recordCastCallCompletionWithStats(
     completion: InsertCastCallCompletion,
@@ -1830,6 +1831,15 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       const [challenge] = await db.select().from(castCallChallenges).where(eq(castCallChallenges.id, id));
       return challenge || undefined;
+    });
+  }
+
+  async updateCastCallChallengeFinalGuessOptions(id: string, options: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const result = await db.update(castCallChallenges)
+        .set({ finalGuessOptions: options })
+        .where(and(eq(castCallChallenges.id, id), isNull(castCallChallenges.finalGuessOptions)));
+      return (result.rowCount ?? 0) > 0;
     });
   }
 

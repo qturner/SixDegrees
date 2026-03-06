@@ -174,6 +174,188 @@ export class CastCallService {
     }
   }
 
+  /**
+   * Generate 2 decoy movies for the final guess poster pick.
+   * Tries shared-cast movies first, then falls back to discover API.
+   */
+  async getDecoyMovies(
+    correctMovieId: number,
+    correctGenreIds: number[],
+    correctYear: number,
+    correctCollectionId: number | null,
+    castActorIds: number[]
+  ): Promise<Array<{ movieId: number; title: string; year: number; posterPath: string }>> {
+    const decoys: Array<{ movieId: number; title: string; year: number; posterPath: string; score: number }> = [];
+    const usedIds = new Set<number>([correctMovieId]);
+
+    // Tier 1: Best decoys — movies sharing cast members
+    const actorSample = castActorIds.slice(0, 5);
+    const movieCounts = new Map<number, { count: number; movie: any }>();
+
+    for (const actorId of actorSample) {
+      try {
+        const movies = await tmdbService.getActorMoviesDetailed(actorId);
+        for (const movie of movies) {
+          if (usedIds.has(movie.id)) continue;
+          if (!movie.posterPath) continue;
+          if (movie.originalLanguage !== "en") continue;
+          if (movie.voteCount < 200) continue;
+          if (correctCollectionId) {
+            // Check collection via extended details later if needed
+          }
+          const movieYear = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : 0;
+          if (Math.abs(movieYear - correctYear) > 10) continue;
+          const sharedGenres = movie.genreIds.filter(g => correctGenreIds.includes(g));
+          if (sharedGenres.length === 0) continue;
+
+          const existing = movieCounts.get(movie.id);
+          if (existing) {
+            existing.count++;
+          } else {
+            movieCounts.set(movie.id, { count: 1, movie: { ...movie, year: movieYear } });
+          }
+        }
+      } catch (e) {
+        // Continue with other actors
+      }
+    }
+
+    // Filter out same-collection movies
+    const candidates = Array.from(movieCounts.entries())
+      .filter(([, v]) => v.count >= 2)
+      .sort((a, b) => b[1].count - a[1].count);
+
+    for (const [movieId, { movie }] of candidates) {
+      if (decoys.length >= 2) break;
+      if (usedIds.has(movieId)) continue;
+
+      // Check collection if needed
+      if (correctCollectionId) {
+        const details = await tmdbService.getMovieDetailsExtended(movieId);
+        if (details?.collectionId === correctCollectionId) continue;
+      }
+
+      decoys.push({
+        movieId,
+        title: movie.title,
+        year: movie.year,
+        posterPath: movie.posterPath,
+        score: movie.voteCount,
+      });
+      usedIds.add(movieId);
+    }
+
+    // Helper to check collection membership for discover-based candidates
+    const isInSameCollection = async (movieId: number): Promise<boolean> => {
+      if (!correctCollectionId) return false;
+      try {
+        const details = await tmdbService.getMovieDetailsExtended(movieId);
+        return details?.collectionId === correctCollectionId;
+      } catch {
+        return false;
+      }
+    };
+
+    // Tier 2: Good fallback — discover with primary genre, ±5 years
+    if (decoys.length < 2 && correctGenreIds.length > 0) {
+      try {
+        const response = await tmdbService.discoverMovies({
+          with_genres: correctGenreIds[0].toString(),
+          "primary_release_date.gte": `${correctYear - 5}-01-01`,
+          "primary_release_date.lte": `${correctYear + 5}-12-31`,
+          with_original_language: "en",
+          "vote_count.gte": "200",
+          sort_by: "popularity.desc",
+        });
+        for (const movie of response.results) {
+          if (decoys.length >= 2) break;
+          if (usedIds.has(movie.id)) continue;
+          if (!movie.poster_path) continue;
+          if (await isInSameCollection(movie.id)) continue;
+          const movieYear = movie.release_date ? new Date(movie.release_date).getFullYear() : 0;
+          decoys.push({
+            movieId: movie.id,
+            title: movie.title,
+            year: movieYear,
+            posterPath: movie.poster_path,
+            score: movie.vote_count,
+          });
+          usedIds.add(movie.id);
+        }
+      } catch (e) {
+        console.error("Decoy fallback tier 2 failed:", e);
+      }
+    }
+
+    // Tier 3: Broad fallback — widen to ±10 years, any overlapping genre, 100+ votes
+    if (decoys.length < 2) {
+      try {
+        const genreParam = correctGenreIds.length > 0 ? correctGenreIds.join(",") : "";
+        const params: Record<string, string> = {
+          "primary_release_date.gte": `${correctYear - 10}-01-01`,
+          "primary_release_date.lte": `${correctYear + 10}-12-31`,
+          with_original_language: "en",
+          "vote_count.gte": "100",
+          sort_by: "popularity.desc",
+        };
+        if (genreParam) params.with_genres = genreParam;
+        const response = await tmdbService.discoverMovies(params);
+        for (const movie of response.results) {
+          if (decoys.length >= 2) break;
+          if (usedIds.has(movie.id)) continue;
+          if (!movie.poster_path) continue;
+          if (await isInSameCollection(movie.id)) continue;
+          const movieYear = movie.release_date ? new Date(movie.release_date).getFullYear() : 0;
+          decoys.push({
+            movieId: movie.id,
+            title: movie.title,
+            year: movieYear,
+            posterPath: movie.poster_path,
+            score: movie.vote_count,
+          });
+          usedIds.add(movie.id);
+        }
+      } catch (e) {
+        console.error("Decoy fallback tier 3 failed:", e);
+      }
+    }
+
+    // Last resort: popular movies from same decade
+    if (decoys.length < 2) {
+      try {
+        const decade = Math.floor(correctYear / 10) * 10;
+        const response = await tmdbService.discoverMovies({
+          "primary_release_date.gte": `${decade}-01-01`,
+          "primary_release_date.lte": `${decade + 9}-12-31`,
+          with_original_language: "en",
+          "vote_count.gte": "50",
+          sort_by: "popularity.desc",
+        });
+        for (const movie of response.results) {
+          if (decoys.length >= 2) break;
+          if (usedIds.has(movie.id)) continue;
+          if (!movie.poster_path) continue;
+          if (await isInSameCollection(movie.id)) continue;
+          const movieYear = movie.release_date ? new Date(movie.release_date).getFullYear() : 0;
+          decoys.push({
+            movieId: movie.id,
+            title: movie.title,
+            year: movieYear,
+            posterPath: movie.poster_path,
+            score: movie.vote_count,
+          });
+          usedIds.add(movie.id);
+        }
+      } catch (e) {
+        console.error("Decoy last resort failed:", e);
+      }
+    }
+
+    return decoys.slice(0, 2).map(({ movieId, title, year, posterPath }) => ({
+      movieId, title, year, posterPath,
+    }));
+  }
+
   static calculateStars(actorsRevealed: number, correct: boolean): number {
     if (!correct) return 0;
     if (actorsRevealed <= 2) return 5;

@@ -725,6 +725,69 @@ class TMDbService {
     return this.makeRequest<TMDbResponse<TMDbMovie>>("/discover/movie", params);
   }
 
+  /**
+   * Get actor's filmography preserving genre_ids, original_language, vote_count, and poster_path.
+   * Unlike getActorMovies(), this doesn't strip metadata needed for decoy selection.
+   */
+  async getActorMoviesDetailed(actorId: number): Promise<Array<{
+    id: number; title: string; releaseDate: string; posterPath: string | null;
+    genreIds: number[]; originalLanguage: string; voteCount: number;
+  }>> {
+    try {
+      const response = await this.makeRequest<TMDbPersonMovies>(`/person/${actorId}/movie_credits`);
+      return response.cast
+        .filter(movie => {
+          if (!movie.release_date) return false;
+          const releaseYear = new Date(movie.release_date).getFullYear();
+          if (releaseYear < 1970) return false;
+          return !this.isExcludedMakingOfMovie(movie);
+        })
+        .map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          releaseDate: movie.release_date,
+          posterPath: movie.poster_path,
+          genreIds: movie.genre_ids || [],
+          originalLanguage: movie.original_language,
+          voteCount: movie.vote_count || 0,
+        }));
+    } catch (error) {
+      console.error(`Error getting detailed actor movies for ${actorId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get extended movie details including collection info for franchise detection.
+   */
+  async getMovieDetailsExtended(movieId: number): Promise<{
+    id: number; title: string; genres: {id: number; name: string}[];
+    releaseDate: string; posterPath: string | null;
+    collectionId: number | null;
+  } | null> {
+    try {
+      const response = await this.makeRequest<{
+        id: number;
+        title: string;
+        genres: {id: number; name: string}[];
+        release_date: string;
+        poster_path: string | null;
+        belongs_to_collection: { id: number; name: string } | null;
+      }>(`/movie/${movieId}`);
+      return {
+        id: response.id,
+        title: response.title,
+        genres: response.genres,
+        releaseDate: response.release_date,
+        posterPath: response.poster_path,
+        collectionId: response.belongs_to_collection?.id ?? null,
+      };
+    } catch (error) {
+      console.error(`Error getting extended movie details for ${movieId}:`, error);
+      return null;
+    }
+  }
+
   async validateActorInMovie(actorId: number, movieId: number): Promise<boolean> {
     try {
       // Use actor's movie credits as it's typically a smaller dataset than a movie's full cast

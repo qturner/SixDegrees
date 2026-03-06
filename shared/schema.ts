@@ -535,6 +535,7 @@ export const castCallChallenges = pgTable("cast_call_challenges", {
   moviePosterPath: text("movie_poster_path"),
   genre: text("genre").notNull(),
   actors: text("actors").notNull(), // JSON array of {id, name, profilePath, revealOrder}
+  finalGuessOptions: text("final_guess_options"), // cached JSON of 3 shuffled poster-pick options
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   unique("cast_call_challenges_date_difficulty_key").on(table.challengeDate, table.difficulty),
@@ -549,6 +550,9 @@ export const castCallCompletions = pgTable("cast_call_completions", {
   totalGuesses: integer("total_guesses").notNull(),
   stars: integer("stars").notNull(),
   correct: boolean("correct").notNull(),
+  finalGuessUsed: boolean("final_guess_used").default(false),
+  finalGuessMovieId: integer("final_guess_movie_id"),
+  finalGuessCorrect: boolean("final_guess_correct"),
   completedAt: timestamp("completed_at").defaultNow(),
 }, (table) => [
   unique("cast_call_completions_user_challenge_unique").on(table.userId, table.challengeId),

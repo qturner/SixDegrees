@@ -2801,10 +2801,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prevent race conditions in final guess options generation
+  const finalGuessGenerationMap = new Map<string, Promise<any>>();
+
+  // POST /api/cast-call/final-guess-options — get 3 poster options (1 correct + 2 decoys)
+  app.post("/api/cast-call/final-guess-options", async (req, res) => {
+    try {
+      const { challengeId } = req.body;
+      if (!challengeId) {
+        return res.status(400).json({ message: "challengeId is required" });
+      }
+
+      const challenge = await storage.getCastCallChallengeById(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge not found" });
+      }
+
+      // Return cached options if already generated
+      if (challenge.finalGuessOptions) {
+        return res.json({ options: JSON.parse(challenge.finalGuessOptions) });
+      }
+
+      // Check if generation is already in-flight for this challenge
+      let generationPromise = finalGuessGenerationMap.get(challengeId);
+      if (generationPromise) {
+        const result = await generationPromise;
+        return res.json({ options: result });
+      }
+
+      // Generate decoys
+      generationPromise = (async () => {
+        try {
+          const details = await tmdbService.getMovieDetailsExtended(challenge.movieId);
+          const correctGenreIds = details?.genres.map(g => g.id) ?? [];
+          const actors = JSON.parse(challenge.actors) as Array<{ id: number }>;
+          const castActorIds = actors.map(a => a.id);
+
+          const decoys = await castCallService.getDecoyMovies(
+            challenge.movieId,
+            correctGenreIds,
+            challenge.movieYear,
+            details?.collectionId ?? null,
+            castActorIds
+          );
+
+          if (decoys.length < 2) {
+            return null;
+          }
+
+          const correctOption = {
+            movieId: challenge.movieId,
+            title: challenge.movieTitle,
+            year: challenge.movieYear,
+            posterPath: challenge.moviePosterPath,
+          };
+
+          // Shuffle the 3 options
+          const options = [correctOption, ...decoys]
+            .sort(() => Math.random() - 0.5);
+
+          // Cache in DB (conditional: only if no other instance wrote first)
+          const optionsJson = JSON.stringify(options);
+          const written = await storage.updateCastCallChallengeFinalGuessOptions(challengeId, optionsJson);
+
+          if (!written) {
+            // Another instance already wrote — return their options for consistency
+            const existing = await storage.getCastCallChallengeById(challengeId);
+            if (existing?.finalGuessOptions) {
+              return JSON.parse(existing.finalGuessOptions);
+            }
+          }
+
+          return options;
+        } catch (e) {
+          console.error("Error generating final guess options:", e);
+          return null;
+        } finally {
+          finalGuessGenerationMap.delete(challengeId);
+        }
+      })();
+
+      finalGuessGenerationMap.set(challengeId, generationPromise);
+      const result = await generationPromise;
+      res.json({ options: result });
+    } catch (error) {
+      console.error("Error getting final guess options:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // POST /api/cast-call/guess — check if movie guess is correct
   app.post("/api/cast-call/guess", async (req, res) => {
     try {
-      const { challengeId, movieId, actorsRevealed } = req.body;
+      const { challengeId, movieId, actorsRevealed, isFinalGuess } = req.body;
 
       if (!challengeId || !movieId) {
         return res.status(400).json({ message: "challengeId and movieId are required" });
@@ -2815,7 +2904,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Challenge not found" });
       }
 
-      if (challenge.movieId !== movieId) {
+      const isCorrect = challenge.movieId === movieId;
+
+      if (isFinalGuess) {
+        // Validate that movieId is one of the cached poster options (or -1 for give-up)
+        if (movieId !== -1) {
+          if (!challenge.finalGuessOptions) {
+            return res.status(400).json({ message: "Final guess options have not been generated yet" });
+          }
+          const options = JSON.parse(challenge.finalGuessOptions) as Array<{ movieId: number }>;
+          const validIds = options.map(o => o.movieId);
+          if (!validIds.includes(movieId)) {
+            return res.status(400).json({ message: "movieId is not one of the presented options" });
+          }
+        }
+
+        // Final guess always reveals the answer
+        const allActors = JSON.parse(challenge.actors);
+        const stars = CastCallService.calculateStars(10, isCorrect);
+        return res.json({
+          correct: isCorrect,
+          movie: {
+            id: challenge.movieId,
+            title: challenge.movieTitle,
+            posterPath: challenge.moviePosterPath,
+            year: challenge.movieYear,
+          },
+          stars,
+          allActors,
+        });
+      }
+
+      if (!isCorrect) {
         return res.json({ correct: false });
       }
 
@@ -2842,7 +2962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cast-call/complete", isAuthenticated, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
-      const { challengeId, actorsRevealed, totalGuesses } = req.body;
+      const { challengeId, actorsRevealed, totalGuesses, finalGuessUsed, finalGuessMovieId } = req.body;
 
       if (!challengeId || actorsRevealed == null || totalGuesses == null) {
         return res.status(400).json({ message: "challengeId, actorsRevealed, and totalGuesses are required" });
@@ -2867,7 +2987,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const stars = CastCallService.calculateStars(actorsRevealed, true);
+      // Determine correctness and stars
+      let correct = true;
+      let effectiveActorsRevealed = actorsRevealed;
+      let finalGuessCorrect: boolean | undefined;
+
+      if (finalGuessUsed) {
+        if (finalGuessMovieId == null) {
+          return res.status(400).json({ message: "finalGuessMovieId is required when finalGuessUsed is true" });
+        }
+        effectiveActorsRevealed = 10; // Force 10 for final guess
+
+        // Validate movieId against cached poster options (skip for give-up / -1)
+        if (finalGuessMovieId !== -1) {
+          if (!challenge.finalGuessOptions) {
+            return res.status(400).json({ message: "Final guess options have not been generated yet" });
+          }
+          const options = JSON.parse(challenge.finalGuessOptions) as Array<{ movieId: number }>;
+          const validIds = options.map(o => o.movieId);
+          if (!validIds.includes(finalGuessMovieId)) {
+            return res.status(400).json({ message: "finalGuessMovieId is not one of the presented options" });
+          }
+        }
+
+        finalGuessCorrect = finalGuessMovieId === challenge.movieId;
+        correct = finalGuessCorrect;
+      }
+
+      const stars = CastCallService.calculateStars(effectiveActorsRevealed, correct);
 
       const yesterday = getYesterdayDateString();
       const dayBeforeYesterday = getDayBeforeYesterdayDateString();
@@ -2876,10 +3023,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           userId,
           challengeId,
-          actorsRevealed,
+          actorsRevealed: effectiveActorsRevealed,
           totalGuesses,
           stars,
-          correct: true,
+          correct,
+          finalGuessUsed: finalGuessUsed || false,
+          finalGuessMovieId: finalGuessMovieId ?? null,
+          finalGuessCorrect: finalGuessCorrect ?? null,
         },
         { today, yesterday, dayBeforeYesterday },
       );
