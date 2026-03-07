@@ -246,6 +246,47 @@ export const userStats = pgTable("user_stats", {
   lastShieldUsedDate: text("last_shield_used_date"), // YYYY-MM-DD format
   castCallCompletions: integer("cast_call_completions").default(0),
   premierAttempts: integer("premier_attempts").default(0),
+
+  // Per-mode streak columns (shared currentStreak/maxStreak/lastPlayedDate become composite "any mode")
+  sdStreakCurrent: integer("sd_streak_current").default(0),
+  sdStreakMax: integer("sd_streak_max").default(0),
+  sdLastPlayedDate: text("sd_last_played_date"),
+
+  castCallStreakCurrent: integer("cast_call_streak_current").default(0),
+  castCallStreakMax: integer("cast_call_streak_max").default(0),
+  castCallLastPlayedDate: text("cast_call_last_played_date"),
+  castCallEasyCompletions: integer("cast_call_easy_completions").default(0),
+  castCallMediumCompletions: integer("cast_call_medium_completions").default(0),
+  castCallHardCompletions: integer("cast_call_hard_completions").default(0),
+
+  premierStreakCurrent: integer("premier_streak_current").default(0),
+  premierStreakMax: integer("premier_streak_max").default(0),
+  premierLastPlayedDate: text("premier_last_played_date"),
+  premierEasyCompletions: integer("premier_easy_completions").default(0),
+  premierMediumCompletions: integer("premier_medium_completions").default(0),
+  premierHardCompletions: integer("premier_hard_completions").default(0),
+
+  // Super streak
+  superStreakCurrent: integer("super_streak_current").default(0),
+  superStreakMax: integer("super_streak_max").default(0),
+  superStreakLastDate: text("super_streak_last_date"),
+
+  // Cast Call trophy tiers
+  trophyDirectorsCut: integer("trophy_directors_cut").default(0),
+  trophyBoxOfficeHit: integer("trophy_box_office_hit").default(0),
+  trophyCCMatinee: integer("trophy_cc_matinee").default(0),
+  trophyBMovie: integer("trophy_b_movie").default(0),
+  trophyStraightToDvd: integer("trophy_straight_to_dvd").default(0),
+  trophyWalkedOut: integer("trophy_walked_out").default(0),
+
+  // Premier trophy tiers
+  trophyFilmHistorian: integer("trophy_film_historian").default(0),
+  trophyArchivist: integer("trophy_archivist").default(0),
+  trophyCinephile: integer("trophy_cinephile").default(0),
+  trophyCasualViewer: integer("trophy_casual_viewer").default(0),
+  trophyTimeTraveler: integer("trophy_time_traveler").default(0),
+  trophyLostInTime: integer("trophy_lost_in_time").default(0),
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -480,11 +521,12 @@ export const reactions = pgTable("reactions", {
   reactorUserId: varchar("reactor_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   targetUserId: varchar("target_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   challengeDate: text("challenge_date").notNull(),
+  gameMode: text("game_mode").notNull().default('six_degrees'),
   difficulty: text("difficulty").notNull(),
   emoji: text("emoji").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
-  unique("reactions_unique_per_user").on(table.reactorUserId, table.targetUserId, table.challengeDate, table.difficulty),
+  unique("reactions_unique_per_user_mode").on(table.reactorUserId, table.targetUserId, table.challengeDate, table.gameMode, table.difficulty),
   index("idx_reactions_target_date").on(table.targetUserId, table.challengeDate),
   check("reactions_difficulty_check", sql`${table.difficulty} IN ('easy', 'medium', 'hard')`),
   check("reactions_emoji_check", sql`${table.emoji} IN ('🔥', '👏', '💀', '😂', '🤯', '👀')`),
@@ -496,6 +538,7 @@ export const reactionEvents = pgTable("reaction_events", {
   targetUserId: varchar("target_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   reactorUserId: varchar("reactor_user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   challengeDate: text("challenge_date").notNull(),
+  gameMode: text("game_mode").notNull().default('six_degrees'),
   difficulty: text("difficulty").notNull(),
   emoji: text("emoji").notNull(),
   reactionId: varchar("reaction_id"),

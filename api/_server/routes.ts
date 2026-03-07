@@ -6,8 +6,8 @@ import { gameLogicService, type DifficultyLevel } from "./services/gameLogic.js"
 import { castCallService, CastCallService } from "./services/castCallLogic.js";
 import { premierService, PremierService } from "./services/premierLogic.js";
 import { withRetry } from "./db.js";
-import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema, userSubscriptions, userStats, castCallChallenges, premierChallenges } from "../../shared/schema.js";
-import { eq, and, ne, sql, inArray, gte } from "drizzle-orm";
+import { insertDailyChallengeSchema, insertGameAttemptSchema, gameConnectionSchema, insertContactSubmissionSchema, insertVisitorAnalyticsSchema, insertUserChallengeCompletionSchema, insertMovieListSchema, insertMovieListEntrySchema, userSubscriptions, userStats, castCallChallenges, castCallCompletions, premierChallenges, premierCompletions } from "../../shared/schema.js";
+import { eq, and, ne, sql, inArray, gte, desc } from "drizzle-orm";
 import { db } from "./db.js";
 import { createAdminUser, authenticateAdmin, createAdminSession, validateAdminSession, deleteAdminSession } from "./adminAuth.js";
 import { setupAuth, isAuthenticated } from "./auth.js";
@@ -1730,6 +1730,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/recent-challenges", isAuthenticated, async (req, res) => {
     try {
       const userId = (req.session as any).userId;
+      const mode = (req.query.mode as string) || "six_degrees";
+
+      if (mode === "cast_call") {
+        // Recent Cast Call completions
+        const ccRecent = await withRetry(async () => {
+          return await db.select({
+            challengeDate: castCallChallenges.challengeDate,
+            difficulty: castCallChallenges.difficulty,
+            stars: castCallCompletions.stars,
+            actorsRevealed: castCallCompletions.actorsRevealed,
+            completedAt: castCallCompletions.completedAt,
+          }).from(castCallCompletions)
+            .innerJoin(castCallChallenges, eq(castCallCompletions.challengeId, castCallChallenges.id))
+            .where(eq(castCallCompletions.userId, userId))
+            .orderBy(desc(castCallCompletions.completedAt))
+            .limit(5);
+        });
+        return res.json(ccRecent.map((r: any, i: number) => ({
+          id: `cc-${r.challengeDate}-${r.difficulty}-${i}`,
+          gameMode: "cast_call",
+          date: r.challengeDate,
+          difficulty: r.difficulty,
+          completed: true,
+          stars: r.stars,
+          actorsRevealed: r.actorsRevealed,
+        })));
+      }
+
+      if (mode === "premier") {
+        // Recent Premier completions
+        const premRecent = await withRetry(async () => {
+          return await db.select({
+            challengeDate: premierChallenges.challengeDate,
+            difficulty: premierChallenges.difficulty,
+            reels: premierCompletions.reels,
+            result: premierCompletions.result,
+            completedAt: premierCompletions.completedAt,
+          }).from(premierCompletions)
+            .innerJoin(premierChallenges, eq(premierCompletions.challengeId, premierChallenges.id))
+            .where(eq(premierCompletions.userId, userId))
+            .orderBy(desc(premierCompletions.completedAt))
+            .limit(5);
+        });
+        return res.json(premRecent.map((r: any, i: number) => ({
+          id: `prem-${r.challengeDate}-${r.difficulty}-${i}`,
+          gameMode: "premier",
+          date: r.challengeDate,
+          difficulty: r.difficulty,
+          completed: true,
+          reels: r.reels,
+          result: r.result,
+        })));
+      }
+
+      // Default: Six Degrees
       const recentChallenges = await storage.getRecentChallengesForUser(userId, 5);
       res.json(recentChallenges);
     } catch (error) {
@@ -2203,7 +2258,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const isEntitled = await storage.isUserEntitled(userId);
-      const leaderboard = await storage.getFriendsLeaderboard(userId, sort, isEntitled);
+      const mode = (req.query.mode as string) || 'all';
+      const leaderboard = await storage.getFriendsLeaderboard(userId, sort, isEntitled, mode);
       res.json(leaderboard);
     } catch (error) {
       console.error("Error getting friends leaderboard:", error);
@@ -2237,11 +2293,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/reactions - Add or remove a reaction on a friend's completion
   const ALLOWED_EMOJIS = ['🔥', '👏', '💀', '😂', '🤯', '👀'];
   const ALLOWED_DIFFICULTIES = ['easy', 'medium', 'hard'];
+  const ALLOWED_GAME_MODES = ['six_degrees', 'cast_call', 'premier'];
 
   app.post("/api/reactions", isAuthenticated, async (req, res) => {
     try {
       const reactorUserId = (req.session as any).userId;
-      const { targetUserId, difficulty, emoji } = req.body;
+      const { targetUserId, difficulty, emoji, gameMode: rawGameMode } = req.body;
+      const gameMode = rawGameMode || 'six_degrees';
 
       if (!targetUserId || !difficulty) {
         return res.status(400).json({ message: "targetUserId and difficulty are required" });
@@ -2249,6 +2307,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!ALLOWED_DIFFICULTIES.includes(difficulty)) {
         return res.status(400).json({ message: "Invalid difficulty" });
+      }
+
+      if (!ALLOWED_GAME_MODES.includes(gameMode)) {
+        return res.status(400).json({ message: "Invalid gameMode" });
       }
 
       if (emoji !== '' && !ALLOWED_EMOJIS.includes(emoji)) {
@@ -2266,19 +2328,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const today = getESTDateString();
 
-      const hasCompletion = await storage.hasCompletionForDifficulty(targetUserId, today, difficulty);
+      const hasCompletion = await storage.hasCompletionForModeAndDifficulty(targetUserId, today, gameMode, difficulty);
       if (!hasCompletion) {
         return res.status(400).json({ message: "This friend has not completed this difficulty today" });
       }
 
       if (emoji === '') {
-        await storage.removeReaction(reactorUserId, targetUserId, today, difficulty);
+        await storage.removeReaction(reactorUserId, targetUserId, today, gameMode, difficulty);
       } else {
-        const reaction = await storage.upsertReaction(reactorUserId, targetUserId, today, difficulty, emoji);
+        const reaction = await storage.upsertReaction(reactorUserId, targetUserId, today, gameMode, difficulty, emoji);
         await storage.createReactionEvent(
           targetUserId,
           reactorUserId,
           today,
+          gameMode,
           difficulty,
           emoji,
           reaction.id,
@@ -3031,7 +3094,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           finalGuessMovieId: finalGuessMovieId ?? null,
           finalGuessCorrect: finalGuessCorrect ?? null,
         },
-        { today, yesterday, dayBeforeYesterday },
+        { difficulty: challenge.difficulty, today, yesterday, dayBeforeYesterday },
       );
 
       if (!completion) {
@@ -3253,7 +3316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reels,
           result,
         },
-        { today, yesterday, dayBeforeYesterday },
+        { difficulty: challenge.difficulty, today, yesterday, dayBeforeYesterday },
       );
 
       res.status(isNew ? 201 : 200).json({

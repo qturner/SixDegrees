@@ -2,8 +2,8 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import bcrypt from "bcryptjs";
 import { pool, getPool, db, withRetry } from "./db.js";
 import { storage } from "./storage.js";
-import { loginSchema, registerSchema, userChallengeCompletions, dailyChallenges } from "../../shared/schema.js";
-import { eq, and, gt, sql } from "drizzle-orm";
+import { loginSchema, registerSchema, userChallengeCompletions, dailyChallenges, castCallCompletions, castCallChallenges, premierCompletions, premierChallenges, userStats } from "../../shared/schema.js";
+import { eq, and, gt, sql, count, avg, desc } from "drizzle-orm";
 import { ZodError } from "zod";
 
 import passport from "passport";
@@ -416,6 +416,7 @@ export async function setupAuth(app: Express) {
   app.get("/api/user/stats", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const userId = (req.session as any).userId;
+      const mode = (req.query.mode as string) || "six_degrees";
       const stats = await storage.getUserStats(userId);
 
       if (!stats) {
@@ -433,58 +434,40 @@ export async function setupAuth(app: Express) {
         });
       }
 
-      // Compute average moves over time windows
+      // Helper to compute average of an array
+      const computeAvg = (arr: number[]) => arr.length > 0
+        ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10
+        : null;
+
+      // --- Six Degrees stats (always computed for top-level fields) ---
       const now = new Date();
       const sevenDaysAgo = new Date(now);
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const thirtyDaysAgo = new Date(now);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const allCompletions = await withRetry(async () => {
-        return await db.select({
-          moves: userChallengeCompletions.moves,
-          completedAt: userChallengeCompletions.completedAt,
-          challengeId: userChallengeCompletions.challengeId,
-        }).from(userChallengeCompletions)
-          .where(eq(userChallengeCompletions.userId, userId));
-      });
-
-      // Calculate averages
-      const avg = (arr: number[]) => arr.length > 0
-        ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10
-        : null;
-
-      const allMoves = allCompletions.map((c: any) => c.moves);
-      const recent7d = allCompletions
-        .filter((c: any) => c.completedAt && c.completedAt > sevenDaysAgo)
-        .map((c: any) => c.moves);
-      const recent30d = allCompletions
-        .filter((c: any) => c.completedAt && c.completedAt > thirtyDaysAgo)
-        .map((c: any) => c.moves);
-
-      // Compute per-difficulty completion rates
-      // Get all challenges for the completions
-      const challengeIds = [...new Set(allCompletions.map((c: any) => c.challengeId))];
-      let challengeDifficultyMap: Record<string, string> = {};
-      if (challengeIds.length > 0) {
-        const challenges = await withRetry(async () => {
+      let avgMoves7d = null, avgMoves30d = null, avgMovesAllTime = null;
+      if (mode === "six_degrees" || mode === "all") {
+        const allCompletions = await withRetry(async () => {
           return await db.select({
-            id: dailyChallenges.id,
-            difficulty: dailyChallenges.difficulty,
-          }).from(dailyChallenges)
-            .where(sql`${dailyChallenges.id} IN (${sql.join(challengeIds.map(id => sql`${id}`), sql`, `)})`);
+            moves: userChallengeCompletions.moves,
+            completedAt: userChallengeCompletions.completedAt,
+            challengeId: userChallengeCompletions.challengeId,
+          }).from(userChallengeCompletions)
+            .where(eq(userChallengeCompletions.userId, userId));
         });
-        for (const ch of challenges) {
-          challengeDifficultyMap[ch.id] = ch.difficulty;
-        }
-      }
 
-      const completionsByDifficulty = { easy: 0, medium: 0, hard: 0 };
-      for (const comp of allCompletions) {
-        const diff = challengeDifficultyMap[comp.challengeId];
-        if (diff && diff in completionsByDifficulty) {
-          completionsByDifficulty[diff as keyof typeof completionsByDifficulty]++;
-        }
+        const allMoves = allCompletions.map((c: any) => c.moves);
+        const recent7d = allCompletions
+          .filter((c: any) => c.completedAt && c.completedAt > sevenDaysAgo)
+          .map((c: any) => c.moves);
+        const recent30d = allCompletions
+          .filter((c: any) => c.completedAt && c.completedAt > thirtyDaysAgo)
+          .map((c: any) => c.moves);
+
+        avgMoves7d = computeAvg(recent7d);
+        avgMoves30d = computeAvg(recent30d);
+        avgMovesAllTime = computeAvg(allMoves);
       }
 
       // Total challenges by difficulty (approximate from stats columns)
@@ -492,15 +475,121 @@ export async function setupAuth(app: Express) {
       const totalMedium = stats.mediumCompletions ?? 0;
       const totalHard = stats.hardCompletions ?? 0;
 
+      // --- Cast Call stats ---
+      let castCallData: any = undefined;
+      if (mode === "cast_call" || mode === "all") {
+        const ccCompletions = await withRetry(async () => {
+          return await db.select({
+            stars: castCallCompletions.stars,
+            actorsRevealed: castCallCompletions.actorsRevealed,
+            completedAt: castCallCompletions.completedAt,
+          }).from(castCallCompletions)
+            .where(eq(castCallCompletions.userId, userId));
+        });
+
+        const ccTotal = ccCompletions.length;
+        const ccStars = ccCompletions.map((c: any) => c.stars);
+        const ccAvgStars = computeAvg(ccStars);
+        const ccFiveStarCount = ccStars.filter((s: number) => s === 5).length;
+        const ccFiveStarRate = ccTotal > 0 ? Math.round((ccFiveStarCount / ccTotal) * 1000) / 1000 : 0;
+
+        // Star distribution
+        const starDist: { stars: number; count: number }[] = [];
+        for (let s = 0; s <= 5; s++) {
+          const cnt = ccStars.filter((x: number) => x === s).length;
+          if (cnt > 0) starDist.push({ stars: s, count: cnt });
+        }
+
+        castCallData = {
+          completed: ccTotal,
+          currentStreak: stats.castCallStreakCurrent ?? 0,
+          maxStreak: stats.castCallStreakMax ?? 0,
+          avgStars: ccAvgStars,
+          fiveStarRate: ccFiveStarRate,
+          starDistribution: starDist,
+          easyCompletions: stats.castCallEasyCompletions ?? 0,
+          mediumCompletions: stats.castCallMediumCompletions ?? 0,
+          hardCompletions: stats.castCallHardCompletions ?? 0,
+          trophyBreakdown: {
+            directorsCut: stats.trophyDirectorsCut ?? 0,
+            boxOfficeHit: stats.trophyBoxOfficeHit ?? 0,
+            ccMatinee: stats.trophyCCMatinee ?? 0,
+            bMovie: stats.trophyBMovie ?? 0,
+            straightToDvd: stats.trophyStraightToDvd ?? 0,
+            walkedOut: stats.trophyWalkedOut ?? 0,
+          },
+        };
+      }
+
+      // --- Premier stats ---
+      let premierData: any = undefined;
+      if (mode === "premier" || mode === "all") {
+        const premCompletions = await withRetry(async () => {
+          return await db.select({
+            reels: premierCompletions.reels,
+            result: premierCompletions.result,
+            completedAt: premierCompletions.completedAt,
+          }).from(premierCompletions)
+            .where(eq(premierCompletions.userId, userId));
+        });
+
+        const premTotal = premCompletions.length;
+        const wonCompletions = premCompletions.filter((c: any) => c.result === "won");
+        const wonReels = wonCompletions.map((c: any) => c.reels);
+        const premAvgReels = computeAvg(wonReels);
+        const perfectSorts = wonReels.filter((r: number) => r === 0).length;
+
+        // Reels distribution (only won games)
+        const reelsDist: { reels: number; count: number }[] = [];
+        for (let r = 0; r <= 9; r++) {
+          const cnt = wonReels.filter((x: number) => x === r).length;
+          if (cnt > 0) reelsDist.push({ reels: r, count: cnt });
+        }
+        // Also count failed
+        const failedCount = premCompletions.filter((c: any) => c.result === "failed").length;
+        if (failedCount > 0) reelsDist.push({ reels: -1, count: failedCount });
+
+        premierData = {
+          completed: premTotal,
+          currentStreak: stats.premierStreakCurrent ?? 0,
+          maxStreak: stats.premierStreakMax ?? 0,
+          avgReels: premAvgReels,
+          perfectSorts: perfectSorts,
+          reelsDistribution: reelsDist,
+          easyCompletions: stats.premierEasyCompletions ?? 0,
+          mediumCompletions: stats.premierMediumCompletions ?? 0,
+          hardCompletions: stats.premierHardCompletions ?? 0,
+          trophyBreakdown: {
+            filmHistorian: stats.trophyFilmHistorian ?? 0,
+            archivist: stats.trophyArchivist ?? 0,
+            cinephile: stats.trophyCinephile ?? 0,
+            casualViewer: stats.trophyCasualViewer ?? 0,
+            timeTraveler: stats.trophyTimeTraveler ?? 0,
+            lostInTime: stats.trophyLostInTime ?? 0,
+          },
+        };
+      }
+
+      // Top-level fields are always SD values (backward compat for ProfileView)
+      // Use SD-specific streak columns when available, fall back to shared for compat
       res.json({
         ...stats,
-        avgMoves7d: avg(recent7d),
-        avgMoves30d: avg(recent30d),
-        avgMovesAllTime: avg(allMoves),
+        currentStreak: stats.sdStreakCurrent ?? stats.currentStreak ?? 0,
+        maxStreak: stats.sdStreakMax ?? stats.maxStreak ?? 0,
+        avgMoves7d,
+        avgMoves30d,
+        avgMovesAllTime,
         completionRateEasy: totalEasy,
         completionRateMedium: totalMedium,
         completionRateHard: totalHard,
         streakShieldsRemaining: stats.streakShieldsRemaining ?? 0,
+        // Nested mode stats
+        castCall: castCallData,
+        premier: premierData,
+        // Composite metrics
+        compositeStreak: stats.currentStreak ?? 0,
+        superStreakCurrent: stats.superStreakCurrent ?? 0,
+        superStreakMax: stats.superStreakMax ?? 0,
       });
     } catch (error) {
       console.error("Get user stats error:", error);

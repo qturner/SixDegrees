@@ -152,18 +152,18 @@ export interface IStorage {
   getAcceptedFriends(userId: string): Promise<any[]>;
   searchUsersByUsername(query: string, currentUserId: string): Promise<any[]>;
   getFriendsWithTodayStatus(userId: string, date: string): Promise<any[]>;
-  getFriendsLeaderboard(userId: string, sortBy: string, isEntitled?: boolean): Promise<any>;
+  getFriendsLeaderboard(userId: string, sortBy: string, isEntitled?: boolean, mode?: string): Promise<any>;
   getUserByUsernameCaseInsensitive(username: string): Promise<User | undefined>;
 
   // Reaction methods
-  upsertReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string, emoji: string): Promise<Reaction>;
-  removeReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string): Promise<void>;
-  createReactionEvent(targetUserId: string, reactorUserId: string, challengeDate: string, difficulty: string, emoji: string, reactionId?: string | null): Promise<ReactionEvent>;
+  upsertReaction(reactorUserId: string, targetUserId: string, challengeDate: string, gameMode: string, difficulty: string, emoji: string): Promise<Reaction>;
+  removeReaction(reactorUserId: string, targetUserId: string, challengeDate: string, gameMode: string, difficulty: string): Promise<void>;
+  createReactionEvent(targetUserId: string, reactorUserId: string, challengeDate: string, gameMode: string, difficulty: string, emoji: string, reactionId?: string | null): Promise<ReactionEvent>;
   getReactionInbox(userId: string, cursor: string | undefined, limit: number): Promise<ReactionInboxPage>;
   markReactionInboxRead(userId: string, upToEventId?: string): Promise<number>;
   getReactionInboxUnreadCount(userId: string): Promise<number>;
   areFriends(userId1: string, userId2: string): Promise<boolean>;
-  hasCompletionForDifficulty(userId: string, date: string, difficulty: string): Promise<boolean>;
+  hasCompletionForModeAndDifficulty(userId: string, date: string, gameMode: string, difficulty: string): Promise<boolean>;
   getReactionsForUsersOnDate(targetUserIds: string[], date: string): Promise<Reaction[]>;
 
   // Cast Call methods
@@ -175,6 +175,7 @@ export interface IStorage {
   recordCastCallCompletionWithStats(
     completion: InsertCastCallCompletion,
     context: {
+      difficulty: string;
       today: string;
       yesterday: string;
       dayBeforeYesterday: string;
@@ -189,6 +190,7 @@ export interface IStorage {
   recordPremierCompletionWithStats(
     completion: InsertPremierCompletion,
     context: {
+      difficulty: string;
       today: string;
       yesterday: string;
       dayBeforeYesterday: string;
@@ -201,6 +203,51 @@ export interface IStorage {
   upsertSubscription(data: Partial<InsertUserSubscription> & { originalTransactionId: string; userId: string; plan: string; productId: string; status: string; environment: string }): Promise<UserSubscription>;
   createSubscriptionEvent(data: InsertSubscriptionEvent): Promise<SubscriptionEvent | null>;
   isUserEntitled(userId: string): Promise<boolean>;
+}
+
+// Super streak helper: checks if all 3 modes have completions today,
+// and if so, increments super streak (idempotently via superStreakLastDate).
+// Must be called inside the same transaction & FOR UPDATE lock scope.
+async function updateSuperStreakInTx(tx: any, userId: string, statsId: string, today: string, yesterday: string) {
+  // Check all 3 modes for today
+  const [sdToday] = await tx.select({ id: userChallengeCompletions.id })
+    .from(userChallengeCompletions)
+    .innerJoin(dailyChallenges, eq(userChallengeCompletions.challengeId, dailyChallenges.id))
+    .where(and(eq(userChallengeCompletions.userId, userId), eq(dailyChallenges.date, today)))
+    .limit(1);
+  const [ccToday] = await tx.select({ id: castCallCompletions.id })
+    .from(castCallCompletions)
+    .innerJoin(castCallChallenges, eq(castCallCompletions.challengeId, castCallChallenges.id))
+    .where(and(eq(castCallCompletions.userId, userId), eq(castCallChallenges.challengeDate, today)))
+    .limit(1);
+  const [premToday] = await tx.select({ id: premierCompletions.id })
+    .from(premierCompletions)
+    .innerJoin(premierChallenges, eq(premierCompletions.challengeId, premierChallenges.id))
+    .where(and(eq(premierCompletions.userId, userId), eq(premierChallenges.challengeDate, today)))
+    .limit(1);
+
+  if (!sdToday || !ccToday || !premToday) return; // Not all 3 modes completed today
+
+  // All 3 modes done today — update super streak (idempotent via superStreakLastDate)
+  await tx.update(userStats)
+    .set({
+      superStreakCurrent: sql`
+        CASE
+          WHEN ${userStats.superStreakLastDate} = ${today} THEN COALESCE(${userStats.superStreakCurrent}, 0)
+          WHEN ${userStats.superStreakLastDate} = ${yesterday} THEN COALESCE(${userStats.superStreakCurrent}, 0) + 1
+          ELSE 1
+        END
+      `,
+      superStreakMax: sql`GREATEST(COALESCE(${userStats.superStreakMax}, 0),
+        CASE
+          WHEN ${userStats.superStreakLastDate} = ${today} THEN COALESCE(${userStats.superStreakCurrent}, 0)
+          WHEN ${userStats.superStreakLastDate} = ${yesterday} THEN COALESCE(${userStats.superStreakCurrent}, 0) + 1
+          ELSE 1
+        END
+      )`,
+      superStreakLastDate: today,
+    })
+    .where(eq(userStats.id, statsId));
 }
 
 export class DatabaseStorage implements IStorage {
@@ -888,6 +935,7 @@ export class DatabaseStorage implements IStorage {
 
         // Streak calculation now includes shield logic:
         // If lastPlayedDate is dayBeforeYesterday and shields > 0, the shield saves the streak.
+        // Composite streak (shared columns — any mode played today keeps it alive)
         const streakExpr = sql<number>`
           CASE
             WHEN ${userStats.lastPlayedDate} = ${context.today} THEN COALESCE(${userStats.currentStreak}, 0)
@@ -895,6 +943,15 @@ export class DatabaseStorage implements IStorage {
             WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
               AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
               THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            ELSE 1
+          END
+        `;
+
+        // SD-specific streak (uses SD-specific lastPlayedDate)
+        const sdStreakExpr = sql<number>`
+          CASE
+            WHEN ${userStats.sdLastPlayedDate} = ${context.today} THEN COALESCE(${userStats.sdStreakCurrent}, 0)
+            WHEN ${userStats.sdLastPlayedDate} = ${context.yesterday} THEN COALESCE(${userStats.sdStreakCurrent}, 0) + 1
             ELSE 1
           END
         `;
@@ -914,9 +971,14 @@ export class DatabaseStorage implements IStorage {
           .set({
             totalCompletions: sql`COALESCE(${userStats.totalCompletions}, 0) + 1`,
             totalMoves: sql`COALESCE(${userStats.totalMoves}, 0) + ${completion.moves}`,
+            // Composite streak (any mode)
             currentStreak: streakExpr,
             maxStreak: sql`GREATEST(COALESCE(${userStats.maxStreak}, 0), ${streakExpr})`,
             lastPlayedDate: context.today,
+            // SD-specific streak
+            sdStreakCurrent: sdStreakExpr,
+            sdStreakMax: sql`GREATEST(COALESCE(${userStats.sdStreakMax}, 0), ${sdStreakExpr})`,
+            sdLastPlayedDate: context.today,
             completionsAt1Move: sql`COALESCE(${userStats.completionsAt1Move}, 0) + ${move1Delta}`,
             completionsAt2Moves: sql`COALESCE(${userStats.completionsAt2Moves}, 0) + ${move2Delta}`,
             completionsAt3Moves: sql`COALESCE(${userStats.completionsAt3Moves}, 0) + ${move3Delta}`,
@@ -938,6 +1000,9 @@ export class DatabaseStorage implements IStorage {
             updatedAt: new Date(),
           })
           .where(eq(userStats.id, existingStats.id));
+
+        // Check super streak (all 3 modes completed today)
+        await updateSuperStreakInTx(tx, completion.userId, existingStats.id, context.today, context.yesterday);
 
         return rows[0];
       });
@@ -1417,21 +1482,27 @@ export class DatabaseStorage implements IStorage {
         ...friends,
       ];
 
-      // Get today's challenges for the given date
+      // Get today's challenges for all modes
       const todayChallenges = await db.select().from(dailyChallenges)
         .where(eq(dailyChallenges.date, date));
+      const todayCCChallenges = await db.select().from(castCallChallenges)
+        .where(eq(castCallChallenges.challengeDate, date));
+      const todayPremierChallenges = await db.select().from(premierChallenges)
+        .where(eq(premierChallenges.challengeDate, date));
 
       // Batch-fetch reactions for all visible participants on this date.
       const participantIds = participants.map(p => p.id);
       const allReactions = participantIds.length > 0
         ? await this.getReactionsForUsersOnDate(participantIds, date)
         : [];
-      const reactionsByTargetDifficulty = new Map<string, { reactorUserId: string; emoji: string }[]>();
+      // Key by targetUserId:gameMode:difficulty
+      const reactionsByKey = new Map<string, { reactorUserId: string; emoji: string }[]>();
       for (const reaction of allReactions) {
-        const key = `${reaction.targetUserId}:${reaction.difficulty}`;
-        const existing = reactionsByTargetDifficulty.get(key) ?? [];
+        const gm = (reaction as any).gameMode || 'six_degrees';
+        const key = `${reaction.targetUserId}:${gm}:${reaction.difficulty}`;
+        const existing = reactionsByKey.get(key) ?? [];
         existing.push({ reactorUserId: reaction.reactorUserId, emoji: reaction.emoji });
-        reactionsByTargetDifficulty.set(key, existing);
+        reactionsByKey.set(key, existing);
       }
 
       const results = [];
@@ -1440,23 +1511,67 @@ export class DatabaseStorage implements IStorage {
         const [stats] = await db.select().from(userStats)
           .where(eq(userStats.userId, participant.id));
 
-        // Get user completions for today's challenges (include all difficulties)
         const difficultyOrder: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
-        const sortedChallenges = [...todayChallenges].sort(
+        const todayCompletions: any[] = [];
+
+        // Six Degrees completions
+        const sortedSDChallenges = [...todayChallenges].sort(
           (a, b) => (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99)
         );
-        const todayCompletions = [];
-        for (const challenge of sortedChallenges) {
+        for (const challenge of sortedSDChallenges) {
           const [completion] = await db.select().from(userChallengeCompletions)
             .where(and(
               eq(userChallengeCompletions.userId, participant.id),
               eq(userChallengeCompletions.challengeId, challenge.id)
             ));
-          const pillReactions = reactionsByTargetDifficulty.get(`${participant.id}:${challenge.difficulty}`) ?? [];
+          const pillReactions = reactionsByKey.get(`${participant.id}:six_degrees:${challenge.difficulty}`) ?? [];
           todayCompletions.push({
+            gameMode: 'six_degrees',
             difficulty: challenge.difficulty,
             completed: !!completion,
             moves: completion?.moves ?? null,
+            reactions: pillReactions,
+          });
+        }
+
+        // Cast Call completions
+        const sortedCCChallenges = [...todayCCChallenges].sort(
+          (a, b) => (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99)
+        );
+        for (const challenge of sortedCCChallenges) {
+          const [completion] = await db.select().from(castCallCompletions)
+            .where(and(
+              eq(castCallCompletions.userId, participant.id),
+              eq(castCallCompletions.challengeId, challenge.id)
+            ));
+          const pillReactions = reactionsByKey.get(`${participant.id}:cast_call:${challenge.difficulty}`) ?? [];
+          todayCompletions.push({
+            gameMode: 'cast_call',
+            difficulty: challenge.difficulty,
+            completed: !!completion,
+            stars: completion ? (completion as any).stars : null,
+            actorsRevealed: completion ? (completion as any).actorsRevealed : null,
+            reactions: pillReactions,
+          });
+        }
+
+        // Premier completions
+        const sortedPremierChallenges = [...todayPremierChallenges].sort(
+          (a, b) => (difficultyOrder[a.difficulty] ?? 99) - (difficultyOrder[b.difficulty] ?? 99)
+        );
+        for (const challenge of sortedPremierChallenges) {
+          const [completion] = await db.select().from(premierCompletions)
+            .where(and(
+              eq(premierCompletions.userId, participant.id),
+              eq(premierCompletions.challengeId, challenge.id)
+            ));
+          const pillReactions = reactionsByKey.get(`${participant.id}:premier:${challenge.difficulty}`) ?? [];
+          todayCompletions.push({
+            gameMode: 'premier',
+            difficulty: challenge.difficulty,
+            completed: !!completion,
+            reels: completion?.reels ?? null,
+            result: completion?.result ?? null,
             reactions: pillReactions,
           });
         }
@@ -1478,12 +1593,12 @@ export class DatabaseStorage implements IStorage {
 
   // Reaction methods
 
-  async upsertReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string, emoji: string): Promise<Reaction> {
+  async upsertReaction(reactorUserId: string, targetUserId: string, challengeDate: string, gameMode: string, difficulty: string, emoji: string): Promise<Reaction> {
     return await withRetry(async () => {
       const [reaction] = await db.insert(reactions)
-        .values({ reactorUserId, targetUserId, challengeDate, difficulty, emoji })
+        .values({ reactorUserId, targetUserId, challengeDate, gameMode, difficulty, emoji })
         .onConflictDoUpdate({
-          target: [reactions.reactorUserId, reactions.targetUserId, reactions.challengeDate, reactions.difficulty],
+          target: [reactions.reactorUserId, reactions.targetUserId, reactions.challengeDate, reactions.gameMode, reactions.difficulty],
           set: { emoji },
         })
         .returning();
@@ -1491,12 +1606,13 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async removeReaction(reactorUserId: string, targetUserId: string, challengeDate: string, difficulty: string): Promise<void> {
+  async removeReaction(reactorUserId: string, targetUserId: string, challengeDate: string, gameMode: string, difficulty: string): Promise<void> {
     await withRetry(async () => {
       await db.delete(reactions).where(and(
         eq(reactions.reactorUserId, reactorUserId),
         eq(reactions.targetUserId, targetUserId),
         eq(reactions.challengeDate, challengeDate),
+        eq(reactions.gameMode, gameMode),
         eq(reactions.difficulty, difficulty),
       ));
     });
@@ -1506,6 +1622,7 @@ export class DatabaseStorage implements IStorage {
     targetUserId: string,
     reactorUserId: string,
     challengeDate: string,
+    gameMode: string,
     difficulty: string,
     emoji: string,
     reactionId?: string | null,
@@ -1516,6 +1633,7 @@ export class DatabaseStorage implements IStorage {
           targetUserId,
           reactorUserId,
           challengeDate,
+          gameMode,
           difficulty,
           emoji,
           reactionId: reactionId ?? null,
@@ -1563,21 +1681,48 @@ export class DatabaseStorage implements IStorage {
           reactorPicture: users.picture,
           targetUserId: reactionEvents.targetUserId,
           challengeDate: reactionEvents.challengeDate,
+          gameMode: reactionEvents.gameMode,
           difficulty: reactionEvents.difficulty,
           emoji: reactionEvents.emoji,
           moves: userChallengeCompletions.moves,
+          stars: castCallCompletions.stars,
+          actorsRevealed: castCallCompletions.actorsRevealed,
+          reels: premierCompletions.reels,
+          result: premierCompletions.result,
           createdAt: reactionEvents.createdAt,
           readAt: reactionEvents.readAt,
         })
         .from(reactionEvents)
         .innerJoin(users, eq(reactionEvents.reactorUserId, users.id))
+        // SD join (moves) — only match when gameMode is six_degrees
         .leftJoin(dailyChallenges, and(
+          eq(reactionEvents.gameMode, 'six_degrees'),
           eq(dailyChallenges.date, reactionEvents.challengeDate),
           eq(dailyChallenges.difficulty, reactionEvents.difficulty),
         ))
         .leftJoin(userChallengeCompletions, and(
           eq(userChallengeCompletions.userId, reactionEvents.targetUserId),
           eq(userChallengeCompletions.challengeId, dailyChallenges.id),
+        ))
+        // CC join (stars, actorsRevealed) — only match when gameMode is cast_call
+        .leftJoin(castCallChallenges, and(
+          eq(reactionEvents.gameMode, 'cast_call'),
+          eq(castCallChallenges.challengeDate, reactionEvents.challengeDate),
+          eq(castCallChallenges.difficulty, reactionEvents.difficulty),
+        ))
+        .leftJoin(castCallCompletions, and(
+          eq(castCallCompletions.userId, reactionEvents.targetUserId),
+          eq(castCallCompletions.challengeId, castCallChallenges.id),
+        ))
+        // Premier join (reels, result) — only match when gameMode is premier
+        .leftJoin(premierChallenges, and(
+          eq(reactionEvents.gameMode, 'premier'),
+          eq(premierChallenges.challengeDate, reactionEvents.challengeDate),
+          eq(premierChallenges.difficulty, reactionEvents.difficulty),
+        ))
+        .leftJoin(premierCompletions, and(
+          eq(premierCompletions.userId, reactionEvents.targetUserId),
+          eq(premierCompletions.challengeId, premierChallenges.id),
         ))
         .where(whereClause)
         .orderBy(desc(reactionEvents.createdAt), desc(reactionEvents.id))
@@ -1671,8 +1816,31 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async hasCompletionForDifficulty(userId: string, date: string, difficulty: string): Promise<boolean> {
+  async hasCompletionForModeAndDifficulty(userId: string, date: string, gameMode: string, difficulty: string): Promise<boolean> {
     return await withRetry(async () => {
+      if (gameMode === 'cast_call') {
+        const [result] = await db.select({ id: castCallCompletions.id })
+          .from(castCallCompletions)
+          .innerJoin(castCallChallenges, eq(castCallCompletions.challengeId, castCallChallenges.id))
+          .where(and(
+            eq(castCallCompletions.userId, userId),
+            eq(castCallChallenges.challengeDate, date),
+            eq(castCallChallenges.difficulty, difficulty),
+          ));
+        return !!result;
+      }
+      if (gameMode === 'premier') {
+        const [result] = await db.select({ id: premierCompletions.id })
+          .from(premierCompletions)
+          .innerJoin(premierChallenges, eq(premierCompletions.challengeId, premierChallenges.id))
+          .where(and(
+            eq(premierCompletions.userId, userId),
+            eq(premierChallenges.challengeDate, date),
+            eq(premierChallenges.difficulty, difficulty),
+          ));
+        return !!result;
+      }
+      // Default: six_degrees
       const [result] = await db.select({ id: userChallengeCompletions.id })
         .from(userChallengeCompletions)
         .innerJoin(dailyChallenges, eq(userChallengeCompletions.challengeId, dailyChallenges.id))
@@ -1695,7 +1863,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getFriendsLeaderboard(userId: string, sortBy: string, isEntitled: boolean = true): Promise<any> {
+  async getFriendsLeaderboard(userId: string, sortBy: string, isEntitled: boolean = true, mode: string = 'all'): Promise<any> {
     return await withRetry(async () => {
       const friends = await this.getAcceptedFriends(userId);
 
@@ -1706,27 +1874,70 @@ export class DatabaseStorage implements IStorage {
         ...(currentUser ? [{ id: currentUser.id, username: currentUser.username, picture: currentUser.picture, isCurrentUser: true }] : []),
       ];
 
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
       const leaderboard = [];
       for (const participant of allParticipants) {
         const [stats] = await db.select().from(userStats)
           .where(eq(userStats.userId, participant.id));
 
-        // Calculate avg moves from last 7 days
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const recentCompletions = await db.select().from(userChallengeCompletions)
-          .where(and(
-            eq(userChallengeCompletions.userId, participant.id),
-            gt(userChallengeCompletions.completedAt, sevenDaysAgo)
-          ));
+        // Calculate avg moves from last 7 days (SD)
         let avgMoves7Day: number | null = null;
-        if (recentCompletions.length > 0) {
-          const totalMoves = recentCompletions.reduce((sum: number, c: any) => sum + c.moves, 0);
-          avgMoves7Day = Math.round((totalMoves / recentCompletions.length) * 10) / 10;
+        if (mode === 'six_degrees' || mode === 'all') {
+          const recentSDCompletions = await db.select().from(userChallengeCompletions)
+            .where(and(
+              eq(userChallengeCompletions.userId, participant.id),
+              gt(userChallengeCompletions.completedAt, sevenDaysAgo)
+            ));
+          if (recentSDCompletions.length > 0) {
+            const totalMoves = recentSDCompletions.reduce((sum: number, c: any) => sum + c.moves, 0);
+            avgMoves7Day = Math.round((totalMoves / recentSDCompletions.length) * 10) / 10;
+          }
         }
 
-        // Calculate trophy totals using par-based trophy columns
-        const trophyBreakdown: Record<string, number> = {
+        // Cast Call avg stars (7 day)
+        let castCallAvgStars: number | null = null;
+        let castCallStreak = stats?.castCallStreakCurrent ?? 0;
+        let castCallTotalTrophies = 0;
+        if (mode === 'cast_call' || mode === 'all') {
+          const recentCCCompletions = await db.select({ stars: castCallCompletions.stars }).from(castCallCompletions)
+            .where(and(
+              eq(castCallCompletions.userId, participant.id),
+              gt(castCallCompletions.completedAt, sevenDaysAgo)
+            ));
+          if (recentCCCompletions.length > 0) {
+            const totalStars = recentCCCompletions.reduce((sum: number, c: any) => sum + c.stars, 0);
+            castCallAvgStars = Math.round((totalStars / recentCCCompletions.length) * 10) / 10;
+          }
+          castCallTotalTrophies = (stats?.trophyDirectorsCut ?? 0) + (stats?.trophyBoxOfficeHit ?? 0)
+            + (stats?.trophyCCMatinee ?? 0) + (stats?.trophyBMovie ?? 0)
+            + (stats?.trophyStraightToDvd ?? 0) + (stats?.trophyWalkedOut ?? 0);
+        }
+
+        // Premier avg reels (7 day)
+        let premierAvgReels: number | null = null;
+        let premierStreak = stats?.premierStreakCurrent ?? 0;
+        let premierTotalTrophies = 0;
+        if (mode === 'premier' || mode === 'all') {
+          const recentPremCompletions = await db.select({ reels: premierCompletions.reels, result: premierCompletions.result })
+            .from(premierCompletions)
+            .where(and(
+              eq(premierCompletions.userId, participant.id),
+              gt(premierCompletions.completedAt, sevenDaysAgo)
+            ));
+          const wonRecent = recentPremCompletions.filter((c: any) => c.result === 'won');
+          if (wonRecent.length > 0) {
+            const totalReels = wonRecent.reduce((sum: number, c: any) => sum + c.reels, 0);
+            premierAvgReels = Math.round((totalReels / wonRecent.length) * 10) / 10;
+          }
+          premierTotalTrophies = (stats?.trophyFilmHistorian ?? 0) + (stats?.trophyArchivist ?? 0)
+            + (stats?.trophyCinephile ?? 0) + (stats?.trophyCasualViewer ?? 0)
+            + (stats?.trophyTimeTraveler ?? 0) + (stats?.trophyLostInTime ?? 0);
+        }
+
+        // SD trophy totals
+        const sdTrophyBreakdown: Record<string, number> = {
           walkOfFame: stats?.trophyWalkOfFame ?? 0,
           oscar: stats?.trophyOscar ?? 0,
           goldenGlobe: stats?.trophyGoldenGlobe ?? 0,
@@ -1734,20 +1945,57 @@ export class DatabaseStorage implements IStorage {
           sag: stats?.trophySag ?? 0,
           popcorn: stats?.trophyPopcorn ?? 0,
         };
-        const totalTrophies = Object.values(trophyBreakdown).reduce((sum, v) => sum + v, 0);
+        const sdTotalTrophies = Object.values(sdTrophyBreakdown).reduce((sum, v) => sum + v, 0);
 
+        // Compute sort value and totals based on mode
         let sortValue = 0;
-        if (sortBy === "streak") {
-          sortValue = stats?.currentStreak ?? 0;
-        } else if (sortBy === "efficiency") {
-          sortValue = avgMoves7Day ?? 999;
-        } else if (sortBy === "trophies") {
-          // Weighted score: higher tier = more points
-          const weightedScore = trophyBreakdown.walkOfFame * 6 + trophyBreakdown.oscar * 5
-            + trophyBreakdown.goldenGlobe * 4 + trophyBreakdown.emmy * 3
-            + trophyBreakdown.sag * 2 + trophyBreakdown.popcorn * 1;
-          // Transition fallback: use totalCompletions when all trophy counts are 0
-          sortValue = weightedScore > 0 ? weightedScore : (stats?.totalCompletions ?? 0);
+        let displayStreak = 0;
+        let displayMaxStreak = stats?.maxStreak ?? 0;
+        let displayTotalTrophies = 0;
+        let trophyBreakdown = sdTrophyBreakdown;
+
+        if (mode === 'six_degrees') {
+          displayStreak = stats?.sdStreakCurrent ?? stats?.currentStreak ?? 0;
+          displayMaxStreak = stats?.sdStreakMax ?? stats?.maxStreak ?? 0;
+          displayTotalTrophies = sdTotalTrophies;
+          if (sortBy === "streak") sortValue = displayStreak;
+          else if (sortBy === "efficiency") sortValue = avgMoves7Day ?? 999;
+          else if (sortBy === "trophies") {
+            const wScore = sdTrophyBreakdown.walkOfFame * 6 + sdTrophyBreakdown.oscar * 5
+              + sdTrophyBreakdown.goldenGlobe * 4 + sdTrophyBreakdown.emmy * 3
+              + sdTrophyBreakdown.sag * 2 + sdTrophyBreakdown.popcorn * 1;
+            sortValue = wScore > 0 ? wScore : (stats?.totalCompletions ?? 0);
+          }
+        } else if (mode === 'cast_call') {
+          displayStreak = castCallStreak;
+          displayMaxStreak = stats?.castCallStreakMax ?? 0;
+          displayTotalTrophies = castCallTotalTrophies;
+          if (sortBy === "streak") sortValue = castCallStreak;
+          else if (sortBy === "efficiency") sortValue = castCallAvgStars != null ? -castCallAvgStars : 999; // negate: higher stars = better
+          else if (sortBy === "trophies") sortValue = castCallTotalTrophies;
+        } else if (mode === 'premier') {
+          displayStreak = premierStreak;
+          displayMaxStreak = stats?.premierStreakMax ?? 0;
+          displayTotalTrophies = premierTotalTrophies;
+          if (sortBy === "streak") sortValue = premierStreak;
+          else if (sortBy === "efficiency") sortValue = premierAvgReels ?? 999; // lower reels = better
+          else if (sortBy === "trophies") sortValue = premierTotalTrophies;
+        } else {
+          // mode === 'all'
+          displayStreak = stats?.currentStreak ?? 0;
+          displayTotalTrophies = sdTotalTrophies + castCallTotalTrophies + premierTotalTrophies;
+          if (sortBy === "streak") {
+            sortValue = displayStreak;
+          } else if (sortBy === "efficiency") {
+            // Composite score: average of normalized scores across played modes
+            const scores: number[] = [];
+            if (avgMoves7Day != null) scores.push(100 - Math.min(Math.max((avgMoves7Day - 2) / 4, 0), 1) * 100);
+            if (castCallAvgStars != null) scores.push(Math.min(castCallAvgStars / 5, 1) * 100);
+            if (premierAvgReels != null) scores.push(100 - Math.min(premierAvgReels / 7, 1) * 100);
+            sortValue = scores.length > 0 ? -(scores.reduce((a, b) => a + b, 0) / scores.length) : 999;
+          } else if (sortBy === "trophies") {
+            sortValue = displayTotalTrophies;
+          }
         }
 
         leaderboard.push({
@@ -1755,16 +2003,26 @@ export class DatabaseStorage implements IStorage {
           username: participant.username,
           picture: participant.picture,
           isCurrentUser: participant.isCurrentUser,
-          currentStreak: stats?.currentStreak ?? 0,
-          maxStreak: stats?.maxStreak ?? 0,
+          currentStreak: displayStreak,
+          maxStreak: displayMaxStreak,
           avgMoves7Day,
-          totalTrophies,
+          totalTrophies: displayTotalTrophies,
           trophyBreakdown,
           sortValue,
+          // Mode-specific fields
+          castCallAvgStars,
+          castCallStreak,
+          castCallTotalTrophies,
+          premierAvgReels,
+          premierStreak,
+          premierTotalTrophies,
+          compositeScore: mode === 'all' && sortBy === 'efficiency' && sortValue !== 999 ? Math.abs(sortValue) : undefined,
+          superStreakCurrent: stats?.superStreakCurrent ?? 0,
         });
       }
 
-      // Sort: for efficiency, lower is better; for streak and trophies, higher is better
+      // Sort: for efficiency in SD/premier/all-composite, lower is better; for streak and trophies, higher is better
+      // CC efficiency uses negated values so higher-is-better sort also works
       if (sortBy === "efficiency") {
         leaderboard.sort((a, b) => a.sortValue - b.sortValue);
       } else {
@@ -1857,6 +2115,7 @@ export class DatabaseStorage implements IStorage {
   async recordCastCallCompletionWithStats(
     completion: InsertCastCallCompletion,
     context: {
+      difficulty: string;
       today: string;
       yesterday: string;
       dayBeforeYesterday: string;
@@ -1910,7 +2169,7 @@ export class DatabaseStorage implements IStorage {
           existingStats = createdStats;
         }
 
-        // Streak calculation with shield logic (same as Six Degrees)
+        // Composite streak (shared columns — any mode played today keeps it alive)
         const streakExpr = sql<number>`
           CASE
             WHEN ${userStats.lastPlayedDate} = ${context.today} THEN COALESCE(${userStats.currentStreak}, 0)
@@ -1918,6 +2177,15 @@ export class DatabaseStorage implements IStorage {
             WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
               AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
               THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            ELSE 1
+          END
+        `;
+
+        // Cast Call-specific streak
+        const ccStreakExpr = sql<number>`
+          CASE
+            WHEN ${userStats.castCallLastPlayedDate} = ${context.today} THEN COALESCE(${userStats.castCallStreakCurrent}, 0)
+            WHEN ${userStats.castCallLastPlayedDate} = ${context.yesterday} THEN COALESCE(${userStats.castCallStreakCurrent}, 0) + 1
             ELSE 1
           END
         `;
@@ -1931,18 +2199,52 @@ export class DatabaseStorage implements IStorage {
           END
         `;
 
-        // 4. Update stats atomically — only cast call counter + streak
+        // CC difficulty deltas
+        const ccEasyDelta = context.difficulty === "easy" ? 1 : 0;
+        const ccMediumDelta = context.difficulty === "medium" ? 1 : 0;
+        const ccHardDelta = context.difficulty === "hard" ? 1 : 0;
+
+        // CC trophy tier deltas based on stars
+        const stars = completion.stars;
+        const directorsCutDelta = stars === 5 ? 1 : 0;
+        const boxOfficeHitDelta = stars === 4 ? 1 : 0;
+        const ccMatineeDelta = stars === 3 ? 1 : 0;
+        const bMovieDelta = stars === 2 ? 1 : 0;
+        const straightToDvdDelta = stars === 1 ? 1 : 0;
+        const walkedOutDelta = stars === 0 ? 1 : 0;
+
+        // 4. Update stats atomically — cast call counter + composite streak + CC-specific streak/difficulty/trophies
         await tx.update(userStats)
           .set({
             castCallCompletions: sql`COALESCE(${userStats.castCallCompletions}, 0) + 1`,
+            // Composite streak
             currentStreak: streakExpr,
             maxStreak: sql`GREATEST(COALESCE(${userStats.maxStreak}, 0), ${streakExpr})`,
             lastPlayedDate: context.today,
+            // CC-specific streak
+            castCallStreakCurrent: ccStreakExpr,
+            castCallStreakMax: sql`GREATEST(COALESCE(${userStats.castCallStreakMax}, 0), ${ccStreakExpr})`,
+            castCallLastPlayedDate: context.today,
+            // CC difficulty
+            castCallEasyCompletions: sql`COALESCE(${userStats.castCallEasyCompletions}, 0) + ${ccEasyDelta}`,
+            castCallMediumCompletions: sql`COALESCE(${userStats.castCallMediumCompletions}, 0) + ${ccMediumDelta}`,
+            castCallHardCompletions: sql`COALESCE(${userStats.castCallHardCompletions}, 0) + ${ccHardDelta}`,
+            // CC trophy tiers
+            trophyDirectorsCut: sql`COALESCE(${userStats.trophyDirectorsCut}, 0) + ${directorsCutDelta}`,
+            trophyBoxOfficeHit: sql`COALESCE(${userStats.trophyBoxOfficeHit}, 0) + ${boxOfficeHitDelta}`,
+            trophyCCMatinee: sql`COALESCE(${userStats.trophyCCMatinee}, 0) + ${ccMatineeDelta}`,
+            trophyBMovie: sql`COALESCE(${userStats.trophyBMovie}, 0) + ${bMovieDelta}`,
+            trophyStraightToDvd: sql`COALESCE(${userStats.trophyStraightToDvd}, 0) + ${straightToDvdDelta}`,
+            trophyWalkedOut: sql`COALESCE(${userStats.trophyWalkedOut}, 0) + ${walkedOutDelta}`,
+            // Shield
             streakShieldsRemaining: sql`COALESCE(${userStats.streakShieldsRemaining}, 0) - ${shieldUsed}`,
             lastShieldUsedDate: sql`CASE WHEN ${shieldUsed} = 1 THEN ${context.today} ELSE ${userStats.lastShieldUsedDate} END`,
             updatedAt: new Date(),
           })
           .where(eq(userStats.id, existingStats.id));
+
+        // Check super streak (all 3 modes completed today)
+        await updateSuperStreakInTx(tx, completion.userId, existingStats.id, context.today, context.yesterday);
 
         return rows[0];
       });
@@ -1999,6 +2301,7 @@ export class DatabaseStorage implements IStorage {
   async recordPremierCompletionWithStats(
     completion: InsertPremierCompletion,
     context: {
+      difficulty: string;
       today: string;
       yesterday: string;
       dayBeforeYesterday: string;
@@ -2058,7 +2361,7 @@ export class DatabaseStorage implements IStorage {
           existingStats = createdStats;
         }
 
-        // Streak calculation with shield logic (same as Cast Call / Six Degrees)
+        // Composite streak (shared columns — any mode played today keeps it alive)
         const streakExpr = sql<number>`
           CASE
             WHEN ${userStats.lastPlayedDate} = ${context.today} THEN COALESCE(${userStats.currentStreak}, 0)
@@ -2066,6 +2369,15 @@ export class DatabaseStorage implements IStorage {
             WHEN ${userStats.lastPlayedDate} = ${context.dayBeforeYesterday}
               AND COALESCE(${userStats.streakShieldsRemaining}, 0) > 0
               THEN COALESCE(${userStats.currentStreak}, 0) + 1
+            ELSE 1
+          END
+        `;
+
+        // Premier-specific streak
+        const premierStreakExpr = sql<number>`
+          CASE
+            WHEN ${userStats.premierLastPlayedDate} = ${context.today} THEN COALESCE(${userStats.premierStreakCurrent}, 0)
+            WHEN ${userStats.premierLastPlayedDate} = ${context.yesterday} THEN COALESCE(${userStats.premierStreakCurrent}, 0) + 1
             ELSE 1
           END
         `;
@@ -2079,18 +2391,53 @@ export class DatabaseStorage implements IStorage {
           END
         `;
 
-        // 4. Update stats atomically — premier counter + streak
+        // Premier difficulty deltas
+        const premEasyDelta = context.difficulty === "easy" ? 1 : 0;
+        const premMediumDelta = context.difficulty === "medium" ? 1 : 0;
+        const premHardDelta = context.difficulty === "hard" ? 1 : 0;
+
+        // Premier trophy tier deltas based on reels + result
+        const reels = completion.reels;
+        const result = completion.result;
+        const filmHistorianDelta = result !== "failed" && reels === 0 ? 1 : 0;
+        const archivistDelta = result !== "failed" && reels >= 1 && reels <= 2 ? 1 : 0;
+        const cinephileDelta = result !== "failed" && reels >= 3 && reels <= 4 ? 1 : 0;
+        const casualViewerDelta = result !== "failed" && reels >= 5 && reels <= 6 ? 1 : 0;
+        const timeTravelerDelta = result !== "failed" && reels >= 7 ? 1 : 0;
+        const lostInTimeDelta = result === "failed" ? 1 : 0;
+
+        // 4. Update stats atomically — premier counter + composite streak + Premier-specific streak/difficulty/trophies
         await tx.update(userStats)
           .set({
             premierAttempts: sql`COALESCE(${userStats.premierAttempts}, 0) + 1`,
+            // Composite streak
             currentStreak: streakExpr,
             maxStreak: sql`GREATEST(COALESCE(${userStats.maxStreak}, 0), ${streakExpr})`,
             lastPlayedDate: context.today,
+            // Premier-specific streak
+            premierStreakCurrent: premierStreakExpr,
+            premierStreakMax: sql`GREATEST(COALESCE(${userStats.premierStreakMax}, 0), ${premierStreakExpr})`,
+            premierLastPlayedDate: context.today,
+            // Premier difficulty
+            premierEasyCompletions: sql`COALESCE(${userStats.premierEasyCompletions}, 0) + ${premEasyDelta}`,
+            premierMediumCompletions: sql`COALESCE(${userStats.premierMediumCompletions}, 0) + ${premMediumDelta}`,
+            premierHardCompletions: sql`COALESCE(${userStats.premierHardCompletions}, 0) + ${premHardDelta}`,
+            // Premier trophy tiers
+            trophyFilmHistorian: sql`COALESCE(${userStats.trophyFilmHistorian}, 0) + ${filmHistorianDelta}`,
+            trophyArchivist: sql`COALESCE(${userStats.trophyArchivist}, 0) + ${archivistDelta}`,
+            trophyCinephile: sql`COALESCE(${userStats.trophyCinephile}, 0) + ${cinephileDelta}`,
+            trophyCasualViewer: sql`COALESCE(${userStats.trophyCasualViewer}, 0) + ${casualViewerDelta}`,
+            trophyTimeTraveler: sql`COALESCE(${userStats.trophyTimeTraveler}, 0) + ${timeTravelerDelta}`,
+            trophyLostInTime: sql`COALESCE(${userStats.trophyLostInTime}, 0) + ${lostInTimeDelta}`,
+            // Shield
             streakShieldsRemaining: sql`COALESCE(${userStats.streakShieldsRemaining}, 0) - ${shieldUsed}`,
             lastShieldUsedDate: sql`CASE WHEN ${shieldUsed} = 1 THEN ${context.today} ELSE ${userStats.lastShieldUsedDate} END`,
             updatedAt: new Date(),
           })
           .where(eq(userStats.id, existingStats.id));
+
+        // Check super streak (all 3 modes completed today)
+        await updateSuperStreakInTx(tx, completion.userId, existingStats.id, context.today, context.yesterday);
 
         return { completion: rows[0], isNew: true };
       });
