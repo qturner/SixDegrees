@@ -1745,7 +1745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .innerJoin(castCallChallenges, eq(castCallCompletions.challengeId, castCallChallenges.id))
             .where(eq(castCallCompletions.userId, userId))
             .orderBy(desc(castCallCompletions.completedAt))
-            .limit(5);
+            .limit(15);
         });
         return res.json(ccRecent.map((r: any, i: number) => ({
           id: `cc-${r.challengeDate}-${r.difficulty}-${i}`,
@@ -1771,7 +1771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .innerJoin(premierChallenges, eq(premierCompletions.challengeId, premierChallenges.id))
             .where(eq(premierCompletions.userId, userId))
             .orderBy(desc(premierCompletions.completedAt))
-            .limit(5);
+            .limit(15);
         });
         return res.json(premRecent.map((r: any, i: number) => ({
           id: `prem-${r.challengeDate}-${r.difficulty}-${i}`,
@@ -1785,7 +1785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Default: Six Degrees — flatten to match CC/Premier format
-      const recentChallenges = await storage.getRecentChallengesForUser(userId, 5);
+      const recentChallenges = await storage.getRecentChallengesForUser(userId, 15);
       res.json(recentChallenges.map((r: any) => ({
         id: r.challenge.id,
         gameMode: "six_degrees",
