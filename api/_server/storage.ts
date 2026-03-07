@@ -1926,10 +1926,9 @@ export class DatabaseStorage implements IStorage {
               eq(premierCompletions.userId, participant.id),
               gt(premierCompletions.completedAt, sevenDaysAgo)
             ));
-          const wonRecent = recentPremCompletions.filter((c: any) => c.result === 'won');
-          if (wonRecent.length > 0) {
-            const totalReels = wonRecent.reduce((sum: number, c: any) => sum + c.reels, 0);
-            premierAvgReels = Math.round((totalReels / wonRecent.length) * 10) / 10;
+          if (recentPremCompletions.length > 0) {
+            const totalReels = recentPremCompletions.reduce((sum: number, c: any) => sum + c.reels, 0);
+            premierAvgReels = Math.round((totalReels / recentPremCompletions.length) * 10) / 10;
           }
           premierTotalTrophies = (stats?.trophyFilmHistorian ?? 0) + (stats?.trophyArchivist ?? 0)
             + (stats?.trophyCinephile ?? 0) + (stats?.trophyCasualViewer ?? 0)

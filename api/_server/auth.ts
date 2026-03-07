@@ -534,9 +534,10 @@ export async function setupAuth(app: Express) {
         });
 
         const premTotal = premCompletions.length;
+        const allReels = premCompletions.map((c: any) => c.reels);
         const wonCompletions = premCompletions.filter((c: any) => c.result === "won");
         const wonReels = wonCompletions.map((c: any) => c.reels);
-        const premAvgReels = computeAvg(wonReels);
+        const premAvgReels = computeAvg(allReels);
         const perfectSorts = wonReels.filter((r: number) => r === 0).length;
 
         // Reels distribution (only won games)
