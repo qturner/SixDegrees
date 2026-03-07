@@ -1784,9 +1784,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })));
       }
 
-      // Default: Six Degrees
+      // Default: Six Degrees — flatten to match CC/Premier format
       const recentChallenges = await storage.getRecentChallengesForUser(userId, 5);
-      res.json(recentChallenges);
+      res.json(recentChallenges.map((r: any) => ({
+        id: r.challenge.id,
+        gameMode: "six_degrees",
+        date: r.challenge.date,
+        difficulty: r.challenge.difficulty ?? "medium",
+        completed: r.completed,
+        moves: r.moves,
+      })));
     } catch (error) {
       console.error("Error getting recent challenges:", error);
       res.status(500).json({ message: "Internal server error" });
