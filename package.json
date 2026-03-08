@@ -10,7 +10,10 @@
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "test:completion-concurrency": "tsx api/_server/scripts/test_completion_concurrency.ts",
-    "test:date-math": "tsx api/_server/scripts/test_est_date_math.ts"
+    "test:date-math": "tsx api/_server/scripts/test_est_date_math.ts",
+    "test:easy-actor-allowlist": "node --import tsx api/_server/scripts/test_easy_actor_allowlist_integration.ts",
+    "test:easy-mode-generation": "tsx api/_server/scripts/test_easy_mode_generation.ts",
+    "review:easy-actors": "node --env-file=.env.local --import tsx api/_server/scripts/review_easy_actor_allowlist.ts"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^2.0.0",

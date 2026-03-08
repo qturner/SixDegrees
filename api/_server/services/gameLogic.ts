@@ -26,6 +26,10 @@ interface SearchBudget {
   remainingActorExpansions: number;
 }
 
+interface SearchOptions {
+  moviePopularityFloor?: number;
+}
+
 class GameLogicService {
   private readonly bannedActorNames = new Set(["Brad Pitt"]);
   private readonly maxActorsPerExpansion = 3;
@@ -219,99 +223,26 @@ class GameLogicService {
   }
 
   /**
-   * Generate actor pairs for all three difficulties in a single pass.
-   * Uses one quality pool and BFS distance to bucket pairs into easy/medium/hard.
+   * Generate all difficulty pairs sequentially so each difficulty can apply its
+   * own actor-pool and BFS constraints while preserving cross-bucket uniqueness.
    */
   async generateAllDailyChallenges(
     excludeActorIds: number[] = [],
   ): Promise<Map<DifficultyLevel, { actor1: Actor; actor2: Actor; distance: number }>> {
     const results = new Map<DifficultyLevel, { actor1: Actor; actor2: Actor; distance: number }>();
-    // Store multiple fallbacks per bucket, sorted by score at selection time
-    const fallbacks = new Map<DifficultyLevel, CandidateScore[]>();
 
     try {
-      const pool = await tmdbService.getQualityActorPool();
-      if (pool.length < 2) {
-        console.error(`Quality actor pool too small: ${pool.length}`);
-        return results;
-      }
-
-      // Track actors already used in results to avoid reuse across difficulties
       const usedActorIds = new Set<number>(excludeActorIds);
-
-      for (let attempt = 0; attempt < this.maxUnifiedPairAttempts; attempt++) {
-        // Stop early if all buckets filled
-        if (results.size === this.distanceBuckets.length) break;
-
-        const actor1 = this.pickRandomActor(pool);
-        const actor2 = this.pickRandomActor(pool);
-        if (!actor1 || !actor2) continue;
-        if (!this.isEligiblePair(actor1, actor2, [...usedActorIds])) continue;
-
-        const distance = await this.findPathDistance(actor1.id, actor2.id, 6);
-        if (distance === null) continue;
-
-        // Try to slot into an unfilled bucket
-        let slotted = false;
-        for (const bucket of this.distanceBuckets) {
-          if (results.has(bucket.difficulty)) continue;
-
-          if (distance >= bucket.minDistance && distance <= bucket.maxDistance) {
-            console.log(`Selected ${bucket.difficulty} pair (${distance} hops): ${actor1.name} <-> ${actor2.name} [attempt ${attempt + 1}]`);
-            results.set(bucket.difficulty, { actor1, actor2, distance });
-            usedActorIds.add(actor1.id);
-            usedActorIds.add(actor2.id);
-            slotted = true;
-            break;
-          }
-        }
-
-        // If not slotted into a primary bucket, track as fallback for all unfilled buckets
-        if (!slotted) {
-          for (const bucket of this.distanceBuckets) {
-            if (results.has(bucket.difficulty)) continue;
-
-            const midpoint = (bucket.minDistance + bucket.maxDistance) / 2;
-            let outsidePenalty = 0;
-            if (distance < bucket.minDistance) outsidePenalty = bucket.minDistance - distance;
-            else if (distance > bucket.maxDistance) outsidePenalty = distance - bucket.maxDistance;
-            const score = outsidePenalty * 100 + Math.abs(distance - midpoint);
-
-            if (!fallbacks.has(bucket.difficulty)) {
-              fallbacks.set(bucket.difficulty, []);
-            }
-            fallbacks.get(bucket.difficulty)!.push({ actor1, actor2, distance, score });
-          }
-        }
-      }
-
-      // Fill remaining buckets with fallbacks, enforcing cross-bucket uniqueness
       for (const bucket of this.distanceBuckets) {
-        if (results.has(bucket.difficulty)) continue;
-
-        const candidates = fallbacks.get(bucket.difficulty);
-        if (!candidates || candidates.length === 0) {
+        const pair = await this.generateDailyActors(bucket.difficulty, [...usedActorIds]);
+        if (!pair) {
           console.warn(`No pair found for ${bucket.difficulty} difficulty`);
           continue;
         }
 
-        // Sort by score (best first), pick first that doesn't conflict with usedActorIds
-        candidates.sort((a, b) => a.score - b.score);
-        let picked = false;
-        for (const candidate of candidates) {
-          if (usedActorIds.has(candidate.actor1.id) || usedActorIds.has(candidate.actor2.id)) {
-            continue;
-          }
-          console.warn(`Using fallback ${bucket.difficulty} pair (${candidate.distance} hops): ${candidate.actor1.name} <-> ${candidate.actor2.name}`);
-          results.set(bucket.difficulty, { actor1: candidate.actor1, actor2: candidate.actor2, distance: candidate.distance });
-          usedActorIds.add(candidate.actor1.id);
-          usedActorIds.add(candidate.actor2.id);
-          picked = true;
-          break;
-        }
-        if (!picked) {
-          console.warn(`No unique fallback pair for ${bucket.difficulty} difficulty`);
-        }
+        results.set(bucket.difficulty, pair);
+        usedActorIds.add(pair.actor1.id);
+        usedActorIds.add(pair.actor2.id);
       }
 
       console.log(`Generated ${results.size}/${this.distanceBuckets.length} difficulty pairs`);
@@ -331,9 +262,9 @@ class GameLogicService {
     excludeActorIds: number[] = [],
   ): Promise<{ actor1: Actor; actor2: Actor; distance: number } | null> {
     try {
-      const pool = await tmdbService.getQualityActorPool();
+      const pool = await this.getActorPoolForDifficulty(difficulty);
       if (pool.length < 2) {
-        console.error(`Quality actor pool too small for ${difficulty}: ${pool.length}`);
+        console.error(`Actor pool too small for ${difficulty}: ${pool.length}`);
         return null;
       }
 
@@ -344,6 +275,7 @@ class GameLogicService {
       }
 
       let bestFallback: CandidateScore | null = null;
+      const searchOptions = this.getSearchOptions(difficulty);
 
       for (let attempt = 0; attempt < this.maxUnifiedPairAttempts; attempt++) {
         const actor1 = this.pickRandomActor(pool);
@@ -351,7 +283,7 @@ class GameLogicService {
         if (!actor1 || !actor2) continue;
         if (!this.isEligiblePair(actor1, actor2, excludeActorIds)) continue;
 
-        const distance = await this.findPathDistance(actor1.id, actor2.id, 6);
+        const distance = await this.findPathDistance(actor1.id, actor2.id, 6, searchOptions);
         if (distance === null) continue;
 
         if (distance >= bucket.minDistance && distance <= bucket.maxDistance) {
@@ -384,6 +316,22 @@ class GameLogicService {
     }
   }
 
+  private getSearchOptions(difficulty: DifficultyLevel): SearchOptions {
+    if (difficulty === "easy") {
+      return { moviePopularityFloor: 500 };
+    }
+
+    return {};
+  }
+
+  private async getActorPoolForDifficulty(difficulty: DifficultyLevel): Promise<Actor[]> {
+    if (difficulty === "easy") {
+      return tmdbService.getActorsByTier("easy");
+    }
+
+    return tmdbService.getQualityActorPool();
+  }
+
   private pickRandomActor(pool: Actor[]): Actor | null {
     if (pool.length === 0) return null;
     return pool[Math.floor(Math.random() * pool.length)] ?? null;
@@ -400,6 +348,7 @@ class GameLogicService {
     startId: number,
     endId: number,
     maxDepth: number,
+    searchOptions: SearchOptions = {},
   ): Promise<number | null> {
     if (startId === endId) return 0;
 
@@ -407,7 +356,7 @@ class GameLogicService {
     const endDepth = new Map<number, number>([[endId, 0]]);
     let startFrontier: number[] = [startId];
     let endFrontier: number[] = [endId];
-    const neighborsCache = new Map<number, number[]>();
+    const neighborsCache = new Map<string, number[]>();
     const budget = this.createSearchBudget(maxDepth);
 
     let expansionCount = 0;
@@ -435,6 +384,7 @@ class GameLogicService {
           maxDepth,
           neighborsCache,
           budget,
+          searchOptions,
         );
         if (result.matchDistance !== null) {
           return result.matchDistance;
@@ -448,6 +398,7 @@ class GameLogicService {
           maxDepth,
           neighborsCache,
           budget,
+          searchOptions,
         );
         if (result.matchDistance !== null) {
           return result.matchDistance;
@@ -484,8 +435,9 @@ class GameLogicService {
     thisDepthMap: Map<number, number>,
     otherDepthMap: Map<number, number>,
     maxDepth: number,
-    neighborsCache: Map<number, number[]>,
+    neighborsCache: Map<string, number[]>,
     budget: SearchBudget,
+    searchOptions: SearchOptions,
   ): Promise<{ nextFrontier: number[]; matchDistance: number | null }> {
     const nextFrontier: number[] = [];
     const queued = new Set<number>();
@@ -502,7 +454,11 @@ class GameLogicService {
       }
       budget.remainingActorExpansions--;
 
-      const neighbors = await this.getConnectedActors(actorId, neighborsCache);
+      const neighbors = await this.getConnectedActors(
+        actorId,
+        neighborsCache,
+        searchOptions.moviePopularityFloor,
+      );
       for (const neighborId of neighbors) {
         if (thisDepthMap.has(neighborId)) {
           continue;
@@ -538,15 +494,20 @@ class GameLogicService {
 
   private async getConnectedActors(
     actorId: number,
-    neighborsCache: Map<number, number[]>,
+    neighborsCache: Map<string, number[]>,
+    moviePopularityFloor?: number,
   ): Promise<number[]> {
-    const cached = neighborsCache.get(actorId);
+    const cacheKey = `${actorId}:${moviePopularityFloor ?? 0}`;
+    const cached = neighborsCache.get(cacheKey);
     if (cached) {
       return cached;
     }
 
     const movies = await tmdbService.getActorMovies(actorId);
-    const topMovies = [...movies]
+    const eligibleMovies = moviePopularityFloor
+      ? movies.filter((movie) => (movie.vote_count ?? 0) >= moviePopularityFloor)
+      : movies;
+    const topMovies = [...eligibleMovies]
       .sort((a: Movie, b: Movie) => (b.popularity ?? 0) - (a.popularity ?? 0))
       .slice(0, this.maxMoviesPerActor);
 
@@ -565,7 +526,7 @@ class GameLogicService {
     }
 
     const neighborIds = Array.from(neighbors);
-    neighborsCache.set(actorId, neighborIds);
+    neighborsCache.set(cacheKey, neighborIds);
     return neighborIds;
   }
 }

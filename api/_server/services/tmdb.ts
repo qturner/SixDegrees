@@ -1,4 +1,5 @@
 import { Actor, Movie } from "../../../shared/schema.js";
+import { EASY_ACTOR_ALLOWLIST } from "../data/easyActorAllowlist.js";
 
 interface TMDbConfig {
   apiKey: string;
@@ -116,14 +117,10 @@ class TMDbService {
     'Corey Burton',
     'Kevin Michael Richardson',
     'John DiMaggio',
-    'Mark Hamill', // Primarily voice work in recent years
     // Stand-up comedians (primarily solo performers)
     'Dave Chappelle',
-    'Chris Rock',
-    'Eddie Murphy', // Primarily known for solo stand-up, though has acted
     'Richard Pryor',
     'George Carlin',
-    'Robin Williams', // Though he acted, much of his filmography is solo or voice work
     'Joan Rivers',
     'Andrew Dice Clay',
     'Sam Kinison'
@@ -813,15 +810,24 @@ class TMDbService {
 
   async getActorsByTier(tier: 'easy' | 'medium' | 'hard'): Promise<Actor[]> {
     try {
+      if (tier === "easy") {
+        const curatedActors = EASY_ACTOR_ALLOWLIST
+          .filter((actor) => !this.EXCLUDED_ACTORS.has(actor.name))
+          .map((actor) => ({
+            id: actor.id,
+            name: actor.name,
+            profile_path: actor.profilePath,
+            known_for_department: "Acting",
+          }));
+
+        console.log(`Using curated easy actor allowlist: ${curatedActors.length} actors`);
+        return curatedActors;
+      }
+
       let minPage: number;
       let maxPage: number;
 
       switch (tier) {
-        case 'easy':
-          // A-List: Top-ranked mainstream actors
-          minPage = 1;
-          maxPage = 4;
-          break;
         case 'medium':
           // Mid-Tier: less mainstream, still recognizable
           minPage = 9;
@@ -882,7 +888,6 @@ class TMDbService {
 
       // Apply minimum popularity score threshold per tier
       const popularityThresholds: Record<string, number> = {
-        easy: 40,
         medium: 10,
         hard: 0,
       };
