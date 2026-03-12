@@ -25,6 +25,14 @@
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://sixdegrees.app/og-image.jpg">
+    <link
+        rel="preload"
+        as="image"
+        href="/game-mode-selection-640.png"
+        imagesrcset="/game-mode-selection-320.webp 320w, /game-mode-selection-640.webp 640w, /game-mode-selection-960.webp 960w"
+        imagesizes="(max-width: 850px) calc(100vw - 48px), 320px"
+        fetchpriority="high"
+    >
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -592,6 +600,14 @@
         @media (max-width: 768px) {
             .cta-group { flex-direction: column; align-items: center; }
             .cta-primary, .cta-secondary { width: 100%; max-width: 300px; justify-content: center; }
+            .bg-glow {
+                display: none;
+            }
+            nav {
+                background: rgba(10, 14, 20, 0.96);
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+            }
             .screenshot-row {
                 flex-wrap: nowrap;
                 justify-content: flex-start;
@@ -654,7 +670,22 @@
             </div>
         </div>
         <div class="hero-visual">
-            <img src="game-mode-selection.png" alt="Six Degrees Game Modes" class="iphone-mockup" loading="lazy" width="320" height="693">
+            <picture>
+                <source
+                    srcset="game-mode-selection-320.webp 320w, game-mode-selection-640.webp 640w, game-mode-selection-960.webp 960w"
+                    sizes="(max-width: 850px) calc(100vw - 48px), 320px"
+                    type="image/webp"
+                >
+                <img
+                    src="game-mode-selection-640.png"
+                    alt="Six Degrees Game Modes"
+                    class="iphone-mockup"
+                    width="320"
+                    height="693"
+                    fetchpriority="high"
+                    decoding="async"
+                >
+            </picture>
         </div>
     </div>
 </section>
@@ -676,9 +707,9 @@
         </div>
     </div>
     <div class="screenshot-row reveal">
-        <img src="choose-your-difficulty.jpeg" alt="Choose your difficulty" loading="lazy" width="220" height="476">
-        <img src="showing-the-chain.jpeg" alt="Building the chain" loading="lazy" width="220" height="476">
-        <img src="legendary.jpeg" alt="Legendary rank result" loading="lazy" width="220" height="476">
+        <picture><source srcset="choose-your-difficulty-220.webp 220w, choose-your-difficulty-440.webp 440w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="choose-your-difficulty-440.jpeg" alt="Choose your difficulty" loading="lazy" decoding="async" width="220" height="476"></picture>
+        <picture><source srcset="showing-the-chain-220.webp 220w, showing-the-chain-440.webp 440w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="showing-the-chain-440.jpeg" alt="Building the chain" loading="lazy" decoding="async" width="220" height="476"></picture>
+        <picture><source srcset="legendary-220.webp 220w, legendary-440.webp 440w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="legendary-440.jpeg" alt="Legendary rank result" loading="lazy" decoding="async" width="220" height="476"></picture>
     </div>
 </section>
 
@@ -699,9 +730,9 @@
         </div>
     </div>
     <div class="screenshot-row reveal">
-        <img src="castcall-difficulty.png" alt="Cast Call difficulty selection" loading="lazy" width="220" height="476">
-        <img src="castcall-gameplay.png" alt="Cast Call gameplay — guess the movie" loading="lazy" width="220" height="476">
-        <img src="castcall-results.png" alt="Cast Call results — Film Buff rating" loading="lazy" width="220" height="476">
+        <picture><source srcset="castcall-difficulty-320.webp 320w, castcall-difficulty-640.webp 640w, castcall-difficulty-960.webp 960w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="castcall-difficulty-440.png" alt="Cast Call difficulty selection" loading="lazy" decoding="async" width="220" height="476"></picture>
+        <picture><source srcset="castcall-gameplay-320.webp 320w, castcall-gameplay-640.webp 640w, castcall-gameplay-960.webp 960w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="castcall-gameplay-440.png" alt="Cast Call gameplay — guess the movie" loading="lazy" decoding="async" width="220" height="476"></picture>
+        <picture><source srcset="castcall-results-320.webp 320w, castcall-results-640.webp 640w, castcall-results-960.webp 960w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="castcall-results-440.png" alt="Cast Call results — Film Buff rating" loading="lazy" decoding="async" width="220" height="476"></picture>
     </div>
 </section>
 
@@ -722,9 +753,9 @@
         </div>
     </div>
     <div class="screenshot-row reveal">
-        <img src="premier-difficulty.png" alt="Premier difficulty selection" loading="lazy" width="220" height="476">
-        <img src="premier-gameplay-pick.png" alt="Premier gameplay — which came first?" loading="lazy" width="220" height="476">
-        <img src="premier-gameplay-sort.png" alt="Premier gameplay — sort the timeline" loading="lazy" width="220" height="476">
+        <picture><source srcset="premier-difficulty-320.webp 320w, premier-difficulty-640.webp 640w, premier-difficulty-960.webp 960w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="premier-difficulty-440.png" alt="Premier difficulty selection" loading="lazy" decoding="async" width="220" height="476"></picture>
+        <picture><source srcset="premier-gameplay-pick-320.webp 320w, premier-gameplay-pick-640.webp 640w, premier-gameplay-pick-960.webp 960w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="premier-gameplay-pick-440.png" alt="Premier gameplay — which came first?" loading="lazy" decoding="async" width="220" height="476"></picture>
+        <picture><source srcset="premier-gameplay-sort-320.webp 320w, premier-gameplay-sort-640.webp 640w, premier-gameplay-sort-960.webp 960w" sizes="(max-width: 768px) 200px, 220px" type="image/webp"><img src="premier-gameplay-sort-440.png" alt="Premier gameplay — sort the timeline" loading="lazy" decoding="async" width="220" height="476"></picture>
     </div>
 </section>
 
