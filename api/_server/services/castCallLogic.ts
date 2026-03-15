@@ -25,15 +25,21 @@ export class CastCallService {
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         // Pick a random page based on difficulty
-        const { page, minVotes } = this.getDifficultyParams(difficulty);
+        const { page, minVotes, releaseDateGte } = this.getDifficultyParams(difficulty);
 
-        const response = await tmdbService.discoverMovies({
+        const discoverParams: Record<string, string> = {
           sort_by: "popularity.desc",
           with_original_language: "en",
           without_genres: "16,99",
           page: page.toString(),
           "vote_count.gte": minVotes.toString(),
-        });
+        };
+
+        if (releaseDateGte) {
+          discoverParams["primary_release_date.gte"] = releaseDateGte;
+        }
+
+        const response = await tmdbService.discoverMovies(discoverParams);
 
         if (!response.results || response.results.length === 0) {
           continue;
@@ -153,7 +159,7 @@ export class CastCallService {
     }));
   }
 
-  private getDifficultyParams(difficulty: CastCallDifficulty): { page: number; minVotes: number } {
+  private getDifficultyParams(difficulty: CastCallDifficulty): { page: number; minVotes: number; releaseDateGte?: string } {
     switch (difficulty) {
       case "easy": {
         const page = Math.floor(Math.random() * 3) + 1; // pages 1-3
@@ -161,7 +167,7 @@ export class CastCallService {
       }
       case "medium": {
         const page = Math.floor(Math.random() * 7) + 4; // pages 4-10
-        return { page, minVotes: 200 };
+        return { page, minVotes: 200, releaseDateGte: "1990-01-01" };
       }
       case "hard": {
         const page = Math.floor(Math.random() * 20) + 11; // pages 11-30
