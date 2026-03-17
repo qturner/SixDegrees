@@ -4,7 +4,7 @@
 
 The 98th Academy Awards just happened (March 15, 2026). We're building a 2-week event mode (March 17-31) where all 3 game modes draw exclusively from Oscar-winning movies and actors. The backend auto-reverts to normal gameplay when the event ends. This also establishes the pattern for future event modes.
 
-The core insight: Oscar mode is a **data-source swap, not a logic fork**. Each game mode's algorithm (BFS pathfinding, cast ordering, reveal ordering) stays untouched — we only replace where movies/actors come from.
+The core insight was that Oscar mode should be primarily a **data-source swap, not a logic fork**. The shipped backend keeps the existing generators largely intact, but it does include a small event-specific safeguard in Six Degrees hard mode to avoid publishing sub-5-hop fallback pairs under a hard label.
 
 ### Critical design decisions
 
@@ -13,7 +13,7 @@ The core insight: Oscar mode is a **data-source swap, not a logic fork**. Each g
 3. **Non-overlapping year ranges for Premier**: Easy/medium/hard draw from distinct year buckets so difficulties don't cannibalize each other against the shared 14-day exclusion.
 4. **Genre/language filters preserved**: Oscar movie pool excludes animated-only and documentary-only films at the source. Cast Call and Premier branches apply the same TMDB genre/language checks as the existing code after fetching details.
 5. **Directors excluded from actor pool**: Only acting category winners from `actors` array. Directors lack cast credits.
-6. **Fully static data**: Resolution script caches TMDB IDs AND profile_path for actors. Zero runtime TMDB resolution calls.
+6. **Static ID cache, runtime movie-detail filtering**: Resolution script caches TMDB IDs and actor `profile_path` values so actor pools need no runtime ID resolution. Cast Call and Premier still fetch TMDB movie details at runtime to preserve existing genre/language filters.
 
 ---
 
@@ -38,7 +38,7 @@ The core insight: Oscar mode is a **data-source swap, not a logic fork**. Each g
     "resolved_at": "2026-03-16T..."
   }
   ```
-- Commit the cache file — zero runtime API calls needed
+- Commit the cache file — production now depends on `data/oscar-tmdb-cache.json` being shipped with the backend artifact
 
 ---
 
@@ -95,11 +95,12 @@ Tiered by year of most recent win:
 - **medium**: Winners from 2000+ (~100+ actors)
 - **hard**: All acting winners (~300+ actors)
 
-Resolves `tmdb_person_id` and `profile_path` from `oscar-tmdb-cache.json` — no runtime TMDB calls. Skips actors without resolved IDs.
+Resolves `tmdb_person_id` and `profile_path` from `oscar-tmdb-cache.json` with no runtime TMDB calls for actor pools. Skips actors without resolved IDs.
 
 ### Data loading
 - Lazy-load JSON files on first call, cache in module-level variables
-- Oscar data is static — load once, serve forever
+- Resolve data from `EVENT_MODE_DATA_DIR`, then `process.cwd()/data`, then the source-relative fallback so bundled/serverless builds can still find the Oscar files
+- Fail closed when `oscar-tmdb-cache.json` is missing or the resolved Oscar dataset is too incomplete to support the event safely
 - Export as singleton: `export const eventModeService = new EventModeService();`
 
 ---
@@ -111,7 +112,7 @@ Resolves `tmdb_person_id` and `profile_path` from `oscar-tmdb-cache.json` — no
 Add `GET /api/event-mode` route:
 - Import `eventModeService`
 - Call `eventModeService.getActiveEvent()` (this is the one place that uses today's date)
-- Compute `daysRemaining` from endDate
+- Compute `daysRemaining` inclusively from endDate so the banner shows 15 on March 17 and 1 on March 31
 - Return `{ active, event: { ...config, daysRemaining } }` or `{ active: false, event: null }`
 
 ---
@@ -160,6 +161,8 @@ private async getActorPoolForDifficulty(difficulty: DifficultyLevel, targetDate?
 
 All sites have the target date readily available — just need to pass it through.
 
+Final backend note: Six Degrees hard mode now rejects sub-5-hop fallback pairs during the Oscar event instead of silently publishing mislabeled hard challenges.
+
 ---
 
 ## Phase 4: Cast Call Oscar Mode
@@ -206,12 +209,16 @@ if (targetDate) {
   }
 }
 
-if (!movie) {
+if (!movie && !isOscarMode) {
   // Existing discoverMovies() logic unchanged
+}
+
+if (!movie) {
+  continue;
 }
 ```
 
-Everything after movie selection is identical: `getMovieCastWithOrder()`, filter by photos, `minCast` check, `selectAndOrderActors()`.
+Everything after movie selection is identical: `getMovieCastWithOrder()`, filter by photos, `minCast` check, `selectAndOrderActors()`. Final backend behavior does not fall back to normal discover mode once Oscar mode is active.
 
 ---
 
@@ -232,7 +239,7 @@ The 14-day exclusion in `ensurePremierChallenges()` (routes.ts:3172-3196) is sha
 - **Medium**: 1970-1999 (~230 films) → `yearMin: 1970, yearMax: 1999`
 - **Hard**: pre-1970 (~310 films) → `yearMax: 1969`
 
-Each bucket has 200+ films vs 126 max exclusions — comfortable margin.
+The original plan targeted 200+ films per bucket vs 126 max exclusions. The shipped cache yielded smaller but still workable buckets after source filtering (`151` easy, `149` medium, `254` hard), so the final implementation scans deeper through the shuffled Oscar pool instead of capping itself to the first 50 IDs.
 
 ```typescript
 if (targetDate) {
@@ -247,10 +254,11 @@ if (targetDate) {
     const pool = eventModeService.getOscarMoviePool(yearOpts);
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     const candidates = [];
-    for (const tmdbId of shuffled.slice(0, 50)) {
+    for (const tmdbId of shuffled) {
       if (usedIds.has(tmdbId)) continue;
       const details = await tmdbService.getMovieDetails(tmdbId);
       if (!details?.posterPath || !details?.releaseDate) continue;
+      if (details.originalLanguage !== "en") continue;
 
       // Preserve existing genre filters (premierLogic.ts:45-46)
       // Exclude animation (16), documentary (99), TV movie (10770)
@@ -258,6 +266,8 @@ if (targetDate) {
       if (genreIds.includes(16) || genreIds.includes(99) || genreIds.includes(10770)) continue;
 
       candidates.push({ id: tmdbId, ...details });
+
+      if (candidates.length >= 40) break;
     }
     allCandidates = candidates;
   }
@@ -355,6 +365,8 @@ struct EventConfig: Codable, Identifiable {
 | `SixDegrees/Views/Game/GameTabRootView.swift` | Fetch event mode, pass to view |
 | `SixDegrees/Views/Game/GameModesView.swift` | Accept + display EventBanner |
 
+Status note: the work committed in this backend repo covers Phases 0-5 plus the `/api/event-mode` endpoint. The iOS phases remain follow-up work in the iOS repo.
+
 ### Existing utilities to reuse
 | Utility | Location | Usage |
 |---------|----------|-------|
@@ -377,7 +389,7 @@ npx tsc --noEmit
 # Run TMDB resolution script
 npx tsx scripts/resolve-oscar-tmdb-ids.ts
 # Verify: jq '.films | length' data/oscar-tmdb-cache.json  (expect ~733, the historical films without inline tmdb_id)
-# Verify: jq '.actors | length' data/oscar-tmdb-cache.json  (expect ~323)
+# Verify: jq '.actors | length' data/oscar-tmdb-cache.json  (expect ~336 including acting nominees resolved for profile caching)
 # Verify profile_path cached: jq '.actors | to_entries[0].value.profile_path' data/oscar-tmdb-cache.json
 
 # Test event mode endpoint
@@ -390,6 +402,8 @@ curl -s localhost:5000/api/premier/daily | jq '.[0].movies[].title'
 
 # Verify genre/language filters: no animated/documentary movies in Cast Call or Premier
 # Verify Premier non-overlapping ranges: easy movies should be 2000+, medium 1970-1999, hard pre-1970
+# Verify Six Degrees hard mode does not publish sub-5-hop fallback pairs during the event
+# Verify /api/event-mode reports inclusive countdown values (15 on 2026-03-17, 1 on 2026-03-31)
 
 # Verify date-scoped generation:
 # 1. Set event to March 17-31, generate for March 16 — should use normal mode
@@ -414,5 +428,5 @@ curl -s localhost:5000/api/premier/daily | jq '.[0].movies[].title'
 2. **Event mode service** (Phase 1) — the foundation everything depends on
 3. **API endpoint** (Phase 2) — enables iOS work to start
 4. **Game mode integrations** (Phases 3-5) — each passes `targetDate`, applies filters
-5. **iOS model + API** (Phase 6) — depends on Phase 2
-6. **iOS banner** (Phase 7) — depends on Phase 6
+5. **iOS model + API** (Phase 6) — still pending in the iOS repo
+6. **iOS banner** (Phase 7) — still pending in the iOS repo
