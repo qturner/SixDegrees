@@ -14,6 +14,7 @@ import { setupAuth, isAuthenticated } from "./auth.js";
 import { emailService } from "./services/email.js";
 import { registerTestEmailRoutes } from "./internal_routes/testEmail.js";
 import * as appStoreSubscriptions from "./services/appStoreSubscriptions.js";
+import { eventModeService } from "./services/eventMode.js";
 import cron from "node-cron";
 import { getDayBeforeYesterdayDateString, getESTDateString, getTomorrowDateString, getYesterdayDateString, shiftISODateString } from "./dateHelpers.js";
 
@@ -324,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     difficulty: ChallengeDifficulty,
     excludeActorIds: number[],
   ) => {
-    const actors = await gameLogicService.generateDailyActors(difficulty, excludeActorIds);
+    const actors = await gameLogicService.generateDailyActors(difficulty, excludeActorIds, date);
 
     if (!actors) {
       console.error(`Failed to generate ${difficulty} challenge for ${date}`);
@@ -359,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Generating challenges for ${date}, excluding ${excludeActorIds.length} actors`);
 
-      const pairsMap = await gameLogicService.generateAllDailyChallenges(excludeActorIds);
+      const pairsMap = await gameLogicService.generateAllDailyChallenges(excludeActorIds, date);
       const generatedChallenges = [];
 
       for (const difficulty of difficultyOrder) {
@@ -416,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Use unified generation for consistent behavior
-      const pairsMap = await gameLogicService.generateAllDailyChallenges(excludeActorIds);
+      const pairsMap = await gameLogicService.generateAllDailyChallenges(excludeActorIds, date);
 
       for (const difficulty of missingDifficulties) {
         const pair = pairsMap.get(difficulty as DifficultyLevel);
@@ -487,6 +488,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", message: "pong", timestamp: new Date().toISOString() });
   });
 
+  // Event mode status endpoint
+  app.get("/api/event-mode", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(eventModeService.getActiveEvent());
+  });
+
   // Temporary diagnostic endpoint — tests each generation step
   app.get("/api/debug/generation", async (_req, res) => {
     const steps: { step: string; result?: any; error?: string; ms: number }[] = [];
@@ -514,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Step 3: generateAllDailyChallenges
     start = t();
     try {
-      const pairsMap = await gameLogicService.generateAllDailyChallenges([]);
+      const pairsMap = await gameLogicService.generateAllDailyChallenges([], getESTDateString());
       const pairs: Record<string, string> = {};
       for (const [diff, pair] of pairsMap) {
         pairs[diff] = `${pair.actor1.name} <-> ${pair.actor2.name}`;
@@ -1037,14 +1044,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate new daily challenge (manual trigger)
   app.post("/api/generate-challenge", async (req, res) => {
     try {
-      const excludeActorIds = await getExcludedActorIds(getESTDateString());
+      const today = getESTDateString();
+      const excludeActorIds = await getExcludedActorIds(today);
 
-      const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
+      const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds, today);
       if (!actors) {
         return res.status(500).json({ message: "Unable to generate challenge" });
       }
 
-      const today = getESTDateString();
       const challenge = await storage.createDailyChallenge({
         date: today,
         status: "active",
@@ -1183,7 +1190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...await getExcludedActorIds(tomorrow),
           nextChallenge.startActorId, nextChallenge.endActorId,
         ];
-        const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
+        const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds, tomorrow);
 
         if (actors) {
           const newNextChallenge = await storage.createDailyChallenge({
@@ -1206,7 +1213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // 1. Generate Active
         const baseExclusions = await getExcludedActorIds(today);
-        const activeActors = await gameLogicService.generateDailyActors('medium', baseExclusions);
+        const activeActors = await gameLogicService.generateDailyActors('medium', baseExclusions, today);
         if (activeActors) {
           await storage.createDailyChallenge({
             date: today,
@@ -1226,7 +1233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const nextExclude = activeActors
           ? [...baseExclusions, activeActors.actor1.id, activeActors.actor2.id]
           : baseExclusions;
-        const nextActors = await gameLogicService.generateDailyActors('medium', nextExclude);
+        const nextActors = await gameLogicService.generateDailyActors('medium', nextExclude, tomorrow);
         if (nextActors) {
           await storage.createDailyChallenge({
             date: tomorrow,
@@ -1318,7 +1325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...(currentActive ? [currentActive.startActorId, currentActive.endActorId] : []),
         ];
 
-        const actors = await gameLogicService.generateDailyActors('medium', excludeIds);
+        const actors = await gameLogicService.generateDailyActors('medium', excludeIds, tomorrow);
 
         if (actors) {
           const newNextChallenge = await storage.createDailyChallenge({
@@ -1363,7 +1370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate new next challenge (24 hours in advance)
       const excludeActorIds = await getExcludedActorIds(tomorrow);
-      const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds);
+      const actors = await gameLogicService.generateDailyActors('medium', excludeActorIds, tomorrow);
       if (!actors) {
         return res.status(500).json({ message: "Unable to generate next challenge" });
       }
@@ -2756,7 +2763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Backfilling Cast Call ${missingDifficulties.join(", ")} challenge(s) for ${date}`);
 
       for (const difficulty of missingDifficulties) {
-        const challengeData = await castCallService.generateCastCallChallenge(difficulty, excludeMovieIds);
+        const challengeData = await castCallService.generateCastCallChallenge(difficulty, excludeMovieIds, date);
         if (!challengeData) {
           console.error(`Failed to generate Cast Call ${difficulty} for ${date}`);
           continue;
@@ -3198,7 +3205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Backfilling Premier ${missingDifficulties.join(", ")} challenge(s) for ${date}`);
 
       for (const difficulty of missingDifficulties) {
-        const challengeData = await premierService.generateChallenge(difficulty, excludeMovieIds);
+        const challengeData = await premierService.generateChallenge(difficulty, excludeMovieIds, date);
         if (!challengeData) {
           console.error(`Failed to generate Premier ${difficulty} for ${date}`);
           continue;

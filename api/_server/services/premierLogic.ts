@@ -1,4 +1,5 @@
 import { tmdbService } from "./tmdb.js";
+import { eventModeService } from "./eventMode.js";
 
 interface PremierMovie {
   tmdbId: number;
@@ -13,7 +14,7 @@ export interface PremierChallengeData {
 }
 
 export class PremierService {
-  async generateChallenge(difficulty: string, excludeMovieIds: number[]): Promise<PremierChallengeData | null> {
+  async generateChallenge(difficulty: string, excludeMovieIds: number[], targetDate?: string): Promise<PremierChallengeData | null> {
     const MAX_RETRIES = 15;
     let fallbackLevel = 0;
 
@@ -45,22 +46,65 @@ export class PremierService {
         // Excluded genres: animation (16), documentary (99), TV movies (10770)
         const excludeGenres = "16,99,10770";
 
-        // Fetch from multiple pages to gather enough candidates
-        const pagesToFetch = 3;
         const allCandidates: any[] = [];
 
-        for (let p = 0; p < pagesToFetch; p++) {
-          const page = Math.floor(Math.random() * (pageMax - pageMin + 1)) + pageMin;
-          const response = await tmdbService.discoverMovies({
-            sort_by: "popularity.desc",
-            with_original_language: "en",
-            without_genres: excludeGenres,
-            page: page.toString(),
-            "vote_count.gte": minVotes.toString(),
-          });
+        // Oscar event mode: source from Oscar movie pool with non-overlapping year ranges
+        let isOscarMode = false;
+        if (targetDate) {
+          const event = eventModeService.getEventForDate(targetDate);
+          if (event.active) {
+            isOscarMode = true;
+            const yearOpts = difficulty === "easy"
+              ? { yearMin: 2000 }
+              : difficulty === "medium"
+              ? { yearMin: 1970, yearMax: 1999 }
+              : { yearMax: 1969 };
 
-          if (response.results) {
-            allCandidates.push(...response.results);
+            const pool = eventModeService.getOscarMoviePool(yearOpts);
+            // Shuffle
+            const shuffled = [...pool].sort(() => Math.random() - 0.5);
+            const targetCandidateCount = 40;
+
+            for (const tmdbId of shuffled) {
+              if (usedIds.has(tmdbId)) continue;
+              const details = await tmdbService.getMovieDetails(tmdbId);
+              if (!details?.posterPath || !details?.releaseDate) continue;
+              if (details.originalLanguage !== "en") continue;
+
+              // Preserve existing genre filters
+              const genreIds = details.genres.map(g => g.id);
+              if (genreIds.includes(16) || genreIds.includes(99) || genreIds.includes(10770)) continue;
+
+              allCandidates.push({
+                id: details.id,
+                title: details.title,
+                poster_path: details.posterPath,
+                release_date: details.releaseDate,
+              });
+
+              if (allCandidates.length >= targetCandidateCount) {
+                break;
+              }
+            }
+          }
+        }
+
+        if (!isOscarMode) {
+          // Normal flow: fetch from TMDB discover API
+          const pagesToFetch = 3;
+          for (let p = 0; p < pagesToFetch; p++) {
+            const page = Math.floor(Math.random() * (pageMax - pageMin + 1)) + pageMin;
+            const response = await tmdbService.discoverMovies({
+              sort_by: "popularity.desc",
+              with_original_language: "en",
+              without_genres: excludeGenres,
+              page: page.toString(),
+              "vote_count.gte": minVotes.toString(),
+            });
+
+            if (response.results) {
+              allCandidates.push(...response.results);
+            }
           }
         }
 

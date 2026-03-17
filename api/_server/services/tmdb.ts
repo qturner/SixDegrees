@@ -694,7 +694,7 @@ class TMDbService {
     }
   }
 
-  async getMovieDetails(movieId: number): Promise<{id: number; title: string; genres: {id: number; name: string}[]; releaseDate: string; posterPath: string | null; popularity: number} | null> {
+  async getMovieDetails(movieId: number): Promise<{id: number; title: string; genres: {id: number; name: string}[]; releaseDate: string; posterPath: string | null; popularity: number; originalLanguage: string} | null> {
     try {
       const response = await this.makeRequest<{
         id: number;
@@ -703,6 +703,7 @@ class TMDbService {
         release_date: string;
         poster_path: string | null;
         popularity: number;
+        original_language: string;
       }>(`/movie/${movieId}`);
       return {
         id: response.id,
@@ -711,6 +712,7 @@ class TMDbService {
         releaseDate: response.release_date,
         posterPath: response.poster_path,
         popularity: response.popularity,
+        originalLanguage: response.original_language,
       };
     } catch (error) {
       console.error(`Error getting movie details for ${movieId}:`, error);

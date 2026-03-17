@@ -1,4 +1,5 @@
 import { tmdbService } from "./tmdb.js";
+import { eventModeService } from "./eventMode.js";
 
 type CastCallDifficulty = "easy" | "medium" | "hard";
 
@@ -19,37 +20,68 @@ export interface CastCallChallengeData {
 }
 
 export class CastCallService {
-  async generateCastCallChallenge(difficulty: CastCallDifficulty, excludeMovieIds: number[]): Promise<CastCallChallengeData | null> {
+  async generateCastCallChallenge(difficulty: CastCallDifficulty, excludeMovieIds: number[], targetDate?: string): Promise<CastCallChallengeData | null> {
     const MAX_RETRIES = 10;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        // Pick a random page based on difficulty
-        const { page, minVotes, releaseDateGte } = this.getDifficultyParams(difficulty);
+        let movie: { id: number; title: string } | undefined;
+        let isOscarMode = false;
 
-        const discoverParams: Record<string, string> = {
-          sort_by: "popularity.desc",
-          with_original_language: "en",
-          without_genres: "16,99",
-          page: page.toString(),
-          "vote_count.gte": minVotes.toString(),
-        };
+        // Oscar event mode: pick from Oscar movie pool instead of TMDB discover
+        if (targetDate) {
+          const event = eventModeService.getEventForDate(targetDate);
+          if (event.active) {
+            isOscarMode = true;
+            const pool = eventModeService.getOscarMoviePool({
+              yearMin: difficulty === "easy" ? 2000 : difficulty === "medium" ? 1990 : undefined,
+            });
+            const oscarCandidates = pool.filter(id => !excludeMovieIds.includes(id));
+            if (oscarCandidates.length === 0) continue;
+            const tmdbId = oscarCandidates[Math.floor(Math.random() * oscarCandidates.length)];
+            const details = await tmdbService.getMovieDetails(tmdbId);
+            if (!details) continue;
 
-        if (releaseDateGte) {
-          discoverParams["primary_release_date.gte"] = releaseDateGte;
+            // Preserve existing language/genre filters
+            if (details.originalLanguage !== "en") continue;
+            const genreIds = details.genres.map(g => g.id);
+            if (genreIds.includes(16) || genreIds.includes(99)) continue;
+
+            movie = { id: tmdbId, title: details.title };
+          }
         }
 
-        const response = await tmdbService.discoverMovies(discoverParams);
+        if (!movie && !isOscarMode) {
+          // Normal flow: pick from TMDB discover API
+          const { page, minVotes, releaseDateGte } = this.getDifficultyParams(difficulty);
 
-        if (!response.results || response.results.length === 0) {
+          const discoverParams: Record<string, string> = {
+            sort_by: "popularity.desc",
+            with_original_language: "en",
+            without_genres: "16,99",
+            page: page.toString(),
+            "vote_count.gte": minVotes.toString(),
+          };
+
+          if (releaseDateGte) {
+            discoverParams["primary_release_date.gte"] = releaseDateGte;
+          }
+
+          const response = await tmdbService.discoverMovies(discoverParams);
+
+          if (!response.results || response.results.length === 0) {
+            continue;
+          }
+
+          const candidates = response.results.filter(m => !excludeMovieIds.includes(m.id));
+          if (candidates.length === 0) continue;
+
+          movie = candidates[Math.floor(Math.random() * candidates.length)];
+        }
+
+        if (!movie) {
           continue;
         }
-
-        // Filter out excluded movies and pick random
-        const candidates = response.results.filter(m => !excludeMovieIds.includes(m.id));
-        if (candidates.length === 0) continue;
-
-        const movie = candidates[Math.floor(Math.random() * candidates.length)];
 
         // Get cast with billing order
         const cast = await tmdbService.getMovieCastWithOrder(movie.id);

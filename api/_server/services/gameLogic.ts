@@ -1,4 +1,5 @@
 import { tmdbService } from "./tmdb.js";
+import { eventModeService } from "./eventMode.js";
 import { Actor, Connection, Movie, ValidationResult } from "../../../shared/schema.js";
 
 interface GameValidationContext {
@@ -228,13 +229,14 @@ class GameLogicService {
    */
   async generateAllDailyChallenges(
     excludeActorIds: number[] = [],
+    targetDate?: string,
   ): Promise<Map<DifficultyLevel, { actor1: Actor; actor2: Actor; distance: number }>> {
     const results = new Map<DifficultyLevel, { actor1: Actor; actor2: Actor; distance: number }>();
 
     try {
       const usedActorIds = new Set<number>(excludeActorIds);
       for (const bucket of this.distanceBuckets) {
-        const pair = await this.generateDailyActors(bucket.difficulty, [...usedActorIds]);
+        const pair = await this.generateDailyActors(bucket.difficulty, [...usedActorIds], targetDate);
         if (!pair) {
           console.warn(`No pair found for ${bucket.difficulty} difficulty`);
           continue;
@@ -260,9 +262,11 @@ class GameLogicService {
   async generateDailyActors(
     difficulty: DifficultyLevel = "medium",
     excludeActorIds: number[] = [],
+    targetDate?: string,
   ): Promise<{ actor1: Actor; actor2: Actor; distance: number } | null> {
     try {
-      const pool = await this.getActorPoolForDifficulty(difficulty);
+      const event = targetDate ? eventModeService.getEventForDate(targetDate) : { active: false, event: null };
+      const pool = await this.getActorPoolForDifficulty(difficulty, targetDate);
       if (pool.length < 2) {
         console.error(`Actor pool too small for ${difficulty}: ${pool.length}`);
         return null;
@@ -304,6 +308,13 @@ class GameLogicService {
       }
 
       if (bestFallback) {
+        if (event.active && difficulty === "hard" && bestFallback.distance < bucket.minDistance) {
+          console.warn(
+            `Rejecting fallback hard pair during event mode (${bestFallback.distance} hops): ` +
+            `${bestFallback.actor1.name} <-> ${bestFallback.actor2.name}`,
+          );
+          return null;
+        }
         console.warn(`Using fallback ${difficulty} pair (${bestFallback.distance} hops): ${bestFallback.actor1.name} <-> ${bestFallback.actor2.name}`);
         return { actor1: bestFallback.actor1, actor2: bestFallback.actor2, distance: bestFallback.distance };
       }
@@ -324,7 +335,14 @@ class GameLogicService {
     return {};
   }
 
-  private async getActorPoolForDifficulty(difficulty: DifficultyLevel): Promise<Actor[]> {
+  private async getActorPoolForDifficulty(difficulty: DifficultyLevel, targetDate?: string): Promise<Actor[]> {
+    if (targetDate) {
+      const event = eventModeService.getEventForDate(targetDate);
+      if (event.active) {
+        return eventModeService.getOscarActorPool({ tier: difficulty });
+      }
+    }
+
     if (difficulty === "easy") {
       return tmdbService.getActorsByTier("easy");
     }
