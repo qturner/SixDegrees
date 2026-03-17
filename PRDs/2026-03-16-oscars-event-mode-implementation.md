@@ -2,7 +2,7 @@
 
 ## Context
 
-The 98th Academy Awards just happened (March 15, 2026). We're building a 2-week event mode (March 17-31) where all 3 game modes draw exclusively from Oscar-winning movies and actors. The backend auto-reverts to normal gameplay when the event ends. This also establishes the pattern for future event modes.
+The 98th Academy Awards just happened (March 15, 2026). We're building a 1-week event mode (March 17-23) where all 3 game modes draw exclusively from Oscar-winning movies and actors. The backend auto-reverts to normal gameplay when the event ends. This also establishes the pattern for future event modes.
 
 The core insight was that Oscar mode should be primarily a **data-source swap, not a logic fork**. The shipped backend keeps the existing generators largely intact, but it does include a small event-specific safeguard in Six Degrees hard mode to avoid publishing sub-5-hop fallback pairs under a hard label.
 
@@ -10,7 +10,7 @@ The core insight was that Oscar mode should be primarily a **data-source swap, n
 
 1. **Date-scoped activation**: All event checks use `getEventForDate(dateString)`. Every generator call site passes its target challenge date — including cron, admin, and backfill routes (11 Six Degrees call sites, 1 Cast Call, 1 Premier — all enumerated below).
 2. **Expanded actor pool**: Six Degrees uses all 323 Oscar-winning actors (tiered by difficulty), not just 2026 nominees. Survives the existing 7-day/42-actor exclusion window.
-3. **Non-overlapping year ranges for Premier**: Easy/medium/hard draw from distinct year buckets so difficulties don't cannibalize each other against the shared 14-day exclusion.
+3. **Non-overlapping year ranges for Premier**: Easy/medium/hard draw from distinct year buckets so difficulties don't cannibalize each other against the shared exclusion window.
 4. **Genre/language filters preserved**: Oscar movie pool excludes animated-only and documentary-only films at the source. Cast Call and Premier branches apply the same TMDB genre/language checks as the existing code after fetching details.
 5. **Directors excluded from actor pool**: Only acting category winners from `actors` array. Directors lack cast credits.
 6. **Static ID cache, runtime movie-detail filtering**: Resolution script caches TMDB IDs and actor `profile_path` values so actor pools need no runtime ID resolution. Cast Call and Premier still fetch TMDB movie details at runtime to preserve existing genre/language filters.
@@ -64,7 +64,7 @@ const EVENTS: EventConfig[] = [{
   name: "Oscars Mode",
   description: "All games feature Oscar-winning movies & actors",
   startDate: "2026-03-17",
-  endDate: "2026-03-31",
+  endDate: "2026-03-23",
 }];
 ```
 
@@ -112,7 +112,7 @@ Resolves `tmdb_person_id` and `profile_path` from `oscar-tmdb-cache.json` with n
 Add `GET /api/event-mode` route:
 - Import `eventModeService`
 - Call `eventModeService.getActiveEvent()` (this is the one place that uses today's date)
-- Compute `daysRemaining` inclusively from endDate so the banner shows 15 on March 17 and 1 on March 31
+- Compute `daysRemaining` inclusively from endDate so the banner shows 7 on March 17 and 1 on March 23
 - Return `{ active, event: { ...config, daysRemaining } }` or `{ active: false, event: null }`
 
 ---
@@ -232,14 +232,14 @@ Add `targetDate?: string` parameter. Single call site: `routes.ts:3201` in `ensu
 
 ### Non-overlapping year ranges (prevents cross-difficulty pool cannibalization)
 
-The 14-day exclusion in `ensurePremierChallenges()` (routes.ts:3172-3196) is shared across ALL difficulties. Over 14 days, each difficulty consumes 9 × 14 = 126 movies. With overlapping year ranges, medium/hard would eat into easy's pool.
+The 14-day exclusion in `ensurePremierChallenges()` (routes.ts:3172-3196) is shared across ALL difficulties. Over 7 event days, each difficulty consumes 9 × 7 = 63 movies. With overlapping year ranges, medium/hard would eat into easy's pool.
 
 **Solution: non-overlapping year buckets:**
 - **Easy**: 2000+ (~200 films) → `yearMin: 2000`
 - **Medium**: 1970-1999 (~230 films) → `yearMin: 1970, yearMax: 1999`
 - **Hard**: pre-1970 (~310 films) → `yearMax: 1969`
 
-The original plan targeted 200+ films per bucket vs 126 max exclusions. The shipped cache yielded smaller but still workable buckets after source filtering (`151` easy, `149` medium, `254` hard), so the final implementation scans deeper through the shuffled Oscar pool instead of capping itself to the first 50 IDs.
+The original plan targeted 200+ films per bucket vs 63 max exclusions per difficulty. The shipped cache yielded smaller but still workable buckets after source filtering (`151` easy, `149` medium, `254` hard), so the final implementation scans deeper through the shuffled Oscar pool instead of capping itself to the first 50 IDs.
 
 ```typescript
 if (targetDate) {
@@ -403,7 +403,7 @@ curl -s localhost:5000/api/premier/daily | jq '.[0].movies[].title'
 # Verify genre/language filters: no animated/documentary movies in Cast Call or Premier
 # Verify Premier non-overlapping ranges: easy movies should be 2000+, medium 1970-1999, hard pre-1970
 # Verify Six Degrees hard mode does not publish sub-5-hop fallback pairs during the event
-# Verify /api/event-mode reports inclusive countdown values (15 on 2026-03-17, 1 on 2026-03-31)
+# Verify /api/event-mode reports inclusive countdown values (7 on 2026-03-17, 1 on 2026-03-23)
 
 # Verify date-scoped generation:
 # 1. Set event to March 17-31, generate for March 16 — should use normal mode

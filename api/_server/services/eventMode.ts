@@ -53,7 +53,7 @@ const EVENTS: EventConfig[] = [
     name: "Oscars Mode",
     description: "All games feature Oscar-winning movies & actors",
     startDate: "2026-03-17",
-    endDate: "2026-03-31",
+    endDate: "2026-03-23",
   },
 ];
 

@@ -3,7 +3,7 @@ Generated: 2026-03-16
 
 ## Overview
 
-A time-limited "Oscars Mode" event where all three game modes (Six Degrees, Cast Call, Première) draw exclusively from Oscar-winning movies and actors. Runs for 2 weeks following the 98th Academy Awards (March 15, 2026). The backend automatically reverts to normal gameplay when the event ends — no manual intervention needed.
+A time-limited "Oscars Mode" event where all three game modes (Six Degrees, Cast Call, Première) draw exclusively from Oscar-winning movies and actors. Runs for 1 week following the 98th Academy Awards (March 15, 2026). The backend automatically reverts to normal gameplay when the event ends — no manual intervention needed.
 
 ## Problem Statement
 
@@ -33,7 +33,7 @@ A time-limited "Oscars Mode" event where all three game modes (Six Degrees, Cast
 
 ### Timing
 - **Start:** 2026-03-17 (Monday after the ceremony)
-- **End:** 2026-03-31 (2 full weeks)
+- **End:** 2026-03-23 (1 full week)
 - **Reversion:** Automatic — when `endDate < now`, all generation logic falls through to normal behavior
 
 ### Data Source
@@ -86,7 +86,7 @@ const EVENTS: EventMode[] = [
     name: "Oscars Mode",
     description: "🏆 All games feature Oscar-winning movies and actors",
     startDate: "2026-03-17",
-    endDate: "2026-03-31",
+    endDate: "2026-03-23",
     config: { oscarDataFile: "oscar-winners.json" },
   },
 ];
@@ -174,7 +174,7 @@ private async getActorPoolForDifficulty(difficulty: DifficultyLevel): Promise<Ac
 }
 ```
 
-**Pair exhaustion risk:** ~25 unique nominees = ~300 possible pairs. Over 14 days with 3 difficulties = 42 pairs needed. Plenty of headroom, but we should still exclude previously used actors to avoid repeats.
+**Pair exhaustion risk:** ~25 unique nominees = ~300 possible pairs. Over 7 days with 3 difficulties = 21 pairs needed. Plenty of headroom, but we should still exclude previously used actors to avoid repeats.
 
 ### 2. Cast Call — Oscar Mode
 
@@ -223,7 +223,7 @@ private async generateOscarCastCallChallenge(difficulty: CastCallDifficulty, exc
 - Medium (1990+): ~160-180 films
 - Hard (all): ~742 films (but some pre-1970 may lack TMDB cast data)
 
-Over 14 days, we need 42 unique movies. Even easy mode has plenty.
+Over 7 days, we need 21 unique movies. Even easy mode has plenty.
 
 ### 3. Première — Oscar Mode
 
@@ -395,7 +395,7 @@ cat data/oscar-tmdb-cache.json | jq 'length'
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Oscar pool too small for 14 days | Repeated movies | Pool is 742 films — more than enough. Easy mode (100+ films) is the tightest but still 3x what we need |
+| Oscar pool too small for 7 days | Repeated movies | Pool is 742 films — more than enough. Easy mode (100+ films) is the tightest but still 5x what we need |
 | Historical films missing TMDB cast data | Cast Call fails for old movies | Pre-filter to movies with ≥10 cast members in TMDB. Skip pre-1950 for Cast Call |
 | Six Degrees nominee pairs are too easy/hard | Bad difficulty curve | The connecting path uses all TMDB movies (not just Oscar films), so distance still varies naturally |
 | TMDB ID resolution fails for some IMDb IDs | Missing movies from pool | Non-blocking — just skip those films. Pre-resolve and validate before launch |
@@ -427,7 +427,7 @@ Once the system is built, adding new events is just a config entry:
 | Cast Call: difficulty by era | Easy=2000+, Medium=1990+, Hard=all | Matches existing difficulty pattern, keeps recognition gradient |
 | TMDB resolution strategy | Pre-resolve + cache file | Zero runtime API calls, deterministic |
 | Oscar dataset scope | Winners only (not nominees) for movie pool | 742 films is plenty. Adding all nominees would be 3000+ and dilute the "Oscar winner" brand |
-| 2026 nominees for Six Degrees | Include all acting + directing nominees | 25+ people gives enough pair variety for 14 days |
+| 2026 nominees for Six Degrees | Include all acting + directing nominees | 25+ people gives enough pair variety for 7 days |
 
 ## Context for Coding Agent
 
