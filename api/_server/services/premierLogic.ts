@@ -91,9 +91,19 @@ export class PremierService {
 
         if (!isOscarMode) {
           // Normal flow: fetch from TMDB discover API
-          const pagesToFetch = 3;
-          for (let p = 0; p < pagesToFetch; p++) {
-            const page = Math.floor(Math.random() * (pageMax - pageMin + 1)) + pageMin;
+          // Easy has a small page range (1-5), so fetch all pages to maximize candidates
+          const totalPages = pageMax - pageMin + 1;
+          const pagesToFetch = totalPages <= 5 ? totalPages : 3;
+          const pages: number[] = [];
+          if (pagesToFetch >= totalPages) {
+            for (let i = pageMin; i <= pageMax; i++) pages.push(i);
+          } else {
+            while (pages.length < pagesToFetch) {
+              const page = Math.floor(Math.random() * totalPages) + pageMin;
+              if (!pages.includes(page)) pages.push(page);
+            }
+          }
+          for (const page of pages) {
             const response = await tmdbService.discoverMovies({
               sort_by: "popularity.desc",
               with_original_language: "en",

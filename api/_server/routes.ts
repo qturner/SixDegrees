@@ -2722,6 +2722,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Shield refill error (non-fatal):", shieldErr);
       }
 
+      // Pre-generate Premier and Cast Call challenges so users don't hit lazy generation
+      try {
+        await ensurePremierChallenges(today);
+        console.log(`Premier challenges pre-generated for ${today}`);
+      } catch (premierErr) {
+        console.error("Premier pre-generation error (non-fatal):", premierErr);
+      }
+
+      try {
+        await ensureCastCallChallenges(today);
+        console.log(`Cast Call challenges pre-generated for ${today}`);
+      } catch (castCallErr) {
+        console.error("Cast Call pre-generation error (non-fatal):", castCallErr);
+      }
+
       res.json({ message: "Daily challenge reset completed successfully", date: today });
     } catch (error) {
       console.error("Cron reset error:", error);
@@ -3176,35 +3191,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return challenges;
       }
 
-      // Exclude movie IDs from last 14 days to avoid repeats
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 13);
-      const cutoffDateStr = cutoffDate.toISOString().split("T")[0];
+      // Build per-difficulty exclusion lists: easy uses 7 days, medium/hard use 14 days
+      // Also scope exclusions to same difficulty to avoid cross-difficulty starvation
+      const easyCutoff = new Date();
+      easyCutoff.setDate(easyCutoff.getDate() - 6);
+      const easyCutoffStr = easyCutoff.toISOString().split("T")[0];
+
+      const fullCutoff = new Date();
+      fullCutoff.setDate(fullCutoff.getDate() - 13);
+      const fullCutoffStr = fullCutoff.toISOString().split("T")[0];
 
       const recentChallenges = await db.select()
         .from(premierChallenges)
-        .where(gte(premierChallenges.challengeDate, cutoffDateStr));
+        .where(gte(premierChallenges.challengeDate, fullCutoffStr));
 
-      const excludeMovieIds: number[] = [];
-      for (const c of recentChallenges) {
-        const movies = JSON.parse(c.movies);
-        for (const m of movies) {
-          excludeMovieIds.push(m.tmdbId);
-        }
-      }
-      // Also exclude today's already-created challenges
-      for (const c of challenges) {
-        const movies = JSON.parse(c.movies);
-        for (const m of movies) {
-          if (!excludeMovieIds.includes(m.tmdbId)) {
-            excludeMovieIds.push(m.tmdbId);
+      const getExcludeIds = (difficulty: string): number[] => {
+        const cutoff = difficulty === "easy" ? easyCutoffStr : fullCutoffStr;
+        const ids: number[] = [];
+        for (const c of recentChallenges) {
+          // Only exclude movies from same difficulty, within that difficulty's window
+          if (c.difficulty !== difficulty || c.challengeDate < cutoff) continue;
+          const movies = JSON.parse(c.movies);
+          for (const m of movies) {
+            ids.push(m.tmdbId);
           }
         }
-      }
+        // Also exclude today's already-created challenges (all difficulties, to avoid same-day overlap)
+        for (const c of challenges) {
+          const movies = JSON.parse(c.movies);
+          for (const m of movies) {
+            if (!ids.includes(m.tmdbId)) {
+              ids.push(m.tmdbId);
+            }
+          }
+        }
+        return ids;
+      };
 
       console.log(`Backfilling Premier ${missingDifficulties.join(", ")} challenge(s) for ${date}`);
 
       for (const difficulty of missingDifficulties) {
+        const excludeMovieIds = getExcludeIds(difficulty);
         const challengeData = await premierService.generateChallenge(difficulty, excludeMovieIds, date);
         if (!challengeData) {
           console.error(`Failed to generate Premier ${difficulty} for ${date}`);
@@ -3217,10 +3244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             difficulty,
             movies: JSON.stringify(challengeData.movies),
           });
-          // Add newly created movie IDs to exclude list
-          for (const m of challengeData.movies) {
-            excludeMovieIds.push(m.tmdbId);
-          }
+          // Add to today's challenges so getExcludeIds picks up same-day overlap
+          challenges.push(created);
           console.log(`Created Premier ${difficulty}: ${challengeData.movies.length} movies`);
         } catch (error) {
           if (isPremierDateDifficultyUniqueViolation(error)) {
