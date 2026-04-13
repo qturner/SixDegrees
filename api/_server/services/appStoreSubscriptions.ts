@@ -12,7 +12,12 @@ const bundleId = process.env.APP_STORE_BUNDLE_ID || "com.sixdegreesapp.ios";
 const issuerId = process.env.APP_STORE_ISSUER_ID || "";
 const keyId = process.env.APP_STORE_KEY_ID || "";
 const privateKey = (process.env.APP_STORE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
-const appStoreEnv = process.env.APP_STORE_ENV === "Sandbox" ? Environment.SANDBOX : Environment.PRODUCTION;
+const configuredAppStoreEnv =
+  process.env.APP_STORE_ENV === "Sandbox" ? Environment.SANDBOX : Environment.PRODUCTION;
+const verificationEnvOrder =
+  configuredAppStoreEnv === Environment.SANDBOX
+    ? [Environment.SANDBOX, Environment.PRODUCTION]
+    : [Environment.PRODUCTION, Environment.SANDBOX];
 
 // Apple root certificate URLs (DER format)
 const APPLE_ROOT_CA_URLS = [
@@ -22,9 +27,13 @@ const APPLE_ROOT_CA_URLS = [
 ];
 
 // Lazy-initialized singletons
-let apiClient: AppStoreServerAPIClient | null = null;
-let verifier: SignedDataVerifier | null = null;
+const apiClients = new Map<Environment, AppStoreServerAPIClient>();
+const verifiers = new Map<Environment, SignedDataVerifier>();
 let rootCertsPromise: Promise<Buffer[]> | null = null;
+
+function envLabel(env: Environment): "Sandbox" | "Production" {
+  return env === Environment.SANDBOX ? "Sandbox" : "Production";
+}
 
 async function fetchAppleRootCertificates(): Promise<Buffer[]> {
   const certs: Buffer[] = [];
@@ -49,30 +58,60 @@ function getAppleRootCerts(): Promise<Buffer[]> {
   return rootCertsPromise;
 }
 
-function getApiClient(): AppStoreServerAPIClient {
-  if (!apiClient) {
-    apiClient = new AppStoreServerAPIClient(
+function getApiClient(env: Environment = configuredAppStoreEnv): AppStoreServerAPIClient {
+  const existing = apiClients.get(env);
+  if (existing) {
+    return existing;
+  }
+
+  const client = new AppStoreServerAPIClient(
       privateKey,
       keyId,
       issuerId,
       bundleId,
-      appStoreEnv,
+      env,
     );
-  }
-  return apiClient;
+  apiClients.set(env, client);
+  return client;
 }
 
-async function getVerifier(): Promise<SignedDataVerifier> {
-  if (!verifier) {
-    const rootCerts = await getAppleRootCerts();
-    verifier = new SignedDataVerifier(
-      rootCerts,
-      true,    // Enable online checks
-      appStoreEnv,
-      bundleId,
-    );
+async function getVerifier(env: Environment): Promise<SignedDataVerifier> {
+  const existing = verifiers.get(env);
+  if (existing) {
+    return existing;
   }
+
+  const rootCerts = await getAppleRootCerts();
+  const verifier = new SignedDataVerifier(
+    rootCerts,
+    true,    // Enable online checks
+    env,
+    bundleId,
+  );
+  verifiers.set(env, verifier);
   return verifier;
+}
+
+async function verifyWithFallback<T>(
+  verify: (verifier: SignedDataVerifier) => Promise<T>,
+): Promise<T> {
+  let lastError: unknown;
+
+  for (const [index, env] of verificationEnvOrder.entries()) {
+    try {
+      const result = await verify(await getVerifier(env));
+      if (index > 0) {
+        console.warn(
+          `App Store verification fell back to ${envLabel(env)} after ${envLabel(verificationEnvOrder[0])} failed.`,
+        );
+      }
+      return result;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
 }
 
 /**
@@ -81,8 +120,9 @@ async function getVerifier(): Promise<SignedDataVerifier> {
 export async function verifyAndDecodeNotification(
   signedPayload: string,
 ): Promise<ResponseBodyV2DecodedPayload> {
-  const v = await getVerifier();
-  return await v.verifyAndDecodeNotification(signedPayload);
+  return await verifyWithFallback((verifier) =>
+    verifier.verifyAndDecodeNotification(signedPayload),
+  );
 }
 
 /**
@@ -91,8 +131,9 @@ export async function verifyAndDecodeNotification(
 export async function verifyTransaction(
   signedTransactionInfo: string,
 ): Promise<JWSTransactionDecodedPayload> {
-  const v = await getVerifier();
-  return await v.verifyAndDecodeTransaction(signedTransactionInfo);
+  return await verifyWithFallback((verifier) =>
+    verifier.verifyAndDecodeTransaction(signedTransactionInfo),
+  );
 }
 
 /**
@@ -101,8 +142,9 @@ export async function verifyTransaction(
 export async function verifyRenewalInfo(
   signedRenewalInfo: string,
 ): Promise<JWSRenewalInfoDecodedPayload> {
-  const v = await getVerifier();
-  return await v.verifyAndDecodeRenewalInfo(signedRenewalInfo);
+  return await verifyWithFallback((verifier) =>
+    verifier.verifyAndDecodeRenewalInfo(signedRenewalInfo),
+  );
 }
 
 export type DerivedStatus =
