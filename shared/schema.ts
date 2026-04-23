@@ -266,6 +266,13 @@ export const userStats = pgTable("user_stats", {
   premierMediumCompletions: integer("premier_medium_completions").default(0),
   premierHardCompletions: integer("premier_hard_completions").default(0),
 
+  // Play-tab headliner preference (recent, engagement-based)
+  homePreferredMode: text("home_preferred_mode").default("six_degrees"),
+  homePreferenceLastInteractionAt: timestamp("home_preference_last_interaction_at"),
+  homePreferenceSixDegreesScore: integer("home_preference_six_degrees_score").default(0),
+  homePreferenceCastCallScore: integer("home_preference_cast_call_score").default(0),
+  homePreferencePremierScore: integer("home_preference_premier_score").default(0),
+
   // Super streak
   superStreakCurrent: integer("super_streak_current").default(0),
   superStreakMax: integer("super_streak_max").default(0),

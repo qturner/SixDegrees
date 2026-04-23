@@ -4,7 +4,7 @@ import { pool, getPool, db, withRetry } from "./db.js";
 import { storage } from "./storage.js";
 import { loginSchema, registerSchema, userChallengeCompletions, dailyChallenges, castCallCompletions, castCallChallenges, premierCompletions, premierChallenges, userStats } from "../../shared/schema.js";
 import { eq, and, gt, sql, count, avg, desc } from "drizzle-orm";
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
 
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
@@ -12,6 +12,10 @@ import appleSignin from "apple-signin-auth";
 import crypto from "crypto";
 
 export async function setupAuth(app: Express) {
+  const homeModePreferenceTrackSchema = z.object({
+    mode: z.enum(["six_degrees", "cast_call", "premier"]),
+  });
+
   // Use cookie-session instead of express-session for Vercel/Serverless
   // This stores the session data in the cookie itself (encrypted),
   // avoiding database lookups and connection issues for auth.
@@ -408,6 +412,37 @@ export async function setupAuth(app: Express) {
       res.json(userResponse);
     } catch (error) {
       console.error("Get user error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/user/home-mode-preference", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any).userId;
+      const preference = await storage.getHomeModePreference(userId);
+      res.json(preference);
+    } catch (error) {
+      console.error("Get home mode preference error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/user/home-mode-preference", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any).userId;
+      const parseResult = homeModePreferenceTrackSchema.safeParse(req.body);
+
+      if (!parseResult.success) {
+        return res.status(400).json({
+          message: "Invalid request format",
+          errors: parseResult.error.errors,
+        });
+      }
+
+      const preference = await storage.trackHomeModeEngagement(userId, parseResult.data.mode);
+      res.status(200).json(preference);
+    } catch (error) {
+      console.error("Track home mode preference error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

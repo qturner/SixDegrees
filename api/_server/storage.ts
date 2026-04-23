@@ -32,6 +32,101 @@ type ReactionInboxPage = {
   unreadCount: number;
 };
 
+const homeModePreferenceModes = ["six_degrees", "cast_call", "premier"] as const;
+type HomeModePreferenceMode = (typeof homeModePreferenceModes)[number];
+
+type HomeModePreferenceResponse = {
+  preferredMode: HomeModePreferenceMode;
+  scores: {
+    sixDegrees: number;
+    castCall: number;
+    premier: number;
+  };
+};
+
+const defaultHomeModePreference: HomeModePreferenceResponse = {
+  preferredMode: "six_degrees",
+  scores: {
+    sixDegrees: 0,
+    castCall: 0,
+    premier: 0,
+  },
+};
+
+const HOME_MODE_SCORE_BOOST = 3;
+const HOME_MODE_SCORE_PENALTY = 1;
+const HOME_MODE_SCORE_DECAY_PER_DAY = 1;
+const HOME_MODE_SCORE_MAX = 12;
+
+function normalizeHomeModePreferenceMode(mode: string | null | undefined): HomeModePreferenceMode {
+  if (mode === "cast_call" || mode === "premier") {
+    return mode;
+  }
+  return "six_degrees";
+}
+
+function clampHomeModeScore(value: number): number {
+  return Math.max(0, Math.min(HOME_MODE_SCORE_MAX, value));
+}
+
+function elapsedFullDaysSince(date: Date | null | undefined, now: Date): number {
+  if (!date) return 0;
+  const elapsed = now.getTime() - date.getTime();
+  if (elapsed <= 0) return 0;
+  return Math.floor(elapsed / (24 * 60 * 60 * 1000));
+}
+
+function resolvePreferredHomeMode(
+  scores: HomeModePreferenceResponse["scores"],
+  preferredOrder: HomeModePreferenceMode[],
+): HomeModePreferenceMode {
+  const entries: Array<{ mode: HomeModePreferenceMode; score: number }> = [
+    { mode: "six_degrees", score: scores.sixDegrees },
+    { mode: "cast_call", score: scores.castCall },
+    { mode: "premier", score: scores.premier },
+  ];
+  const maxScore = Math.max(...entries.map((entry) => entry.score));
+
+  if (maxScore <= 0) {
+    return "six_degrees";
+  }
+
+  const tiedModes = entries
+    .filter((entry) => entry.score == maxScore)
+    .map((entry) => entry.mode);
+
+  for (const mode of preferredOrder) {
+    if (tiedModes.includes(mode)) {
+      return mode;
+    }
+  }
+
+  return tiedModes[0] ?? "six_degrees";
+}
+
+function buildHomeModePreferenceResponse(
+  stats: UserStats | undefined,
+  now: Date = new Date(),
+): HomeModePreferenceResponse {
+  if (!stats) {
+    return defaultHomeModePreference;
+  }
+
+  const elapsedDays = elapsedFullDaysSince(stats.homePreferenceLastInteractionAt, now);
+  const decay = elapsedDays * HOME_MODE_SCORE_DECAY_PER_DAY;
+  const scores = {
+    sixDegrees: clampHomeModeScore((stats.homePreferenceSixDegreesScore ?? 0) - decay),
+    castCall: clampHomeModeScore((stats.homePreferenceCastCallScore ?? 0) - decay),
+    premier: clampHomeModeScore((stats.homePreferencePremierScore ?? 0) - decay),
+  };
+  const storedPreferredMode = normalizeHomeModePreferenceMode(stats.homePreferredMode);
+
+  return {
+    preferredMode: resolvePreferredHomeMode(scores, [storedPreferredMode, "six_degrees"]),
+    scores,
+  };
+}
+
 export interface IStorage {
   // Daily Challenge methods
   getDailyChallenge(date: string): Promise<DailyChallenge | undefined>;
@@ -80,6 +175,8 @@ export interface IStorage {
   getUserStats(userId: string): Promise<UserStats | undefined>;
   createUserStats(stats: InsertUserStats): Promise<UserStats>;
   updateUserStats(userId: string, stats: Partial<UserStats>): Promise<UserStats>;
+  getHomeModePreference(userId: string): Promise<HomeModePreferenceResponse>;
+  trackHomeModeEngagement(userId: string, mode: HomeModePreferenceMode): Promise<HomeModePreferenceResponse>;
 
   // User Challenge Completion methods
   createUserChallengeCompletion(completion: InsertUserChallengeCompletion): Promise<UserChallengeCompletion>;
@@ -816,6 +913,69 @@ export class DatabaseStorage implements IStorage {
         .where(eq(userStats.userId, userId))
         .returning();
       return stats;
+    });
+  }
+
+  async getHomeModePreference(userId: string): Promise<HomeModePreferenceResponse> {
+    const stats = await this.getUserStats(userId);
+    return buildHomeModePreferenceResponse(stats);
+  }
+
+  async trackHomeModeEngagement(
+    userId: string,
+    mode: HomeModePreferenceMode,
+  ): Promise<HomeModePreferenceResponse> {
+    return await withRetry(async () => {
+      return await db.transaction(async (tx: any) => {
+        const now = new Date();
+
+        await tx.execute(sql`
+          SELECT ${users.id}
+          FROM ${users}
+          WHERE ${users.id} = ${userId}
+          FOR UPDATE
+        `);
+
+        let [existingStats] = await tx.select().from(userStats)
+          .where(eq(userStats.userId, userId))
+          .limit(1);
+        if (!existingStats) {
+          const [createdStats] = await tx.insert(userStats)
+            .values({ userId })
+            .returning();
+          existingStats = createdStats;
+        }
+
+        const current = buildHomeModePreferenceResponse(existingStats, now);
+        const updatedScores = {
+          sixDegrees: clampHomeModeScore(
+            (mode === "six_degrees" ? current.scores.sixDegrees + HOME_MODE_SCORE_BOOST : current.scores.sixDegrees - HOME_MODE_SCORE_PENALTY)
+          ),
+          castCall: clampHomeModeScore(
+            (mode === "cast_call" ? current.scores.castCall + HOME_MODE_SCORE_BOOST : current.scores.castCall - HOME_MODE_SCORE_PENALTY)
+          ),
+          premier: clampHomeModeScore(
+            (mode === "premier" ? current.scores.premier + HOME_MODE_SCORE_BOOST : current.scores.premier - HOME_MODE_SCORE_PENALTY)
+          ),
+        };
+        const preferredMode = resolvePreferredHomeMode(updatedScores, [mode, current.preferredMode, "six_degrees"]);
+
+        await tx.update(userStats)
+          .set({
+            homePreferredMode: preferredMode,
+            homePreferenceLastInteractionAt: now,
+            homePreferenceSixDegreesScore: updatedScores.sixDegrees,
+            homePreferenceCastCallScore: updatedScores.castCall,
+            homePreferencePremierScore: updatedScores.premier,
+            updatedAt: now,
+          })
+          .where(eq(userStats.id, existingStats.id));
+
+        return {
+          preferredMode,
+          scores: updatedScores,
+        };
+      });
     });
   }
 
