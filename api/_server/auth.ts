@@ -570,20 +570,16 @@ export async function setupAuth(app: Express) {
 
         const premTotal = premCompletions.length;
         const allReels = premCompletions.map((c: any) => c.reels);
-        const wonCompletions = premCompletions.filter((c: any) => c.result === "won");
-        const wonReels = wonCompletions.map((c: any) => c.reels);
         const premAvgReels = computeAvg(allReels);
-        const perfectSorts = wonReels.filter((r: number) => r === 0).length;
+        const countReels = (target: number) => allReels.filter((r: number) => r === target).length;
+        const perfectSorts = countReels(5);
 
-        // Reels distribution (only won games)
+        // Reels distribution across all completions, including failed runs.
         const reelsDist: { reels: number; count: number }[] = [];
-        for (let r = 0; r <= 9; r++) {
-          const cnt = wonReels.filter((x: number) => x === r).length;
+        for (let r = 0; r <= 5; r++) {
+          const cnt = countReels(r);
           if (cnt > 0) reelsDist.push({ reels: r, count: cnt });
         }
-        // Also count failed
-        const failedCount = premCompletions.filter((c: any) => c.result === "failed").length;
-        if (failedCount > 0) reelsDist.push({ reels: -1, count: failedCount });
 
         premierData = {
           completed: premTotal,
@@ -596,12 +592,19 @@ export async function setupAuth(app: Express) {
           mediumCompletions: stats.premierMediumCompletions ?? 0,
           hardCompletions: stats.premierHardCompletions ?? 0,
           trophyBreakdown: {
-            filmHistorian: stats.trophyFilmHistorian ?? 0,
-            archivist: stats.trophyArchivist ?? 0,
-            cinephile: stats.trophyCinephile ?? 0,
-            casualViewer: stats.trophyCasualViewer ?? 0,
-            timeTraveler: stats.trophyTimeTraveler ?? 0,
-            lostInTime: stats.trophyLostInTime ?? 0,
+            boxOfficeBomb: countReels(0),
+            straightToVideo: countReels(1),
+            lateShow: countReels(2),
+            matinee: countReels(3),
+            openingNight: countReels(4),
+            premiereLeague: countReels(5),
+            // Backward compatibility for older app builds that still read the legacy keys.
+            filmHistorian: countReels(0),
+            archivist: countReels(1),
+            cinephile: countReels(2),
+            casualViewer: countReels(3),
+            timeTraveler: countReels(4),
+            lostInTime: countReels(5),
           },
         };
       }

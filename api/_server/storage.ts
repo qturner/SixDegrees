@@ -2137,7 +2137,7 @@ export class DatabaseStorage implements IStorage {
           displayMaxStreak = stats?.premierStreakMax ?? 0;
           displayTotalTrophies = premierTotalTrophies;
           if (sortBy === "streak") sortValue = premierStreak;
-          else if (sortBy === "efficiency") sortValue = premierAvgReels ?? 999; // lower reels = better
+          else if (sortBy === "efficiency") sortValue = premierAvgReels != null ? -premierAvgReels : 999; // negate: higher reels = better
           else if (sortBy === "trophies") sortValue = premierTotalTrophies;
         } else {
           // mode === 'all'
@@ -2150,7 +2150,7 @@ export class DatabaseStorage implements IStorage {
             const scores: number[] = [];
             if (avgMoves7Day != null) scores.push(100 - Math.min(Math.max((avgMoves7Day - 2) / 4, 0), 1) * 100);
             if (castCallAvgStars != null) scores.push(Math.min(castCallAvgStars / 5, 1) * 100);
-            if (premierAvgReels != null) scores.push(100 - Math.min(premierAvgReels / 7, 1) * 100);
+            if (premierAvgReels != null) scores.push(Math.min(premierAvgReels / 5, 1) * 100);
             sortValue = scores.length > 0 ? -(scores.reduce((a, b) => a + b, 0) / scores.length) : 999;
           } else if (sortBy === "trophies") {
             sortValue = displayTotalTrophies;
@@ -2180,8 +2180,8 @@ export class DatabaseStorage implements IStorage {
         });
       }
 
-      // Sort: for efficiency in SD/premier/all-composite, lower is better; for streak and trophies, higher is better
-      // CC efficiency uses negated values so higher-is-better sort also works
+      // Sort: SD efficiency uses lower-is-better raw values; CC, Premier, and all-mode composite
+      // store negated higher-is-better values so ascending sort still works here.
       if (sortBy === "efficiency") {
         leaderboard.sort((a, b) => a.sortValue - b.sortValue);
       } else {
@@ -2555,15 +2555,15 @@ export class DatabaseStorage implements IStorage {
         const premMediumDelta = context.difficulty === "medium" ? 1 : 0;
         const premHardDelta = context.difficulty === "hard" ? 1 : 0;
 
-        // Premier trophy tier deltas based on reels + result
+        // Premier trophy tier deltas based on earned reels.
+        // These reuse the legacy user_stats trophy columns as six ordered reel buckets.
         const reels = completion.reels;
-        const result = completion.result;
-        const filmHistorianDelta = result !== "failed" && reels === 0 ? 1 : 0;
-        const archivistDelta = result !== "failed" && reels >= 1 && reels <= 2 ? 1 : 0;
-        const cinephileDelta = result !== "failed" && reels >= 3 && reels <= 4 ? 1 : 0;
-        const casualViewerDelta = result !== "failed" && reels >= 5 && reels <= 6 ? 1 : 0;
-        const timeTravelerDelta = result !== "failed" && reels >= 7 ? 1 : 0;
-        const lostInTimeDelta = result === "failed" ? 1 : 0;
+        const filmHistorianDelta = reels === 0 ? 1 : 0;
+        const archivistDelta = reels === 1 ? 1 : 0;
+        const cinephileDelta = reels === 2 ? 1 : 0;
+        const casualViewerDelta = reels === 3 ? 1 : 0;
+        const timeTravelerDelta = reels === 4 ? 1 : 0;
+        const lostInTimeDelta = reels === 5 ? 1 : 0;
 
         // 4. Update stats atomically — premier counter + composite streak + Premier-specific streak/difficulty/trophies
         await tx.update(userStats)

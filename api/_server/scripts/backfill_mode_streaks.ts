@@ -144,12 +144,12 @@ async function main() {
       // Premier trophies
       let filmHistorian = 0, archivist = 0, cinephile = 0, casualViewer = 0, timeTraveler = 0, lostInTime = 0;
       for (const r of premRows) {
-        if (r.result === "failed") { lostInTime++; continue; }
         if (r.reels === 0) filmHistorian++;
-        else if (r.reels <= 2) archivist++;
-        else if (r.reels <= 4) cinephile++;
-        else if (r.reels <= 6) casualViewer++;
-        else timeTraveler++;
+        else if (r.reels === 1) archivist++;
+        else if (r.reels === 2) cinephile++;
+        else if (r.reels === 3) casualViewer++;
+        else if (r.reels === 4) timeTraveler++;
+        else lostInTime++;
       }
       console.log(`  Premier: ${premDates.length} completions, current=${premStreak.current}, max=${premStreak.max}`);
 
